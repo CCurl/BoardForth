@@ -49,18 +49,20 @@ To deploy the VM to the development board:
 
 To turn on the LED at pin 13, do this:
 
-    - 1 13 >pin \ this turns on the LED
-    - 0 13 >pin \ this turns off the LED
+    - : pin! $10000 + ! ;
+    - 1 13 pin! \ this turns on the LED
+    - 0 13 pin! \ this turns off the LED
 
 To read the LED at pin 13, do this:
 
-    - 13 pin> .
+    - : pin@ $10000 + ! ;
+    - 13 pin@ .
 
 To turn on the LED depending on whether another pin is HIGH or LOW:
 
-    - : 36 pin> 13 >pin ; \ this turns the LED on or off depending on pin 36
-    - auto-run-last \ now you can switch pin 36 on and off and the LED changes
-    - auto-run-off  \ the LED is no longer changed when pin 36 changes
+    - : main 36 pin@ 13 pin! ;    \ this turns the LED on or off depending on pin 36
+    - auto-run-last               \ now you can switch pin 36 on and off and the LED changes
+    - auto-run-off                \ the LED is no longer changed when pin 36 changes
 
 More notes:
 
