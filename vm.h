@@ -5,9 +5,9 @@
 
 // #define ATMEGA_2560
 // #define LEONARDO
-// #define REDBOARD_TURBO
+#define REDBOARD_TURBO
 // #define UNO_R3
-#define XIAO
+// #define XIAO
 
 #ifdef ATMEGA_2560
 #define SERIAL Serial
@@ -66,7 +66,7 @@ typedef unsigned short ushort;
 #define WORD short
 #define byte unsigned char
 
-#define STK_SZ 15
+#define STK_SZ 32
 #define T dstk[DSP]
 #define N dstk[DSP-1]
 #define R rstk[RSP]
@@ -105,6 +105,9 @@ typedef unsigned short ushort;
 #define NOT          30     // not
 #define EMIT         31     // emit
 #define DOT          32     // .
+#define DTOR         33     // >r
+#define RFETCH       34     // r@
+#define RTOD         35     // r>
 // END of NimbleText generated
 
 void push(CELL);

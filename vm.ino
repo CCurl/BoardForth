@@ -12,10 +12,11 @@ void vm_init() {
   for (int i = 0; i < DICT_SZ; i++) {
     dict[i] = 0;
   }
-  HERE = DSP = RSP = 0;
-  STATE = 0;
+  DSP = RSP = 0;
+  HERE = STATE = 0;
   BASE = 10;
   // 16-bits so that it can be replaced with an address for auto-run
+  LAST = HERE;
   WCOMMA(0);
 }
 
@@ -321,6 +322,18 @@ void runProgram(CELL start) {
 
         case DOT:
           Dot(pop(), BASE, 0);
+          break;
+
+        case DTOR:
+          rpush(pop());
+          break;
+
+        case RFETCH:
+          push(R);
+          break;
+
+        case RTOD:
+          push(rpop());
           break;
       }
     }

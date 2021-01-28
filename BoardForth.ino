@@ -1,9 +1,9 @@
 #include "vm.h"
 
 // --- MAX 70 chars ---           "123456789 123456789 123456789 123456789 123456789 123456789 123456789 ";
-const char string_001[] PROGMEM = ": dict-start 0 ; : dict-end 8192 ; ";
-const char string_002[] PROGMEM = ": cr #13 emit #10 emit ; : bl $20 emit ;";
-const char string_003[] PROGMEM = ": here (here) W@ ; : last (last) W@ ; : dict 0 ;";
+const char string_001[] PROGMEM = ": dict-start 0 ; : dict-end $20000 @ ; ";
+const char string_002[] PROGMEM = ": here $20001 @ ; : last $20002 @ ;";
+const char string_003[] PROGMEM = ": cr #13 emit #10 emit ; : bl $20 emit ;";
 const char string_004[] PROGMEM = ": free dict-end here - ; : used here dict-start - ;";
 const char string_005[] PROGMEM = ": count dup 1+ swap c@ ;";
 const char string_006[] PROGMEM = ": type begin >r dup c@ emit 1+ r> 1- dup while drop drop ;";
@@ -12,14 +12,14 @@ const char string_008[] PROGMEM = ": .word dup . 1+ 1+ dup w@ . 1+ 1+ count $0f 
 const char string_009[] PROGMEM = ": words cr last begin dup .word w@ dup while drop ;";
 const char string_010[] PROGMEM = ": auto-run dict-start 1+ w! ;";
 const char string_011[] PROGMEM = ": auto-run-last last 1+ 1+ w@ auto-run ;";
-const char string_012[] PROGMEM = ": >led 13 >pin ; : pin>led pin> >led ;";
+const char string_012[] PROGMEM = "";
 const char string_013[] PROGMEM = ": apin-base 54 ; : apin# apin-base + ;";
-const char string_014[] PROGMEM = "";
-const char string_015[] PROGMEM = "";
+const char string_014[] PROGMEM = ": >pin $10000 + ! ; : pin> $10000 + @ ;";
+const char string_015[] PROGMEM = ": >led 13 >pin ; : pin>led pin> >led ;";
 const char string_016[] PROGMEM = ": apin> apin# pina> ; : ?apin apin> . ;";
 const char string_017[] PROGMEM = "variable running : running? running @ ;";
 const char string_018[] PROGMEM = ": run running on ; : stop running off ;";
-FLASH(19) = ": do-loop running? if 36 pin>led 0 ?apin cr then ;";
+FLASH(19) = ": main running? if 36 pin>led 0 ?apin cr then $FFFF drop ;";
 FLASH(20) = "stop auto-run-last";
 FLASH(21) = "cr 1 2 3 4 + + + . cr";
 FLASH(999) = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";

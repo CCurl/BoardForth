@@ -261,6 +261,18 @@ void parseWord(char *word) {
     return;
   }
   
+  if (strcmp("variable", word) == 0) {
+    int len = nextWord(word);
+    if (len) {
+      defineWord(word);
+      CCOMMA(WLIT);
+      WCOMMA(HERE+3);
+      CCOMMA(RET);
+      COMMA(0);
+    }
+    return;
+  }
+  
   STATE = 0;
   sendOutput("\n["); sendOutput(word); sendOutput("]??");
 }

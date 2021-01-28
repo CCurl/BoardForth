@@ -35,6 +35,9 @@ XOR xor
 NOT not
 EMIT emit
 DOT .
+DTOR >r
+RFETCH r@
+RTOD r>
 -------------------------------------------------------
 END of NimbleText input
 
