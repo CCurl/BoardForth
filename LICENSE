@@ -1,4 +1,4 @@
-MIT License (Slightly mofidied)
+MIT License (amended)
 
 Copyright (c) 2021 Chris Curl
 
@@ -12,7 +12,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software. Additionaly, the Software
 shall include a comment in the header identifying from where the software was 
-copied: https://github.com/CCurl/BoardForth.
+obtained: https://github.com/CCurl/BoardForth.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
