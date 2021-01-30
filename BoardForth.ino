@@ -66,7 +66,7 @@ void keyPress(char key, char modifier) {
   Keyboard.end();
 #else
   sendOutput(F("[kb]"));
-  sendOutput(key);
+  sendOutput_Char(key);
   sendOutput(F("[kb]"));
 #endif
 }
@@ -91,13 +91,13 @@ void xxx(int addr) {
 }
 
 void setup() {
-  SERIAL.begin(19200);
+  SERIAL_begin(19200);
   // Default pin 13 (the LED) to OUTPUT and OFF (LOW)
-  pinMode(13, OUTPUT);
-  digitalWrite(13, LOW);
+  // pinMode(13, OUTPUT);
+  writePort(0x20001+13, LOW);
 
   while (!SERIAL);
-  while (SERIAL.available() > 0) SERIAL.read();
+  while (SERIAL_available() > 0) SERIAL_read();
   sendOutput(F("\n"));
   sendKeyboard("hi there");
 
@@ -120,10 +120,10 @@ void setup() {
 }
 
 void loop() {
-  while (SERIAL.available() > 0) {
-    char c = SERIAL.read();
+  while (SERIAL_available() > 0) {
+    char c = SERIAL_read();
     //char_in(c);
-    sendOutput(c);
+    sendOutput_Char(c);
   }
   // autoRun();
   vm_FreeAll();

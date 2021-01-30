@@ -157,7 +157,7 @@ void Fetch() {
 
 void Comma() {
     push(HERE);
-    HERE = lStore();
+    HERE = Store();
 }
 
 void COMMA(CELL val) {

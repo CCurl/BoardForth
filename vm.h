@@ -1,7 +1,15 @@
 #ifndef __VM_H__
 #define __VM_H__
 
-#include <avr/pgmspace.h>
+#ifndef IS_PC
+  #include <avr/pgmspace.h>
+#else
+  #define LOW 0
+  #define HIGH 255
+  #define PROGMEM
+  #define F(str) str
+  #define strcpy_P strcpy
+#endif
 #include <stdarg.h>
 
 //#define LOG_DEBUG
@@ -13,9 +21,10 @@
 // Seeduino XIAO    32k     Yes       Serial
 
 #define MEM_32
-#define HAS_KEYBOARD
+//#define HAS_KEYBOARD
 //#define SERIAL Serial
-#define SERIAL SerialUSB
+//#define SERIAL SerialUSB
+#define SERIAL puts
 
 #ifdef MEM_32
   #define MEM_SZ  32*1024
@@ -27,7 +36,13 @@
   #define DICT_SZ  24*256
 #endif
 
-#define sendOutput(str) SERIAL.print(str)
+#ifndef IS_PC
+  #define sendOutput(str) SERIAL.print(str)
+  #define SERIAL_Begin(baud) SERIAL.begin(baud)
+  #define SERIAL_Begin(baud) SERIAL.available()
+  #define SERIAL_read() SERIAL.read()
+#else
+#endif
 
 #ifdef HAS_KEYBOARD
 #include <Keyboard.h>
@@ -121,7 +136,7 @@ void COMMA(CELL);
 
 CELL cStore();
 CELL wStore();
-CELL lStore();
+CELL Store();
 
 void cFetch();
 void wFetch();
