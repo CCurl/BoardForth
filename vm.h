@@ -4,73 +4,53 @@
 #include <avr/pgmspace.h>
 #include <stdarg.h>
 
-// #define DBG_LOG(str)  writePort_String(str)
-// #define DBG_LOGF(...) writePort_StringF(__VA_ARGS__)
-#define DBG_LOG(str) DoNothing(str)
-#define DBG_LOGF(...) DoNothingF(__VA_ARGS__)
+//#define LOG_DEBUG
 
-// #define ATMEGA_2560
-// #define LEONARDO
-#define REDBOARD_TURBO
-// #define UNO_R3
-// #define XIAO
+// Board            SRAM    Keyboard  Serial        
+// ---------------- ------- -------- ------------
+// ATMEGA 2560      8k      No        Serial
+// Redboard_Turbo   32k     Yes       SerialUSB
+// Seeduino XIAO    32k     Yes       Serial
 
-#ifdef ATMEGA_2560
-#define SERIAL Serial
-#define MEM_SZ 8*1024
-#define DICT_SZ 6*1024
-#define ADDR_SZ 2
-typedef unsigned long ulong;
-typedef unsigned short ushort;
-#endif
-
-#ifdef LEONARDO
-#define SERIAL Serial
-#define DICT_SZ 13*128
-#define MEM_SZ  20*128
-#define ADDR_SZ 2
-typedef unsigned long ulong;
-typedef unsigned short ushort;
-// #define HAS_KEYBOARD
-#endif
-
-#ifdef REDBOARD_TURBO
+#define MEM_32
+#define HAS_KEYBOARD
+//#define SERIAL Serial
 #define SERIAL SerialUSB
-#define MEM_SZ 32*1024
-#define DICT_SZ 28*1024
-// #define NEEDS_ALIGN
-#define ADDR_SZ 2
+
+#ifdef MEM_32
+  #define MEM_SZ  32*1024
+  #define DICT_SZ 28*1024
 #endif
 
-#ifdef UNO_R3
-#define SERIAL Serial
-#define MEM_SZ 8*256
-#define DICT_SZ 3*256
-#define ADDR_SZ 2
-typedef unsigned long ulong;
-typedef unsigned short ushort;
+#ifdef MEM_8
+  #define MEM_SZ   32*256
+  #define DICT_SZ  24*256
 #endif
 
-#ifdef XIAO
-#define SERIAL Serial
-#define MEM_SZ 32*1024
-#define DICT_SZ 28*1024
-#define ADDR_SZ 2
-typedef unsigned long ulong;
-typedef unsigned short ushort;
-// #define HAS_KEYBOARD
-#endif
+#define sendOutput(str) SERIAL.print(str)
 
 #ifdef HAS_KEYBOARD
 #include <Keyboard.h>
 #endif
 
-#define sendOutput(str) SERIAL.print(str)
+#ifndef LOG_DEBUG
+  #define DBG_LOG(str) DoNothing(str)
+  #define DBG_LOGF(...) DoNothingF(__VA_ARGS__)
+#else
+  #define DBG_LOG(str)  writePort_String(str)
+  #define DBG_LOGF(...) writePort_StringF(__VA_ARGS__)
+#endif
 
 #define FLASH(num) const PROGMEM char string_ ## num[]
-#define CELL long
-#define WORD short
+
+typedef unsigned long ulong;
+typedef unsigned short ushort;
 #define byte unsigned char
+
+#define CELL long
+#define CELL_SZ 4
+#define WORD short
+#define ADDR_SZ 2
 
 #define STK_SZ 32
 #define T dstk[DSP]
