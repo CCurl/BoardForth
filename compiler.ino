@@ -77,6 +77,7 @@ ulong is_decimal(char *word) {
   if (*word == '-') {
     word++;
     is_neg = 1;
+    if (*word == 0) { return 0; }
   }
   while (*word) {
     char c = *(word++);
@@ -112,7 +113,7 @@ ulong is_number(char *word) {
 }
 
 void defineWord(char *name) {
-  sendOutput("\n-dw-"); sendOutput(name); sendOutput(" at "); Dot(HERE, 16, 0);
+  DBG_LOGF("\n-dw-%s at %lx-", name, HERE);
   push(HERE);
   WCOMMA(LAST);             // link
   LAST = pop();
@@ -160,17 +161,21 @@ void findWord(char *name) {
 void parseWord(char *word) {
   ulong val = is_number(word);
   if (status) {
+    DBG_LOGF("-num:%ld-", val);
     if (STATE) {
       if (val <= 0xFF) {
         CCOMMA(CLIT);
         CCOMMA(val);
-      } else if (val > 0xFFFF) {
+        return;
+      }
+      if (val > 0xFFFF) {
         CCOMMA(LIT);
         COMMA(val);
-      } else {
-        CCOMMA(WLIT);
-        WCOMMA(val);
+        return;
       }
+      CCOMMA(WLIT);
+      WCOMMA(val);
+      return;
     } else {
       push(val);
     }
@@ -182,7 +187,8 @@ void parseWord(char *word) {
     CELL dp = pop();
     push(dp + 2); // Get the XT
     wFetch();
-    if ((STATE == 1) || (dict[dp+4] == 0)) {
+    // dict[dp+4] => flags
+    if ((STATE == 1) && (dict[dp+4] == 0)) {
       CCOMMA(CALL);
       wComma();
     } else {
@@ -197,7 +203,7 @@ void parseWord(char *word) {
     if (src == 0) break;
     strcpy_P(kw, src);
     if (strcmp(kw, word) == 0) {
-      // sendOutput("-kw:"); sendOutput(i);
+      //sendOutput("-kw:"); sendOutput(i); sendOutput("-");
       if (STATE) {
         CCOMMA(i);
       } else {
@@ -274,15 +280,17 @@ void parseWord(char *word) {
   }
   
   STATE = 0;
-  sendOutput("\n["); sendOutput(word); sendOutput("]??");
+  writePort_StringF("\n[%s]??", word);
 }
 
 void parseLine(char *line) {
-  sendOutput("\n---"); sendOutput(line); sendOutput("---\n");
+  DBG_LOG("\n---"); DBG_LOG(line); DBG_LOG("---\n");
   char word[32];
   toIN = line;
   while (1) {
     if (nextWord(word) == 0) { return; }
+    if (strcmp("\\", word) == 0) { return; }
+    if (strcmp("//", word) == 0) { return; }
     parseWord(word);
   }
 }

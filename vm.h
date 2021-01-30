@@ -2,6 +2,12 @@
 #define __VM_H__
 
 #include <avr/pgmspace.h>
+#include <stdarg.h>
+
+// #define DBG_LOG(str)  writePort_String(str)
+// #define DBG_LOGF(...) writePort_StringF(__VA_ARGS__)
+#define DBG_LOG(str) DoNothing(str)
+#define DBG_LOGF(...) DoNothingF(__VA_ARGS__)
 
 // #define ATMEGA_2560
 // #define LEONARDO
@@ -103,12 +109,21 @@ typedef unsigned short ushort;
 #define OR           28     // or
 #define XOR          29     // xor
 #define NOT          30     // not
-#define EMIT         31     // emit
-#define DOT          32     // .
+#define xEMIT        31     // emit
+#define xDOT         32     // .
 #define DTOR         33     // >r
 #define RFETCH       34     // r@
 #define RTOD         35     // r>
 // END of NimbleText generated
+
+#define PORT_EMIT     0x20001
+#define PORT_DOT      0x20002
+#define PORT_HERE     0x30001
+#define PORT_LAST     0x30002
+#define PORT_BASE     0x30003
+#define PORT_STATE    0x30004
+#define PORT_MEM_SZ   0x30005
+#define PORT_DICT_SZ  0x30006
 
 void push(CELL);
 CELL pop();
@@ -143,5 +158,13 @@ void ok();
 void Dot(long num, int base, int width);
 void autoRun();
 void runProgram(CELL start);
-
+void readPort(CELL portNumber);
+void writePort(CELL portNumber, CELL val);
+byte *vm_Alloc(CELL sz);
+void vm_FreeAll();
+void writePort_String(const char *str);
+void writePort_StringF(const char *fmt, ...);
+void DoNothing(const char *str);
+void DoNothingF(const char *fmt, ...);
+void dumpDSTK();
 #endif
