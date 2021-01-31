@@ -1,15 +1,5 @@
 #ifndef __VM_H__
 #define __VM_H__
-
-#ifndef IS_PC
-  #include <avr/pgmspace.h>
-#else
-  #define LOW 0
-  #define HIGH 255
-  #define PROGMEM
-  #define F(str) str
-  #define strcpy_P strcpy
-#endif
 #include <stdarg.h>
 
 //#define LOG_DEBUG
@@ -20,11 +10,31 @@
 // Redboard_Turbo   32k     Yes       SerialUSB
 // Seeduino XIAO    32k     Yes       Serial
 
-#define MEM_32
-//#define HAS_KEYBOARD
-//#define SERIAL Serial
-//#define SERIAL SerialUSB
-#define SERIAL puts
+#ifdef IS_PC
+  #define MEM_64
+  #define LOW 0
+  #define HIGH 255
+  #define PROGMEM
+  #define F(str) str
+  #define strcpy_P strcpy
+  #define SERIAL 1
+#else
+  #include <avr/pgmspace.h>
+  // #include <Keyboard.h>
+  #define MEM_8
+  #define SERIAL Serial
+  // #define SERIAL SerialUSB
+  #define sendOutput(str) SERIAL.print(str)
+  #define SERIAL_begin(baud) SERIAL.begin(baud)
+  #define SERIAL_available(baud) SERIAL.available()
+  #define SERIAL_read() SERIAL.read()
+  #define sendOutput_Char(c) SERIAL.print(c)
+#endif
+
+#ifdef MEM_64
+  #define MEM_SZ  64*1024
+  #define DICT_SZ 60*1024
+#endif
 
 #ifdef MEM_32
   #define MEM_SZ  32*1024
@@ -36,24 +46,12 @@
   #define DICT_SZ  24*256
 #endif
 
-#ifndef IS_PC
-  #define sendOutput(str) SERIAL.print(str)
-  #define SERIAL_Begin(baud) SERIAL.begin(baud)
-  #define SERIAL_Begin(baud) SERIAL.available()
-  #define SERIAL_read() SERIAL.read()
-#else
-#endif
-
-#ifdef HAS_KEYBOARD
-#include <Keyboard.h>
-#endif
-
-#ifndef LOG_DEBUG
-  #define DBG_LOG(str) DoNothing(str)
-  #define DBG_LOGF(...) DoNothingF(__VA_ARGS__)
-#else
+#ifdef LOG_DEBUG
   #define DBG_LOG(str)  writePort_String(str)
   #define DBG_LOGF(...) writePort_StringF(__VA_ARGS__)
+#else
+  #define DBG_LOG(str) DoNothing(str)
+  #define DBG_LOGF(...) DoNothingF(__VA_ARGS__)
 #endif
 
 #define FLASH(num) const PROGMEM char string_ ## num[]

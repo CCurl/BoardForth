@@ -30,10 +30,10 @@ unsigned long pgm_read_word(const char * const* addr) {
     return (unsigned long)*addr;
 }
 
-#include "BoardForth.ino"
-#include "compiler.ino"
-#include "ports.ino"
-#include "vm.ino"
+#include "../BoardForth.ino"
+#include "../compiler.ino"
+#include "../ports.ino"
+#include "../vm.ino"
 
 int main() {
     setup();

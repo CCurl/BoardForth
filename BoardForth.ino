@@ -12,7 +12,7 @@ const char string_008[] PROGMEM = ": .word dup . 1+ 1+ dup w@ . 1+ 1+ count $0f 
 const char string_009[] PROGMEM = ": words cr last begin dup .word w@ dup while drop ;";
 const char string_010[] PROGMEM = ": auto-run dict-start 1+ w! ;";
 const char string_011[] PROGMEM = ": auto-run-last last 1+ 1+ w@ auto-run ;";
-const char string_012[] PROGMEM = "// test 123";
+const char string_012[] PROGMEM = ": bm begin 1- dup while drop ";
 const char string_013[] PROGMEM = ": pin! $10000 + ! ; : pin@ $10000 + @ ;";
 const char string_014[] PROGMEM = ": led! 13 pin! ; : pin>led pin@ led! ;";
 const char string_015[] PROGMEM = ": apin-base 54 ; : apin# apin-base + ;";
@@ -24,8 +24,8 @@ const char string_ok[]  PROGMEM = "cr 'o' emit 'k' emit '.' emit";
 
 //           "123456789 123456789 123456789 123456789 123456789 123456789 123456789 ";
 FLASH(19)  = ": main ?running if 36 pin>led 0 apin? cr then $FFFF drop ;";
-FLASH(20)  = ": xxx stop auto-run-last ;";
-FLASH(21)  = "cr 1 2 3 4 + + + . cr $10 base ! dict-end . here . last . #10 base ! free? used?";
+FLASH(20)  = ": mil 1000 dup * * ; cr 's' emit 1 mil bm cr 'e' emit";
+FLASH(21)  = "// cr 1 2 3 4 + + + . cr $10 base ! dict-end . here . last . #10 base ! free? used?";
 FLASH(999) = "123456789 123456789 123456789 123456789 123456789 123456789 123456789 ";
 
 const char *const forthSource[] PROGMEM = {
@@ -84,12 +84,6 @@ void dumpDict() {
   }
 }
 
-void xxx(int addr) {
-  sendOutput("\nval at "); Dot(addr, 10, 0);
-  sendOutput(" is "); Dot(dict[addr], 10, 0);
-  sendOutput(".");
-}
-
 void setup() {
   SERIAL_begin(19200);
   // Default pin 13 (the LED) to OUTPUT and OFF (LOW)
@@ -99,10 +93,11 @@ void setup() {
   while (!SERIAL);
   while (SERIAL_available() > 0) SERIAL_read();
   sendOutput(F("\n"));
-  sendKeyboard("hi there");
+  // sendKeyboard("hi there");
 
   vm_init();
 
+  writePort_String("Starting parse ...");
   char *srcBuf = (char *)vm_Alloc(256);
   for (int i = 0; i < 999; i++) {
     char *src = (char *)pgm_read_word(&(forthSource[i]));
@@ -116,7 +111,7 @@ void setup() {
   writePort_String("\nStack: ");
   dumpDSTK();
   writePort_String("\n");
-  dumpDict();
+  // dumpDict();
 }
 
 void loop() {

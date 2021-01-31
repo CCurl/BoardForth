@@ -208,7 +208,7 @@ void runProgram(CELL start) {
     long cycles = 0;
 
     while (1) {
-      if ((++cycles) > 100) { return; }
+      // if ((++cycles) > 100) { return; }
       IR = dict[PC++];
       DBG_LOGF("\n-PC:%lx,IR:%d-", PC-1, IR);
       switch (IR) {
