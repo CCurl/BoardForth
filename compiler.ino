@@ -115,10 +115,10 @@ ulong is_number(char *word) {
 void defineWord(char *name) {
   DBG_LOGF("\n-dw-%s at %lx-", name, HERE);
   push(HERE);
-  WCOMMA(LAST);             // link
+  addrCOMMA(LAST);             // link
   LAST = pop();
   push(HERE);
-  WCOMMA(0);                // XT
+  addrCOMMA(0);                // XT
   CCOMMA(0);                // FLAGS
   CCOMMA(strlen(name));     // LEN
   while (*name) {           // NAME
@@ -127,14 +127,14 @@ void defineWord(char *name) {
   CCOMMA(0);
   push(HERE);
   swap();
-  wStore();
+  addrStore();
 }
 
 void findWord(char *name) {
   CELL cur = LAST;
   int len = strlen(name);
   while (cur) {
-    CELL t = cur + 6;
+    CELL t = cur + (ADDR_SZ*2) + 2;
     int found = 0;
     if (dict[t-1] == len) {
       found = 1;
@@ -150,9 +150,7 @@ void findWord(char *name) {
       push(1);
       return;
     } else {
-      push(cur);
-      wFetch();
-      cur = pop();
+      cur = addrAt(cur);
     }
   }
   push(0);
@@ -185,14 +183,13 @@ void parseWord(char *word) {
   findWord(word);
   if (pop()) {
     CELL dp = pop();
-    push(dp + 2); // Get the XT
-    wFetch();
+    CELL xt = addrAt(dp+ADDR_SZ);
     // dict[dp+4] => flags
     if ((STATE == 1) && (dict[dp+4] == 0)) {
       CCOMMA(CALL);
-      wComma();
+      addrCOMMA(xt);
     } else {
-      runProgram(pop());
+      runProgram(xt);
     }
     return;
   }
@@ -207,9 +204,10 @@ void parseWord(char *word) {
       if (STATE) {
         CCOMMA(i);
       } else {
-        dict[HERE+10] = i;
-        dict[HERE+11] = RET;
-        runProgram(HERE+10);
+        CELL xt = HERE + 0x10;
+        dict[xt] = i;
+        dict[xt+1] = RET;
+        runProgram(xt);
       }
       return;
     }
@@ -233,14 +231,14 @@ void parseWord(char *word) {
   if (strcmp("if", word) == 0) {
     CCOMMA(JMPZ);
     push(HERE);
-    WCOMMA(0);
+    addrCOMMA(0);
     return;
   }
 
   if (strcmp("then", word) == 0) {
     push(HERE);
     swap();
-    wStore();
+    addrStore();
     return;
   }
 
@@ -251,19 +249,19 @@ void parseWord(char *word) {
 
   if (strcmp("again", word) == 0) {
     CCOMMA(JMP);
-    wComma();
+    addrCOMMA(pop());
     return;
   }
 
   if (strcmp("while", word) == 0) {
     CCOMMA(JMPNZ);
-    wComma();
+    addrCOMMA(pop());
     return;
   }
   
   if (strcmp("until", word) == 0) {
     CCOMMA(JMPZ);
-    wComma();
+    addrCOMMA(pop());
     return;
   }
   

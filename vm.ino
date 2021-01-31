@@ -19,7 +19,7 @@ void vm_init() {
   // 16-bits so that it can be replaced with an address for auto-run
   LAST = HERE;
   vm_FreeAll();
-  WCOMMA(0);
+  addrCOMMA(0);
 }
 
 void push(CELL v){
@@ -48,10 +48,10 @@ CELL rpop(){
     return 0;
 }
 
-void dumpDSTK() {
+void dotS() {
   writePort_String("(");
   for (int i = 1; i <= DSP; i++) {
-    writePort_StringF(" %lx", dstk[i]);
+    dot_port(dstk[i]);
   }
   writePort_String(" )");
 }
@@ -177,27 +177,18 @@ CELL addrAt(CELL loc) {
     return addr;
 }
 
+void addrCOMMA(CELL loc) {
+    ADDR_SZ == 2 ? WCOMMA(loc) : COMMA(loc);
+}
+
+void addrStore() {
+    ADDR_SZ == 2 ? wStore() : Store();
+}
+
 void swap() {
   CELL t = T;
   T = N;
   N = t;
-}
-
-void dot() {
-  CELL v = pop();
-  Dot(v, BASE, 0);
-}
-
-void Dot(CELL num, int base, int width) {
-  char buf[40];
-  if (base == 16){
-    sprintf(buf, " 0x%02lx", num);
-  } else if (base == 10) {
-    sprintf(buf, " %ld", num);
-  } else {
-    sprintf(buf, " (%lx in base %lx)", num, base);
-  }
-  sendOutput(buf);
 }
 
 void runProgram(CELL start) {
@@ -205,10 +196,10 @@ void runProgram(CELL start) {
     CELL t1, t2;
     PC = start;
     char buf[64];
-    long cycles = 0;
+    long cycles = MAX_CYCLES;
 
     while (1) {
-      // if ((++cycles) > 100) { return; }
+      if ((MAX_CYCLES > 0) && ((--cycles) < 1)) { return; }
       IR = dict[PC++];
       DBG_LOGF("\n-PC:%lx,IR:%d-", PC-1, IR);
       switch (IR) {

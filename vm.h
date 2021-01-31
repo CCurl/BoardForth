@@ -2,7 +2,8 @@
 #define __VM_H__
 #include <stdarg.h>
 
-//#define LOG_DEBUG
+// #define LOG_DEBUG
+#define MAX_CYCLES 0
 
 // Board            SRAM    Keyboard  Serial        
 // ---------------- ------- -------- ------------
@@ -102,13 +103,12 @@ typedef unsigned short ushort;
 #define OR           28     // or
 #define XOR          29     // xor
 #define NOT          30     // not
-#define xEMIT        31     // emit
-#define xDOT         32     // .
-#define DTOR         33     // >r
-#define RFETCH       34     // r@
-#define RTOD         35     // r>
+#define DTOR         31     // >r
+#define RFETCH       32     // r@
+#define RTOD         33     // r>
 // END of NimbleText generated
 
+#define PORT_PINS     0x10001
 #define PORT_EMIT     0x20001
 #define PORT_DOT      0x20002
 #define PORT_HERE     0x30001
@@ -124,21 +124,24 @@ void rpush(CELL);
 CELL rpop();
 void swap();
 
-void cComma();
-void wComma();
-void lComma();
+//void cComma();
+//void wComma();
+//void Comma();
 
 void CCOMMA(CELL);
 void WCOMMA(CELL);
 void COMMA(CELL);
+void addrCOMMA(CELL);
+CELL addrAt(CELL);
 
-CELL cStore();
-CELL wStore();
-CELL Store();
+//CELL cStore();
+//CELL wStore();
+//CELL Store();
+void addrStore();
 
-void cFetch();
-void wFetch();
-void lFetch();
+//void cFetch();
+//void wFetch();
+//void Fetch();
 
 extern byte dict[];
 extern CELL HERE;
@@ -148,7 +151,7 @@ extern CELL STATE;
 void parseLine(char *);
 void vm_init();
 void ok();
-void Dot(long num, int base, int width);
+void dotS();
 void autoRun();
 void runProgram(CELL start);
 void readPort(CELL portNumber);

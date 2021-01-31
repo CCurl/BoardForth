@@ -22,12 +22,11 @@ void dot_port(CELL val) {
   if (BASE == 10) sprintf(x, " %ld", val);
   else if (BASE == 0x10) sprintf(x, " %lx", val);
   else sprintf(x, "(%d in BASE %d)", val, BASE);
-  sendOutput(x);
+  writePort_String(x);
 }
 
 void writePort(CELL portNumber, CELL val) {
-//char x[64];
-//sprintf(x, "-port:%lx,num:%ld-", portNumber, val); sendOutput(x);
+  // writePort_StringF(x, "-port:%lx,num:%ld-", portNumber, val);
   if (portNumber == PORT_EMIT  ) { emit_port(val); }
   if (portNumber == PORT_DOT   ) { dot_port(val); }
   if (portNumber == PORT_HERE  ) { HERE = val; }

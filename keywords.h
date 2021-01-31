@@ -29,11 +29,9 @@ FLASH(10027) = "and";
 FLASH(10028) = "or";
 FLASH(10029) = "xor";
 FLASH(10030) = "not";
-FLASH(10031) = "xxxemit";
-FLASH(10032) = "xxx.";
-FLASH(10033) = ">r";
-FLASH(10034) = "r@";
-FLASH(10035) = "r>";
+FLASH(10031) = ">r";
+FLASH(10032) = "r@";
+FLASH(10033) = "r>";
 
 const char *const keyWords[] PROGMEM = {
     string_10000,
@@ -70,6 +68,4 @@ const char *const keyWords[] PROGMEM = {
     string_10031,
     string_10032,
     string_10033,
-    string_10034,
-    string_10035,
     0 };

@@ -24,7 +24,7 @@ const char string_ok[]  PROGMEM = "cr 'o' emit 'k' emit '.' emit";
 
 //           "123456789 123456789 123456789 123456789 123456789 123456789 123456789 ";
 FLASH(19)  = ": main ?running if 36 pin>led 0 apin? cr then $FFFF drop ;";
-FLASH(20)  = ": mil 1000 dup * * ; cr 's' emit 1 mil bm cr 'e' emit";
+FLASH(20)  = ": mil 1000 dup * * ; cr 's' emit 100 mil bm cr 'e' emit";
 FLASH(21)  = "// cr 1 2 3 4 + + + . cr $10 base ! dict-end . here . last . #10 base ! free? used?";
 FLASH(999) = "123456789 123456789 123456789 123456789 123456789 123456789 123456789 ";
 
@@ -73,22 +73,24 @@ void keyPress(char key, char modifier) {
 
 void dumpDict() {
   int h = 0;
+  int b = BASE;
+  BASE = 16;
   while (h < HERE) {
-    Dot(h, 16, 4);
-    sendOutput(": ");
+      writePort(PORT_DOT, h);
+    writePort_String(": ");
     for (int i = 0; i < 8; i++) {
-      byte v = dict[h++];
-      Dot(v, 16, 2);
+      writePort(PORT_DOT, dict[h++]);
     }
-    sendOutput("\n");
+    writePort_String("\n");
   }
+  BASE = b;
 }
 
 void setup() {
   SERIAL_begin(19200);
   // Default pin 13 (the LED) to OUTPUT and OFF (LOW)
   // pinMode(13, OUTPUT);
-  writePort(0x20001+13, LOW);
+  writePort(PORT_PINS+13, LOW);
 
   while (!SERIAL);
   while (SERIAL_available() > 0) SERIAL_read();
@@ -97,7 +99,6 @@ void setup() {
 
   vm_init();
 
-  writePort_String("Starting parse ...");
   char *srcBuf = (char *)vm_Alloc(256);
   for (int i = 0; i < 999; i++) {
     char *src = (char *)pgm_read_word(&(forthSource[i]));
@@ -109,7 +110,7 @@ void setup() {
   writePort_StringF(",HERE: %d (0x%04lx)", HERE, HERE);
   writePort_StringF(",LAST: %d (0x%04lx)", LAST, LAST);
   writePort_String("\nStack: ");
-  dumpDSTK();
+  dotS();
   writePort_String("\n");
   // dumpDict();
 }
