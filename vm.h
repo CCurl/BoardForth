@@ -10,9 +10,12 @@
 // ATMEGA 2560      8k      No        Serial
 // Redboard_Turbo   32k     Yes       SerialUSB
 // Seeduino XIAO    32k     Yes       Serial
+// ESP8266          96k     Yes       Serial
 
 #ifdef IS_PC
-  #define MEM_64
+  #define MEM_SZ  64*1024
+  #define DICT_SZ 64*1024
+  #define ADDR_SZ 2
   #define LOW 0
   #define HIGH 255
   #define PROGMEM
@@ -22,14 +25,20 @@
 #else
   #include <avr/pgmspace.h>
   // #include <Keyboard.h>
-  #define MEM_8
+  #define MEM_ESP8266
   #define SERIAL Serial
+  #define ADDR_SZ 2
   // #define SERIAL SerialUSB
   #define sendOutput(str) SERIAL.print(str)
   #define SERIAL_begin(baud) SERIAL.begin(baud)
   #define SERIAL_available(baud) SERIAL.available()
   #define SERIAL_read() SERIAL.read()
   #define sendOutput_Char(c) SERIAL.print(c)
+#endif
+
+#ifdef MEM_ESP8266
+  #define MEM_SZ  80*1024
+  #define DICT_SZ 32*1024
 #endif
 
 #ifdef MEM_64
@@ -61,10 +70,9 @@ typedef unsigned long ulong;
 typedef unsigned short ushort;
 #define byte unsigned char
 
-#define CELL long
+#define CELL unsigned long
 #define CELL_SZ 4
-#define WORD short
-#define ADDR_SZ 2
+#define WORD unsigned short
 
 #define STK_SZ 32
 #define T dstk[DSP]
@@ -106,6 +114,7 @@ typedef unsigned short ushort;
 #define DTOR         31     // >r
 #define RFETCH       32     // r@
 #define RTOD         33     // r>
+#define WDTFEED      34     // wdtfeed
 // END of NimbleText generated
 
 #define PORT_PINS     0x10001
@@ -163,4 +172,5 @@ void writePort_StringF(const char *fmt, ...);
 void DoNothing(const char *str);
 void DoNothingF(const char *fmt, ...);
 void dumpDSTK();
+void char_in(char c);
 #endif

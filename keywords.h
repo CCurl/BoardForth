@@ -32,6 +32,7 @@ FLASH(10030) = "not";
 FLASH(10031) = ">r";
 FLASH(10032) = "r@";
 FLASH(10033) = "r>";
+FLASH(10034) = "wdtfeed";
 
 const char *const keyWords[] PROGMEM = {
     string_10000,
@@ -68,4 +69,5 @@ const char *const keyWords[] PROGMEM = {
     string_10031,
     string_10032,
     string_10033,
+    string_10034,
     0 };

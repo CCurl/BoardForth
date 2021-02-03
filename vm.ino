@@ -1,6 +1,9 @@
 CELL PC;
 byte IR;
 
+char TIB[80];
+byte tibIn = 0;
+
 byte dict[DICT_SZ+1];
 CELL HERE, LAST, BASE, STATE;
 
@@ -93,7 +96,7 @@ void CCOMMA(CELL val) {
 CELL wStore() {
     CELL addr = pop();
     CELL v    = pop();
-    if ((addr+2) < DICT_SZ) {
+    if ((0 <= addr) && ((addr+2) < DICT_SZ)) {
         dict[addr++] = (v & 0xff);
         dict[addr++] = ((v >> 8) & 0xff);
     }
@@ -125,13 +128,13 @@ CELL Store() {
     CELL addr = pop();
     CELL v    = pop();
 
-    if ((1 < addr) && ((addr+4) < DICT_SZ)) {
+    if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
         dict[addr++] = (v & 0xff);
         dict[addr++] = ((v >>  8) & 0xff);
         dict[addr++] = ((v >> 16) & 0xff);
         dict[addr++] = ((v >> 24) & 0xff);
     } else if (DICT_SZ < addr) {
-DBG_LOGF("-Store(%lx<-%lx)-", addr, v);
+//DBG_LOGF("-Store(%lx<-%lx)-", addr, v);
       writePort(addr, v);
     }
     return addr;
@@ -162,27 +165,42 @@ void Comma() {
 
 void COMMA(CELL val) {
   push(val);
-  push(HERE);
-  HERE = Store();
+  Comma();
 }
 
 CELL addrAt(CELL loc) {
-    DBG_LOGF("-addr(%lx):[%02x", loc, dict[loc]);
+//    DBG_LOGF("-addr(%lx,SZ=%d):[%02x", loc, ADDR_SZ, dict[loc]);
     CELL addr = dict[loc++];
-    DBG_LOGF(",%02x", dict[loc]);
+//    DBG_LOGF(",%02x", dict[loc]);
     addr += ((CELL)dict[loc++] << 8);
-    if (ADDR_SZ > 2) { addr += ((CELL)dict[loc++] << 16); }
-    if (ADDR_SZ > 3) { addr += ((CELL)dict[loc++] << 24); }
-    DBG_LOGF("]:%lx-", addr);
+    if (ADDR_SZ > 2) {
+//      DBG_LOGF(",%02x", dict[loc]);
+      addr += ((CELL)dict[loc++] << 16);
+    }
+    if (ADDR_SZ > 3) {
+//      DBG_LOGF(",%02x", dict[loc]);
+      addr += ((CELL)dict[loc++] << 24);
+    }
+//    DBG_LOGF("]:%lx-", addr);
     return addr;
 }
 
 void addrCOMMA(CELL loc) {
-    ADDR_SZ == 2 ? WCOMMA(loc) : COMMA(loc);
+    if (ADDR_SZ == 4) {
+        COMMA(loc); 
+//        DBG_LOGF("-addrCOMMA(L):HERE now=%d-", HERE);
+    } else {
+        WCOMMA(loc);
+//        DBG_LOGF("-addrCOMMA(W):HERE now=%d-", HERE);
+    }
 }
 
 void addrStore() {
-    ADDR_SZ == 2 ? wStore() : Store();
+    if (ADDR_SZ == 4) {
+        Store(); 
+    } else {
+        wStore();
+    }
 }
 
 void swap() {
@@ -202,6 +220,9 @@ void runProgram(CELL start) {
       if ((MAX_CYCLES > 0) && ((--cycles) < 1)) { return; }
       IR = dict[PC++];
       DBG_LOGF("\n-PC:%lx,IR:%d-", PC-1, IR);
+      #ifdef LOG_DEBUG
+        dotS();
+      #endif
       switch (IR) {
         case CALL: 
           ++callDepth;
@@ -220,6 +241,7 @@ void runProgram(CELL start) {
           break;
   
         case JMPZ:
+          DBG_LOGF("-JMPZ:TOS=%d-", T);
           if (pop() == 0) {
             PC = addrAt(PC);
           } else {
@@ -228,6 +250,7 @@ void runProgram(CELL start) {
           break;
   
         case JMPNZ:
+          DBG_LOGF("-JMPNZ:TOS=%d-", T);
           if (pop()) {
             PC = addrAt(PC);
           } else {
@@ -237,6 +260,10 @@ void runProgram(CELL start) {
   
         case ONEMINUS:
           T--;
+          break;
+  
+        case ONEPLUS:
+          T++;
           break;
   
         case DUP:
@@ -345,7 +372,7 @@ void runProgram(CELL start) {
           break;
 
         case LIT:
-          DBG_LOGF("-LIT:PC=%lx,", PC);
+          DBG_LOGF("-LIT:PC=%lx,", PC); // DBG_LOGF
           push(PC);
           Fetch();
           PC += 4;
@@ -362,6 +389,12 @@ void runProgram(CELL start) {
 
         case RTOD:
           push(rpop());
+          break;
+
+        case WDTFEED:
+          #ifdef MEM_ESP8266
+            ESP.wdtFeed();
+          #endif
           break;
       }
     }
@@ -385,4 +418,17 @@ byte *vm_Alloc(CELL sz) {
 
 void vm_FreeAll() {
   last_allocated = DICT_SZ-1;
+}
+
+void char_in(char c) {
+  if (tibIn < sizeof(TIB)) {
+    TIB[tibIn++] = c;
+    TIB[tibIn] = 0;
+  } else {
+    writePort_String("\nInput buffer full!");
+  }
+  if (c == 13) {
+    parseLine(TIB);
+    tibIn = 0;
+  }
 }

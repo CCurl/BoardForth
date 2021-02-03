@@ -115,10 +115,10 @@ ulong is_number(char *word) {
 void defineWord(char *name) {
   DBG_LOGF("\n-dw-%s at %lx-", name, HERE);
   push(HERE);
-  addrCOMMA(LAST);             // link
+  addrCOMMA(LAST);          // link
   LAST = pop();
   push(HERE);
-  addrCOMMA(0);                // XT
+  addrCOMMA(0);             // XT
   CCOMMA(0);                // FLAGS
   CCOMMA(strlen(name));     // LEN
   while (*name) {           // NAME
@@ -157,6 +157,7 @@ void findWord(char *name) {
 }
 
 void parseWord(char *word) {
+  DBG_LOGF("[%s]", word);
   ulong val = is_number(word);
   if (status) {
     DBG_LOGF("-num:%ld-", val);
@@ -180,12 +181,13 @@ void parseWord(char *word) {
     return;
   }
 
+  DBG_LOG("-word?-");
   findWord(word);
   if (pop()) {
     CELL dp = pop();
     CELL xt = addrAt(dp+ADDR_SZ);
-    // dict[dp+4] => flags
-    if ((STATE == 1) && (dict[dp+4] == 0)) {
+    // dict[dp+(2*ADDR_SZ)] => flags
+    if ((STATE == 1) && (dict[dp+(2*ADDR_SZ)] == 0)) {
       CCOMMA(CALL);
       addrCOMMA(xt);
     } else {
@@ -194,13 +196,14 @@ void parseWord(char *word) {
     return;
   }
   
+  DBG_LOG("-kw?-");
   char kw[12];
   for (int i = 0; i < 999; i++) {
-    char *src = (char *)pgm_read_word(&(keyWords[i]));
+    char *src = (char *)pgm_read_dword(&(keyWords[i]));
     if (src == 0) break;
     strcpy_P(kw, src);
     if (strcmp(kw, word) == 0) {
-      //sendOutput("-kw:"); sendOutput(i); sendOutput("-");
+      DBG_LOGF("-kw:%d-", i);
       if (STATE) {
         CCOMMA(i);
       } else {
@@ -214,7 +217,9 @@ void parseWord(char *word) {
   }
 
   if (strcmp(":", word) == 0) {
+    DBG_LOG("-is-colon-");
     int len = nextWord(word);
+    DBG_LOGF("-word:%s-", word);
     if (len) {
       defineWord(word);
       STATE = 1;

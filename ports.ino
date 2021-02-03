@@ -1,4 +1,24 @@
 
+// ---------------------------------------------------------------------
+void writePort_String(const char *str)
+{
+  sendOutput(str);
+  // while (*str) {
+  //   emit_port(*(str++));
+  // }
+}
+
+// ---------------------------------------------------------------------
+void writePort_StringF(const char *fmt, ...)
+{
+    char buf[64];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    writePort_String(buf);
+}
+
 void readPort(CELL portNumber) {
 //char x[64];
 //sprintf(x, "-readPort(%lx)-", portNumber); sendOutput(x);
@@ -26,7 +46,7 @@ void dot_port(CELL val) {
 }
 
 void writePort(CELL portNumber, CELL val) {
-  // writePort_StringF(x, "-port:%lx,num:%ld-", portNumber, val);
+  DBG_LOGF("\n-writePort(%lx,%ld)-", portNumber, val);
   if (portNumber == PORT_EMIT  ) { emit_port(val); }
   if (portNumber == PORT_DOT   ) { dot_port(val); }
   if (portNumber == PORT_HERE  ) { HERE = val; }
@@ -34,25 +54,4 @@ void writePort(CELL portNumber, CELL val) {
   if (portNumber == PORT_STATE ) { STATE = val; }
   // if (portNumber == PORT_XXX ) { emit(val); }
   // if (portNumber == PORT_XXX ) { emit(val); }
-}
-
-
-
-// ---------------------------------------------------------------------
-void writePort_String(const char *str)
-{
-  while (*str) {
-    emit_port(*(str++));
-  }
-}
-
-// ---------------------------------------------------------------------
-void writePort_StringF(const char *fmt, ...)
-{
-    char buf[64];
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
-    writePort_String(buf);
 }
