@@ -16,10 +16,8 @@
 : led! 13 pin! ; : pin>led pin@ led! ;
 : apin-base 54 ; : apin# apin-base + ;
 : apin! apin# $10000 + ! ; : apin@ apin# $10000 + @ ; : apin? apin@ . ;
-variable running : ?running running @ ;
 : on 1 swap ! ; : off 0 swap ! ;
 : run running on ; : stop running off ;
-: main ?running if 36 pin>led 0 apin? cr then $FFFF drop ;
 : k 1000 * ; : mil k k ; : go cr 's' emit bm cr 'e' emit ;
 : ok cr 'o' emit 'k' emit cr ; ok
 : .char dup c@ . 1+ ; : .char4 .char .char .char .char ; 
@@ -28,3 +26,5 @@ variable running : ?running running @ ;
 : dump-16 dup . ':' emit space .char4 .char4 .char4 .char4 ;
 : dump-dict here . last . 0 begin cr dump-16 here over > while drop ;
 : auto-run 0 w! ; : auto-run-last last 1+ 1+ w@ auto-run ;
+variable running : ?running running @ ;
+: main ?running if 36 pin>led 0 apin? cr then $FFFF drop ;

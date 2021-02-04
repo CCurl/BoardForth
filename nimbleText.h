@@ -41,27 +41,26 @@ WDTFEED wdtfeed
 END of NimbleText input
 
 For the opcodes
--------------------------------------------------------
-$each
-#define <%($0 + '               ').substring(0,12)%><%Number($rownum) < 10 ? ' ' : ''%>$rownum     // $1
+------------------------------------------------------
+$each+
+#define <%($0 + '               ').substring(0,13)%><%(Number($h0)+$rownum) < 10 ? ' ' : ''%><%Number($h0)+$rownum%>     // $1
 $once
 
-$each
-const PROGMEM char string_$rownum[] = "$1";
+$each+
+const PROGMEM char string_<%Number($h0)+$rownum%>[] = "$1";
 $once
 
-const char *const keyWords[] PROGMEM = {
-$each
-    string_$rownum),
-$once    0 };
+$each+
+    string_<%Number($h0)+$rownum%>,
 
-$each
+$once
+
+$each+
         case $0: 
           // N = N+T; t1 = T; T = N; N = t1; pop(); push(t1);
           break;
 
-$once
-    }
+
 -------------------------------------------------------
 END of the NimbleText script
 
@@ -78,3 +77,21 @@ $once
     0 };
 -------------------------------------------------------
 END of the NimbleText script
+
+#define TOCOM        38     // >com
+#define FROMCOM      39     // com>
+
+const PROGMEM char string_38[] = ">com";
+const PROGMEM char string_39[] = "com>";
+
+    string_38,
+    string_39,
+
+        case TOCOM: 
+          // N = N+T; t1 = T; T = N; N = t1; pop(); push(t1);
+          break;
+
+        case FROMCOM: 
+          // N = N+T; t1 = T; T = N; N = t1; pop(); push(t1);
+          break;
+
