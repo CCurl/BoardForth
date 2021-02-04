@@ -396,6 +396,21 @@ void runProgram(CELL start) {
             ESP.wdtFeed();
           #endif
           break;
+
+        case GTHAN:
+            N = (N > T) ? -1 : 0;
+            pop();
+          break;
+
+        case LTHAN:
+            N = (N < T) ? -1 : 0;
+            pop();
+          break;
+
+        case EQUAL:
+            N = (N == T) ? -1 : 0;
+            pop();
+          break;
       }
     }
 }

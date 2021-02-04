@@ -50,8 +50,8 @@ void writePort(CELL portNumber, CELL val) {
   if (portNumber == PORT_EMIT  ) { emit_port(val); }
   if (portNumber == PORT_DOT   ) { dot_port(val); }
   if (portNumber == PORT_HERE  ) { HERE = val; }
+  if (portNumber == PORT_LAST  ) { LAST = val; }
   if (portNumber == PORT_BASE  ) { BASE = val > 0 ? val : 10; }
   if (portNumber == PORT_STATE ) { STATE = val; }
-  // if (portNumber == PORT_XXX ) { emit(val); }
   // if (portNumber == PORT_XXX ) { emit(val); }
 }

@@ -115,6 +115,9 @@ typedef unsigned short ushort;
 #define RFETCH       32     // r@
 #define RTOD         33     // r>
 #define WDTFEED      34     // wdtfeed
+#define GTHAN        35     // >
+#define LTHAN        36     // <
+#define EQUAL        37     // =
 // END of NimbleText generated
 
 #define PORT_PINS     0x10001
