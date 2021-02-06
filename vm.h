@@ -108,7 +108,7 @@ typedef unsigned short ushort;
 #define ADD          21     // +
 #define SUB          22     // -
 #define MULT         23     // *
-#define DIV          24     // /
+#define SLASHMOD     24     // /mod
 #define LSHIFT       25     // <<
 #define RSHIFT       26     // >>
 #define AND          27     // and

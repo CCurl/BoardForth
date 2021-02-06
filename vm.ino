@@ -297,9 +297,16 @@ void runProgram(CELL start) {
           pop();
           break;
   
-        case DIV:
-          N = (T != 0) ? (N/T) : -1;
-          pop();
+        case SLASHMOD:
+          if (T != 0) {
+            t1 = N;
+            t2 = T;
+            N = t1 % t2;
+            T = t1 / t2;
+          } else {
+            N = 0;
+            T = 0;
+          }
           break;
   
         case LSHIFT:

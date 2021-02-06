@@ -1,22 +1,23 @@
-// : (here) $30001 ; : (last) $30002 ;
-// 2 (here) ! 0 (last) !
 : emit $20001 ! ; : . $20002 ! ;
 : (here) $30001 ; : (last) $30002 ;
 : base $30003 ; : state  $30004 ; : (dsp) $30005 ;
 : dict-start 0 ; : dict-end $30006 @ 1- ; 
 : pin-port $10000 ; : apin-port $11000 ; 
 : here (here) @ ; : last (last) @ ; 
-: depth (dsp) @ ; : clearstack 0 (dsp) ! ;
-variable m-here 2 m-here !
-variable m-last 0 m-last ! 
-: marker here m-here ! last m-last ! ;
-: forget m-here @ (here) ! m-last @ (last) ! ;
+: depth (dsp) @ ; : sp! 0 (dsp) ! ;
+variable fh 2 fh !
+variable fl 0 fl ! 
+: marker here fh ! last fl ! ;
+: forget fh @ (here) ! fl @ (last) ! ;
 : cr #13 emit #10 emit ; : space $20 emit ;
 : .. dup . ; : hex $10 base ! ; : decimal #10 base ! ;
 : .s '(' emit >r >r >r >r .. r> .. r> .. r> .. r> .. space ')' emit ;
 : count dup 1+ swap c@ ;
 : type begin >r dup c@ emit 1+ r> 1- dup while drop drop ;
 : on 1 swap ! ; : off 0 swap ! ;
+: ?dup dup if dup then ; : 2dup over over ; : 2drop drop drop ;
+: nip swap drop ; : tuck swap over ;
+: / /mod nip ; : mod /mod drop ;
 : words cr last begin dup 5 + count type space w@ dup while drop ;
 : .word dup . dup 2 + w@ . space 5 + count type cr ;
 : wordsl cr last begin dup .word w@ dup while drop ;
@@ -27,7 +28,6 @@ variable m-last 0 m-last !
 : apin-base 54 ; : apin# apin-base + ;
 : apin! apin# apin-port + ! ; 
 : apin@ apin# apin-port + @ ;
-: pin? pin@ . ; : apin? apin@ . ;
 : led! 13 pin! ; : pin>led pin@ led! ;
 // other stuff
 : k 1000 * ; : mil k k ;
@@ -41,4 +41,4 @@ variable m-last 0 m-last !
 variable running : ?running running @ ;
 : run running on ; : stop running off ;
 : bm cr 's' emit begin wdtfeed 1- dup while drop cr 'e' emit ;
-: do-loop ?running if 36 pin>led 0 apin? cr then ;
+: do-loop ?running if 36 pin>led 0 apin@ . cr then ;
