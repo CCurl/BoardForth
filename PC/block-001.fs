@@ -30,6 +30,10 @@ variable fl 0 fl !
 : apin@ apin# apin-port + @ ;
 : led! 13 pin! ; : pin>led pin@ led! ;
 
+: c, here c! here 1+  (here) ! ;
+: w, here w! here 2 + (here) ! ;
+:  , here  ! here 4 + (here) ! ;
+
 variable #neg
 variable #len
 : ++  dup @  1+ swap ! ;
