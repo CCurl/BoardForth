@@ -1,10 +1,10 @@
 #include "vm.h"
 
-FLASH(ok) = ": ok cr 'o' emit 'k' emit cr ; ok";
+// FLASH(ok) = ": ok cr 'o' emit 'k' emit cr ; ok";
 // FLASH(test) = ": emit $20001 ! ; : cr '-' emit $ffffffff drop ;";
 
 const char *const strings[] PROGMEM = {
-  string_ok, 0
+  0
   };
 
 
@@ -74,18 +74,21 @@ void setup() {
 
   char *buf = (char *)vm_Alloc(256);
   for (int i = 0; i < 999; i++ ) {
-    char *src = (char *)pgm_read_dword(&(strings[i]));
+    char *src;
+    #ifdef MEM_ESP8266
+     src = (char *)pgm_read_dword(&(strings[i]));
+    #else
+     src = (char *)pgm_read_word(&(strings[i]));
+    #endif
     if (src == 0) {
       break;
     }
     strcpy_P(buf, src);
     parseLine(buf);
   }
-  writePort_StringF("\nDICT_SZ: %d (0x%04lx)", DICT_SZ, DICT_SZ);
-  writePort_StringF(",HERE: %d (0x%04lx)", HERE, HERE);
-  writePort_StringF(",LAST: %d (0x%04lx)", LAST, LAST);
-  writePort_String("\nStack: "); dotS();
-  writePort_String("\n");
+  writePort_String("\nBoardForth v0. Written by Chris Curl (2021)");
+  writePort_StringF("\nDictionary size is: %d (0x%lx) bytes.", DICT_SZ, DICT_SZ);
+  writePort_String("\nok.\n");
   // dumpDict();
 }
 
@@ -93,7 +96,6 @@ void loop() {
   while (SERIAL_available() > 0) {
     char c = SERIAL_read();
     char_in(c);
-    // sendOutput_Char(c);
   }
   // autoRun();
   vm_FreeAll();

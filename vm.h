@@ -79,6 +79,10 @@ typedef unsigned short ushort;
 #define N dstk[DSP-1]
 #define R rstk[RSP]
 
+// Special STATEs
+#define LOAD_HERE_LAST 0x100
+#define LOAD_LINE      0x101
+
 // NimbleText generated ...
 #define NOOP          0     // nop
 #define CLIT          1     // cliteral
@@ -120,15 +124,23 @@ typedef unsigned short ushort;
 #define EQUAL        37     // =
 // END of NimbleText generated
 
-#define PORT_PINS     0x10001
+// ***************************
+// Ports
+// ***************************
+// Pins
+#define PORT_PINS     0x10000
+#define PORT_APINS    0x11000
+// Input/Output
 #define PORT_EMIT     0x20001
 #define PORT_DOT      0x20002
+// System variables
 #define PORT_HERE     0x30001
 #define PORT_LAST     0x30002
 #define PORT_BASE     0x30003
 #define PORT_STATE    0x30004
-#define PORT_MEM_SZ   0x30005
+#define PORT_DSP      0x30005
 #define PORT_DICT_SZ  0x30006
+// ***************************
 
 void push(CELL);
 CELL pop();
@@ -160,6 +172,7 @@ extern CELL HERE;
 extern CELL LAST;
 extern CELL BASE;
 extern CELL STATE;
+extern byte DSP;
 void parseLine(char *);
 void vm_init();
 void ok();

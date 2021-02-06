@@ -73,7 +73,10 @@ void repl() {
         printf(" ok.\n");
         gets(buf);
         if (strcmp(buf, "bye") == 0) return;
-        if (strcmp(buf, "load") == 0) {
+        if (strcmp(buf, "init") == 0) {
+            push(1);
+            load();
+        } else if (strcmp(buf, "load") == 0) {
             load();
         } else {
             doHistory(buf);

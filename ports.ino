@@ -26,8 +26,16 @@ void readPort(CELL portNumber) {
   if (portNumber == PORT_LAST   ) { push(LAST); }
   if (portNumber == PORT_STATE  ) { push(STATE); }
   if (portNumber == PORT_BASE   ) { push(BASE); }
-  if (portNumber == PORT_MEM_SZ ) { push(MEM_SZ); }
+  if (portNumber == PORT_DSP    ) { push(DSP); }
   if (portNumber == PORT_DICT_SZ) { push(DICT_SZ); }
+  if ((portNumber >= PORT_PINS) && (portNumber < (PORT_PINS+0x0100))) {
+      int pinNumber = (portNumber & 0xFF);
+      writePort_StringF("(read pin port:%d)", pinNumber);
+  }
+  if ((portNumber >= PORT_APINS) && (portNumber < (PORT_APINS+0x100))) {
+      int pinNumber = (portNumber & 0xFF);
+      writePort_StringF("(read apin port:%d)", pinNumber);
+  }
 }
 
 void emit_port(CELL val) {
@@ -49,9 +57,29 @@ void writePort(CELL portNumber, CELL val) {
   DBG_LOGF("\n-writePort(%lx,%ld)-", portNumber, val);
   if (portNumber == PORT_EMIT  ) { emit_port(val); }
   if (portNumber == PORT_DOT   ) { dot_port(val); }
-  if (portNumber == PORT_HERE  ) { HERE = val; }
-  if (portNumber == PORT_LAST  ) { LAST = val; }
   if (portNumber == PORT_BASE  ) { BASE = val > 0 ? val : 10; }
   if (portNumber == PORT_STATE ) { STATE = val; }
-  // if (portNumber == PORT_XXX ) { emit(val); }
+  if (portNumber == PORT_HERE ) {
+      val = (val >= DICT_SZ) ? DICT_SZ-1 : val;
+      val = (val < 1) ? 0 : val;
+      HERE = val;
+  }
+  if (portNumber == PORT_LAST ) {
+      val = (val >= DICT_SZ) ? DICT_SZ-1 : val;
+      val = (val < 1) ? 0 : val;
+      LAST = val;
+  }
+  if (portNumber == PORT_DSP ) {
+      val = (val >= STK_SZ) ? STK_SZ-1 : val;
+      val = (val < 1) ? 0 : val;
+      DSP = val;
+  }
+  if ((portNumber >= PORT_PINS) && (portNumber < (PORT_PINS+0x0100))) {
+      int pinNumber = (portNumber & 0xFF);
+      writePort_StringF("(pin port:%d<-%d)", pinNumber, val);
+  }
+  if ((portNumber >= PORT_APINS) && (portNumber < (PORT_APINS+0x100))) {
+      int pinNumber = (portNumber & 0xFF);
+      writePort_StringF("(apin port:%d<-%d)", pinNumber, val);
+  }
 }

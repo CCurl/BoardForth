@@ -33,6 +33,7 @@ int nextWord(char *w) {
 
 ulong is_binary(char *word) {
   ulong num = 0;
+  if (*word == (char)0) return 0;
   while (*word) {
     char c = *(word++);
     if ((c >= '0') && (c <= '1')) {
@@ -48,6 +49,7 @@ ulong is_binary(char *word) {
 
 ulong is_hex(char *word) {
   ulong num = 0;
+  if (*word == (char)0) return 0;
   while (*word) {
     char c = *(word++);
     if ((c >= '0') && (c <= '9')) {
@@ -77,8 +79,8 @@ ulong is_decimal(char *word) {
   if (*word == '-') {
     word++;
     is_neg = 1;
-    if (*word == 0) { return 0; }
   }
+  if (*word == (char)0) { return 0; }
   while (*word) {
     char c = *(word++);
     if ((c >= '0') && (c <= '9')) {
@@ -286,10 +288,77 @@ void parseWord(char *word) {
   writePort_StringF("\n[%s]??", word);
 }
 
+void loadHereLast(char *line) {
+    char word[24];
+    STATE = 0;
+    int len = nextWord(word);
+    CELL hereVal = is_number(word);
+    if (status == 0) {
+      writePort_String("\nHERE val not a number.");
+      return;
+    }
+    len = nextWord(word);
+    CELL lastVal = is_number(word);
+    if (status == 0) {
+      writePort_String("\nLAST val not a number.");
+      return;
+    }
+    if ((0 <= hereVal) && (hereVal < DICT_SZ) && 
+        (0 <= lastVal) && (lastVal < DICT_SZ)) {
+      HERE=  hereVal;
+      LAST = lastVal;
+      STATE = LOAD_LINE;
+    } else {
+      writePort_String("\nHERE or LAST val not in range.");
+    }
+}
+
+void loadLine(char *line) {
+    if (strcmp("(end)", line) == 0) {
+        STATE = 0;
+    } else {
+        char word[32];
+        int len = nextWord(word);
+        writePort_StringF("[%s]", word);
+        if ((len < 1) || (word[len-1] != ':')) {
+            writePort_String("\nAddress must end with ':'");
+            STATE = 0;
+            return;
+        }
+        word[len-1] = (char)0;
+        CELL addr = is_number(word);
+        if (status == 0) {
+            writePort_String("\nAddress must be a number");
+            STATE = 0;
+            return;
+        }
+        len = nextWord(word);
+        while (len) {
+            writePort_StringF("[%s]", word);
+            CELL val = is_number(word);
+            if ((status == 0) || (val > 0xFF) || (val < 0)) {
+                writePort_String("\nInvalid byte value, must be 0-255");
+                STATE = 0;
+                return;
+            }
+            dict[addr++] = (val & 0xFF);
+            len = nextWord(word);
+        }
+    }
+}
+
 void parseLine(char *line) {
   DBG_LOG("\n---"); DBG_LOG(line); DBG_LOG("---\n");
   char word[32];
   toIN = line;
+  if (STATE == LOAD_HERE_LAST) {
+      loadHereLast(line);
+      return;
+  }
+  if (STATE == LOAD_LINE) {
+      loadLine(line);
+      return;
+  }
   while (1) {
     if (nextWord(word) == 0) { return; }
     if (strcmp("\\", word) == 0) { return; }
