@@ -86,10 +86,9 @@ void setup() {
     strcpy_P(buf, src);
     parseLine(buf);
   }
-  writePort_String("\nBoardForth v0. Written by Chris Curl (2021)");
+  writePort_String("\nBoardForth v0.0.1 Written by Chris Curl (2021)");
   writePort_StringF("\nDictionary size is: %d (0x%lx) bytes.", DICT_SZ, DICT_SZ);
-  writePort_String("\nok.\n");
-  // dumpDict();
+  writePort_String("\nHello.");
 }
 
 void loop() {

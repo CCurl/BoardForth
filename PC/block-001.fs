@@ -10,7 +10,7 @@ variable fl 0 fl !
 : marker here fh ! last fl ! ;
 : forget fh @ (here) ! fl @ (last) ! ;
 : cr #13 emit #10 emit ; : space $20 emit ;
-: .. dup . ; : hex $10 base ! ; : decimal #10 base ! ;
+: .. dup . ; : hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;
 : .s '(' emit >r >r >r >r .. r> .. r> .. r> .. r> .. space ')' emit ;
 : count dup 1+ swap c@ ;
 : type begin >r dup c@ emit 1+ r> 1- dup while drop drop ;
@@ -29,14 +29,38 @@ variable fl 0 fl !
 : apin! apin# apin-port + ! ; 
 : apin@ apin# apin-port + @ ;
 : led! 13 pin! ; : pin>led pin@ led! ;
+
+variable #neg
+variable #len
+: ++  dup @  1+ swap ! ;
+: negate 0 swap - ;
+: <# #neg off #len off dup 0 < if negate 1 then 0 swap ;        \ ( u1 -- 0 u2 )
+: # base @ /mod swap '0' + dup '9' > if 7 + then #len ++ swap ; \ ( u1 -- c u2 )
+: #s begin # dup while ;                                        \ ( u1 -- u2 )
+: #> ;
+: #p- drop #neg @ if '-' emit then ;
+: #p #p- begin emit dup while drop ;      \ ( 0 ... n 0 -- )
+: (.) <# #s #> #p ;
+: . (.) space ;
+: .2 <# # # #> #p ;
+: .3 <# # # # #> #p ;
+: .4 <# # # # # #> #p ;
+: hex.      base @ swap hex (.) base ! ; 
+: hex.2     base @ swap hex .2 base ! ; 
+: hex.4     base @ swap hex .4 base ! ; 
+: decimal.  base @ swap decimal (.) base ! ;
+: decimal.3 base @ swap decimal .3  base ! ;
+: binary.   base @ swap binary  (.) base ! ;
+
+: .byte dup c@ hex.2 space 1+ ; : .bytes begin >r .byte r> 1- dup while drop ;
+: .bytes-ft over - .bytes ;
+: .addr dup hex.4 ':' emit space ;
+: .dict here hex.4 space last hex.4
+    0 begin cr .addr 8 .bytes space 8 .bytes here over > while drop ;
+
 // other stuff
 : k 1000 * ; : mil k k ;
 : free dict-end here - ; : used here dict-start - ;
-: .char dup c@ . 1+ ; : .char4 .char .char .char .char ; 
-: dump begin >r dup .char 1+ r> 1- dup while drop drop ;
-: dump-ft over - dump ;
-: dump-16 dup . ':' emit space .char4 .char4 .char4 .char4 ;
-: dump-dict here . last . 0 begin cr dump-16 here over > while drop ;
 : auto-run 0 w! ; : auto-run-last last 1+ 1+ w@ auto-run ;
 variable running : ?running running @ ;
 : run running on ; : stop running off ;
