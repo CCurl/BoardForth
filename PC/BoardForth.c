@@ -1,7 +1,13 @@
+#include <windows.h>
 #include <stdio.h>
 #include <string.h>
 
 #define IS_PC
+
+extern void comOpen();
+extern void comClose();
+extern void comOut();
+extern void comIn();
 
 void SERIAL_begin(int baud) {
 }
@@ -76,12 +82,14 @@ void repl() {
         if (strcmp(buf, "init") == 0) {
             push(1);
             load();
-        } else if (strcmp(buf, "load") == 0) {
-            load();
-        } else {
-            doHistory(buf);
-            parseLine(buf);
+            continue;
         }
+        if (strcmp(buf, "load") == 0) {
+            load();
+            continue;
+        }
+        doHistory(buf);
+        parseLine(buf);
     }
 }
 

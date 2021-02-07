@@ -126,16 +126,16 @@ void WCOMMA(CELL val) {
 
 CELL Store() {
     CELL addr = pop();
-    CELL v    = pop();
 
     if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
+        CELL v = pop();
         dict[addr++] = (v & 0xff);
         dict[addr++] = ((v >>  8) & 0xff);
         dict[addr++] = ((v >> 16) & 0xff);
         dict[addr++] = ((v >> 24) & 0xff);
     } else if (DICT_SZ < addr) {
 //DBG_LOGF("-Store(%lx<-%lx)-", addr, v);
-      writePort(addr, v);
+      writePort(addr);
     }
     return addr;
  }
@@ -146,7 +146,7 @@ void Fetch() {
 //sprintf(x, "-fetch(%lx)-", addr); sendOutput(x);
     if (DICT_SZ < addr) {
       readPort(pop());
-    } else if ((1 < addr) && ((addr+4) < DICT_SZ)) {
+    } else if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
         CELL v    = 0;
         v = dict[addr++];
         v += ((CELL)dict[addr++] <<  8);

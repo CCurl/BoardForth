@@ -3,6 +3,7 @@
 : base $30003 ; : state  $30004 ; : (dsp) $30005 ;
 : dict-start 0 ; : dict-end $30006 @ 1- ; 
 : pin-port $10000 ; : apin-port $11000 ; 
+: com-open-port $28001 ; : com-io-port $28002 ;
 : here (here) @ ; : last (last) @ ; 
 : depth (dsp) @ ; : sp! 0 (dsp) ! ;
 variable fh 2 fh !
@@ -33,6 +34,8 @@ variable fl 0 fl !
 : c, here c! here 1+  (here) ! ;
 : w, here w! here 2 + (here) ! ;
 :  , here  ! here 4 + (here) ! ;
+
+: com-all begin com-io-port @ dup if dup emit then while ;
 
 variable #neg
 variable #len

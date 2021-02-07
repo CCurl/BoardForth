@@ -25,7 +25,7 @@
 #else
   #include <avr/pgmspace.h>
   // #include <Keyboard.h>
-  #define MEM_ESP8266
+  #define MEM_8
   #define SERIAL Serial
   #define ADDR_SZ 2
   // #define SERIAL SerialUSB
@@ -133,6 +133,8 @@ typedef unsigned short ushort;
 // Input/Output
 #define PORT_EMIT     0x20001
 #define PORT_DOT      0x20002
+#define PORT_COM_OPEN 0x28001
+#define PORT_COM_IO   0x28002
 // System variables
 #define PORT_HERE     0x30001
 #define PORT_LAST     0x30002
@@ -173,6 +175,7 @@ extern CELL LAST;
 extern CELL BASE;
 extern CELL STATE;
 extern byte DSP;
+extern CELL dstk[];
 void parseLine(char *);
 void vm_init();
 void ok();
@@ -180,7 +183,7 @@ void dotS();
 void autoRun();
 void runProgram(CELL start);
 void readPort(CELL portNumber);
-void writePort(CELL portNumber, CELL val);
+void writePort(CELL portNumber);
 byte *vm_Alloc(CELL sz);
 void vm_FreeAll();
 void writePort_String(const char *str);
