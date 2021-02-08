@@ -3,9 +3,6 @@
 void writePort_String(const char *str)
 {
   sendOutput(str);
-  // while (*str) {
-  //   emit_port(*(str++));
-  // }
 }
 
 // ---------------------------------------------------------------------
@@ -20,16 +17,18 @@ void writePort_StringF(const char *fmt, ...)
 }
 
 // ---------------------------------------------------------------------
-void emit_port(CELL val) {
+void write_portEmit() {
   char x[2];
+  CELL val = pop();
   x[0] = val & 0xff;
   x[1] = 0;
   sendOutput(x);
 }
 
 // ---------------------------------------------------------------------
-void dot_port(CELL val) {
+void write_portDot() {
   char x[24];
+  CELL val = pop();
   if (BASE == 10) sprintf(x, " %ld", val);
   else if (BASE == 0x10) sprintf(x, " %lx", val);
   else sprintf(x, "(%d in BASE %d)", val, BASE);
@@ -42,7 +41,7 @@ void write_ComOpen() {
   #ifdef IS_PC
       comOpen();
   #else
-    emit_port(pop());
+      writePort_String("-comOpen: PC only-");
   #endif
 }
 
@@ -51,7 +50,7 @@ void write_ComIO() {
   #ifdef IS_PC
     comOut();
   #else
-    emit_port(pop());
+    write_portDot();
   #endif
 }
 
@@ -83,57 +82,99 @@ void readPort(CELL portNumber) {
       return;
   }
   switch (portNumber) {
-    case PORT_HERE:  push(HERE);
+    case PORT_HERE:
+      push(HERE);
       break;
-    case PORT_LAST: push(LAST);
+    
+    case PORT_LAST:
+      push(LAST);
       break;
-    case PORT_STATE: push(STATE);
+    
+    case PORT_STATE:
+      push(STATE);
       break;
-    case PORT_BASE: push(BASE);
+    
+    case PORT_BASE:
+      push(BASE);
       break;
-    case PORT_DSP: push(DSP);
+    
+    case PORT_DSP:
+      push(DSP);
       break;
-    case PORT_DICT_SZ: push(DICT_SZ);
+    
+    case PORT_DICT_SZ:
+      push(DICT_SZ);
       break;
-    case PORT_COM_IO: read_ComIO();
+    
+    case PORT_COM_IO:
+      read_ComIO();
       break;
   }
 }
 
 void writePort(CELL portNumber) {
   DBG_LOGF("\n-writePort(%lx, %ld)-", portNumber, T);
-  if (portNumber == PORT_COM_IO )   { write_ComIO(); return; }
-  if (portNumber == PORT_COM_OPEN ) { write_ComOpen(); return; }
-  CELL val = pop();
-  if (portNumber == PORT_EMIT ) { emit_port(val); }
-  if (portNumber == PORT_DOT  ) { dot_port(val); }
-  if (portNumber == PORT_BASE ) { BASE = val > 0 ? val : 10; }
-  if (portNumber == PORT_STATE) { STATE = val; }
-  if (portNumber == PORT_HERE ) {
-      val = (val >= DICT_SZ) ? DICT_SZ-1 : val;
-      val = (val < 1) ? 0 : val;
-      HERE = val;
-  }
-  if (portNumber == PORT_LAST ) {
-      val = (val >= DICT_SZ) ? DICT_SZ-1 : val;
-      val = (val < 1) ? 0 : val;
-      LAST = val;
-  }
-  if (portNumber == PORT_DSP ) {
-      val = (val >= STK_SZ) ? STK_SZ-1 : val;
-      val = (val < 1) ? 0 : val;
-      DSP = val;
-  }
+  CELL val;
   if ((portNumber >= PORT_PINS) && (portNumber < (PORT_PINS+0x0100))) {
       int pinNumber = (portNumber & 0xFF);
-      writePort_StringF("(pin port:%d<-%d)", pinNumber, val);
+      writePort_StringF("(pin port:%d<-%ld)", pinNumber, pop());
+      return;
   }
   if ((portNumber >= PORT_APINS) && (portNumber < (PORT_APINS+0x100))) {
       int pinNumber = (portNumber & 0xFF);
-      writePort_StringF("(apin port:%d<-%d)", pinNumber, val);
+      writePort_StringF("(apin port:%d<-%ld)", pinNumber, pop());
+      return;
+  }
+  switch (portNumber) {
+    case PORT_COM_IO:
+      write_ComIO();
+      break;
+      
+    case PORT_COM_OPEN:
+      write_ComOpen();
+      break;
+      
+    case PORT_BASE:
+      val = pop();
+      BASE = val > 0 ? val : 10;
+      break;
+      
+    case PORT_STATE:
+      val = pop();
+      STATE = pop();
+      break;
+      
+    case PORT_HERE:
+      val = pop();
+      val = (val >= DICT_SZ) ? DICT_SZ-1 : val;
+      val = (val < 1) ? 0 : val;
+      HERE = val;
+      break;
+    
+    case PORT_LAST:
+      val = pop();
+      val = (val >= DICT_SZ) ? DICT_SZ-1 : val;
+      val = (val < 1) ? 0 : val;
+      LAST = val;
+      break;
+    
+    case PORT_DSP:
+      val = pop();
+      val = (val >= STK_SZ) ? STK_SZ-1 : val;
+      val = (val < 1) ? 0 : val;
+      DSP = val;
+      break;
+    
+    case PORT_DOT:
+      write_portDot();
+      break;
+    
+    case PORT_EMIT:
+      write_portEmit();
+      break;
+    
   }
 }
-
 
 #ifdef IS_PC
 void comClose() {

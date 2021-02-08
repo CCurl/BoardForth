@@ -54,7 +54,8 @@ CELL rpop(){
 void dotS() {
   writePort_String("(");
   for (int i = 1; i <= DSP; i++) {
-    dot_port(dstk[i]);
+    push(dstk[i]);
+    write_portDot();
   }
   writePort_String(" )");
 }

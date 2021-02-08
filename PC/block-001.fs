@@ -35,15 +35,21 @@ variable fl 0 fl !
 : w, here w! here 2 + (here) ! ;
 :  , here  ! here 4 + (here) ! ;
 
-: com-all begin com-io-port @ dup if dup emit then while ;
+: rot >r swap r> swap ;
+: -rot swap >r swap r> ;
+
+variable com-port
+: com-open com-open-port ! com-port ! ;
+: com-all begin com-port @ com-io-port @ dup if dup emit then while ;
+: com-emit com-port @ com-io-port ! drop ;
 
 variable #neg
 variable #len
 : ++  dup @  1+ swap ! ;
 : negate 0 swap - ;
-: <# #neg off #len off dup 0 < if negate 1 then 0 swap ;        \ ( u1 -- 0 u2 )
-: # base @ /mod swap '0' + dup '9' > if 7 + then #len ++ swap ; \ ( u1 -- c u2 )
-: #s begin # dup while ;                                        \ ( u1 -- u2 )
+: <# #neg off #len off dup 0 < if negate 1 then 0 swap ;         \ ( u1 -- 0 u2 )
+: # base @ /mod swap '0' + dup '9' > if 7 + then #len ++ swap ;  \ ( u1 -- c u2 )
+: #s begin # dup while ;                                         \ ( u1 -- u2 )
 : #> ;
 : #p- drop #neg @ if '-' emit then ;
 : #p #p- begin emit dup while drop ;      \ ( 0 ... n 0 -- )
