@@ -131,17 +131,19 @@ typedef unsigned short ushort;
 #define PORT_PINS     0x10000
 #define PORT_APINS    0x11000
 // Input/Output
-#define PORT_EMIT     0x20001
-#define PORT_DOT      0x20002
-#define PORT_COM_OPEN 0x28001
-#define PORT_COM_IO   0x28002
+#define PORT_EMIT        0x20001
+#define PORT_DOT         0x20002
+#define PORT_COM_OPEN    0x28001
+#define PORT_COM_IO      0x28002
+#define PORT_FILE_OPEN   0x29001
+#define PORT_FILE_IO     0x29002
 // System variables
-#define PORT_HERE     0x30001
-#define PORT_LAST     0x30002
-#define PORT_BASE     0x30003
-#define PORT_STATE    0x30004
-#define PORT_DSP      0x30005
-#define PORT_DICT_SZ  0x30006
+#define PORT_HERE        0x30001
+#define PORT_LAST        0x30002
+#define PORT_BASE        0x30003
+#define PORT_STATE       0x30004
+#define PORT_DSP         0x30005
+#define PORT_DICT_SZ     0x30006
 // ***************************
 
 void push(CELL);

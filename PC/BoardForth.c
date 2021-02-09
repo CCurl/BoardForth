@@ -4,11 +4,6 @@
 
 #define IS_PC
 
-extern void comOpen();
-extern void comClose();
-extern void comOut();
-extern void comIn();
-
 void SERIAL_begin(int baud) {
 }
 

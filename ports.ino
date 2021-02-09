@@ -1,3 +1,12 @@
+void fileOpen();
+void fileRead();
+void fileWrite();
+void fileClose();
+
+void comOpen();
+void comRead();
+void comWrite();
+void comClose();
 
 // ---------------------------------------------------------------------
 void writePort_String(const char *str)
@@ -36,28 +45,59 @@ void write_portDot() {
 }
 
 // ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-void write_ComOpen() {
+void write_comOpen() {
   #ifdef IS_PC
-      comOpen();
+      CELL action = pop();
+      action ? comOpen() : comClose();
   #else
       writePort_String("-comOpen: PC only-");
   #endif
 }
 
 // ---------------------------------------------------------------------
-void write_ComIO() {
+void write_comIO() {
   #ifdef IS_PC
-    comOut();
+    comWrite();
   #else
-    write_portDot();
+    write_portEmit();
   #endif
 }
 
 // ---------------------------------------------------------------------
 void read_ComIO() {
   #ifdef IS_PC
-    comIn();
+    comRead();
+  #else
+    push(0);
+    if (SERIAL_available()) {
+        T = SERIAL_read();
+    }
+  #endif
+}
+
+// ---------------------------------------------------------------------
+void write_fileOpen() {
+  #ifdef IS_PC
+      CELL action = pop();
+      action ? fileOpen() : fileClose();
+  #else
+      writePort_String("-fileOpen: PC only-");
+  #endif
+}
+
+// ---------------------------------------------------------------------
+void write_fileIO() {
+  #ifdef IS_PC
+    fileWrite();
+  #else
+    write_portEmit();
+  #endif
+}
+
+// ---------------------------------------------------------------------
+void read_fileIO() {
+  #ifdef IS_PC
+    fileRead();
   #else
     push(0);
     if (SERIAL_available()) {
@@ -109,6 +149,10 @@ void readPort(CELL portNumber) {
     case PORT_COM_IO:
       read_ComIO();
       break;
+    
+    case PORT_FILE_IO:
+      read_ComIO();
+      break;
   }
 }
 
@@ -127,11 +171,19 @@ void writePort(CELL portNumber) {
   }
   switch (portNumber) {
     case PORT_COM_IO:
-      write_ComIO();
+      write_comIO();
       break;
       
     case PORT_COM_OPEN:
-      write_ComOpen();
+      write_comOpen();
+      break;
+      
+    case PORT_FILE_OPEN:
+      write_fileOpen();
+      break;
+      
+    case PORT_FILE_IO:
+      write_fileIO();
       break;
       
     case PORT_BASE:
@@ -177,9 +229,34 @@ void writePort(CELL portNumber) {
 }
 
 #ifdef IS_PC
-void comClose() {
-    HANDLE H = (HANDLE)pop();
-    if (H) { CloseHandle(H); }
+void fileOpen() {
+    CELL blockNum = pop();
+    char fn[24];
+
+    sprintf(fn, "block-%03d.fs", blockNum);
+    FILE *fp = fopen(fn, "rt");
+    push((CELL)fp);
+}
+
+void fileRead() {
+    FILE *fp = (FILE *)pop();
+    push(0);
+    if (fp && (!feof(fp))) {
+      T = fgetc(fp);
+    }
+}
+
+void fileWrite() {
+    FILE *fp = (FILE *)pop();
+    CELL v = pop();
+    if (fp) {
+      fputc(v%0xFF, fp);
+    }
+}
+
+void fileClose() {
+    FILE *fp = (FILE *)pop();
+    if (fp) { fclose(fp); }
 }
 
 void comOpen() {
@@ -193,7 +270,6 @@ void comOpen() {
         sprintf(port, "\\\\.\\COM%d", portNum);
     }
 
-    printf("trying to open com port [%s] ... ", port);
     hPort = CreateFile(port,          // for COM1—COM9 only
         GENERIC_READ | GENERIC_WRITE, //Read/Write
         0,               // No Sharing
@@ -202,7 +278,6 @@ void comOpen() {
         0,               // Non Overlapped I/O
         NULL);
 
-    printf("handle: [%d] ... ", hPort);
 
     if (hPort == INVALID_HANDLE_VALUE) {
       printf("Could not open port.");
@@ -234,10 +309,17 @@ void comOpen() {
     ClearCommError(hPort, &errors, &comStat);
 
     push((CELL)hPort);
-    writePort_StringF(", T now=%ld", T);
 }
 
-void comOut() {
+void comRead() {
+    HANDLE H = (HANDLE)pop();
+    char buf[2];
+    DWORD num = 0;
+    int sts = ReadFile(H, buf, 1, &num, NULL);
+    (num) ? push(buf[0]) : push(0);
+}
+
+void comWrite() {
     HANDLE H = (HANDLE)pop();
     CELL val = pop();
     if (H) {
@@ -253,11 +335,8 @@ void comOut() {
     }
 }
 
-void comIn() {
+void comClose() {
     HANDLE H = (HANDLE)pop();
-    char buf[2];
-    DWORD num = 0;
-    int sts = ReadFile(H, buf, 1, &num, NULL);
-    (num) ? push(buf[0]) : push(0);
+    if (H) { CloseHandle(H); }
 }
 #endif

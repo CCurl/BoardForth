@@ -4,6 +4,7 @@
 : dict-start 0 ; : dict-end $30006 @ 1- ; 
 : pin-port $10000 ; : apin-port $11000 ; 
 : com-open-port $28001 ; : com-io-port $28002 ;
+: file-open-port $29001 ; : file-io-port $29002 ;
 : here (here) @ ; : last (last) @ ; 
 : depth (dsp) @ ; : sp! 0 (dsp) ! ;
 variable fh 2 fh !
@@ -38,10 +39,19 @@ variable fl 0 fl !
 : rot >r swap r> swap ;
 : -rot swap >r swap r> ;
 
-variable com-port
-: com-open com-open-port ! com-port ! ;
-: com-all begin com-port @ com-io-port @ dup if dup emit then while ;
-: com-emit com-port @ com-io-port ! drop ;
+variable com-handle
+: com-open 1 com-open-port ! com-handle ! ;
+: com-close com-handle @ 0 com-open-port ! com-handle off ;
+: com-all begin com-handle @ com-io-port @ dup if dup emit then while ;
+: com-emit com-handle @ com-io-port ! drop ;
+
+variable file-handle
+: file-open 1 file-open-port ! file-handle ! ;
+: file-close file-handle @ 0 file-open-port ! file-handle off ;
+: file-read file-handle @ file-io-port @ ;
+: file-write file-handle @ file-io-port ! ;
+: file-to-com begin file-read @ dup if dup com-emit then while ;
+: file-emit file-handle @ file-io-port ! drop ;
 
 variable #neg
 variable #len
