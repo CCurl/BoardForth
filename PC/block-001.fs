@@ -4,7 +4,7 @@
 : dict-start 0 ; : dict-end $30006 @ 1- ; 
 : pin-port $10000 ; : apin-port $11000 ; 
 : com-open-port $28001 ; : com-io-port $28002 ;
-: file-open-port $29001 ; : file-io-port $29002 ;
+: block-open-port $29001 ; : block-io-port $29002 ;
 : here (here) @ ; : last (last) @ ; 
 : depth (dsp) @ ; : sp! 0 (dsp) ! ;
 variable fh 2 fh !
@@ -45,13 +45,18 @@ variable com-handle
 : com-all begin com-handle @ com-io-port @ dup if dup emit then while ;
 : com-emit com-handle @ com-io-port ! drop ;
 
-variable file-handle
-: file-open 1 file-open-port ! file-handle ! ;
-: file-close file-handle @ 0 file-open-port ! file-handle off ;
-: file-read file-handle @ file-io-port @ ;
-: file-write file-handle @ file-io-port ! ;
-: file-to-com begin file-read @ dup if dup com-emit then while ;
-: file-emit file-handle @ file-io-port ! drop ;
+variable block-handle
+: block-open 1 block-open-port ! block-handle ! ;
+: block-close block-handle @ 0 block-open-port ! block-handle off ;
+: block-open? block-handle @ ;
+: block-read  block-handle @ block-io-port @ ;
+: block-write block-handle @ block-io-port ! ;
+: block->screen begin block-read dup if emit     1 then while ;
+: block->com    begin block-read dup if com-emit 1 then while ;
+: block-emit block-handle @ block-io-port ! drop ;
+: block-type block-open block-open? if block->screen block-close then ;
+
+: load-board block-open block-open? if block->com block-close then ;
 
 variable #neg
 variable #len

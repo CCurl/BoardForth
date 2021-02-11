@@ -109,8 +109,7 @@ void read_fileIO() {
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 void readPort(CELL portNumber) {
-  //char x[64];
-  //sprintf(x, "-readPort(%lx)-", portNumber); sendOutput(x);
+  DBG_LOGF("-readPort(0x%lx)-", portNumber);
   if ((portNumber >= PORT_PINS) && (portNumber < (PORT_PINS+0x0100))) {
       int pinNumber = (portNumber & 0xFF);
       writePort_StringF("(read pin port:%d)", pinNumber);
@@ -151,7 +150,7 @@ void readPort(CELL portNumber) {
       break;
     
     case PORT_FILE_IO:
-      read_ComIO();
+      read_fileIO();
       break;
   }
 }
@@ -243,6 +242,7 @@ void fileRead() {
     push(0);
     if (fp && (!feof(fp))) {
       T = fgetc(fp);
+      DBG_LOGF("-fileRead:%d-",(int)T);
     }
 }
 

@@ -143,8 +143,7 @@ CELL Store() {
 
 void Fetch() {
     CELL addr = T;
-//char x[64];
-//sprintf(x, "-fetch(%lx)-", addr); sendOutput(x);
+    // printf("-fetch(%lx)-", addr);
     if (DICT_SZ < addr) {
       readPort(pop());
     } else if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
