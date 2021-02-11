@@ -135,7 +135,7 @@ typedef unsigned short ushort;
 #define PORT_DOT         0x20002
 #define PORT_COM_OPEN    0x28001
 #define PORT_COM_IO      0x28002
-#define PORT_FILE_OPEN   0x29001
+#define PORT_BLOCK_OPEN  0x29001
 #define PORT_FILE_IO     0x29002
 // System variables
 #define PORT_HERE        0x30001

@@ -1,4 +1,4 @@
-void fileOpen();
+void blockOpen();
 void fileRead();
 void fileWrite();
 void fileClose();
@@ -76,10 +76,10 @@ void read_ComIO() {
 }
 
 // ---------------------------------------------------------------------
-void write_fileOpen() {
+void write_blockOpen() {
   #ifdef IS_PC
       CELL action = pop();
-      action ? fileOpen() : fileClose();
+      action ? blockOpen() : fileClose();
   #else
       writePort_String("-fileOpen: PC only-");
   #endif
@@ -177,8 +177,8 @@ void writePort(CELL portNumber) {
       write_comOpen();
       break;
       
-    case PORT_FILE_OPEN:
-      write_fileOpen();
+    case PORT_BLOCK_OPEN:
+      write_blockOpen();
       break;
       
     case PORT_FILE_IO:
@@ -228,7 +228,7 @@ void writePort(CELL portNumber) {
 }
 
 #ifdef IS_PC
-void fileOpen() {
+void blockOpen() {
     CELL blockNum = pop();
     char fn[24];
 

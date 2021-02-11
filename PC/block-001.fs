@@ -4,7 +4,7 @@
 : dict-start 0 ; : dict-end $30006 @ 1- ; 
 : pin-port $10000 ; : apin-port $11000 ; 
 : com-open-port $28001 ; : com-io-port $28002 ;
-: block-open-port $29001 ; : block-io-port $29002 ;
+: block-open-port $29001 ; : file-io-port $29002 ;
 : here (here) @ ; : last (last) @ ; 
 : depth (dsp) @ ; : sp! 0 (dsp) ! ;
 variable fh 2 fh !
@@ -45,18 +45,17 @@ variable com-handle
 : com-all begin com-handle @ com-io-port @ dup if dup emit then while ;
 : com-emit com-handle @ com-io-port ! drop ;
 
-variable block-handle
-: block-open 1 block-open-port ! block-handle ! ;
-: block-close block-handle @ 0 block-open-port ! block-handle off ;
-: block-open? block-handle @ ;
-: block-read  block-handle @ block-io-port @ ;
-: block-write block-handle @ block-io-port ! ;
-: block->screen begin block-read dup if emit     1 then while ;
-: block->com    begin block-read dup if com-emit 1 then while ;
-: block-emit block-handle @ block-io-port ! drop ;
-: block-type block-open block-open? if block->screen block-close then ;
+// Blocks are files with names like block-002.fs
+variable file-handle
+: block-open 1 block-open-port ! file-handle ! ;
+: file-close file-handle @ 0 block-open-port ! file-handle off ;
+: file-open? file-handle @ ;
+: file-read  file-handle @ file-io-port @ ;
+: file->screen  begin file-read dup if emit     1 then while ;
+: file->com     begin file-read dup if com-emit 1 then while ;
+: block-type block-open file-open? if file->screen file-close then ;
 
-: load-board block-open block-open? if block->com block-close then ;
+: load-board block-open file-open? if file->com file-close then ;
 
 variable #neg
 variable #len
