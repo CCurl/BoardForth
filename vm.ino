@@ -443,14 +443,24 @@ void vm_FreeAll() {
 }
 
 void char_in(char c) {
-  if (tibIn < sizeof(TIB)) {
-    TIB[tibIn++] = c;
-    TIB[tibIn] = 0;
+  DBG_LOGF("-ci:%d-", (int)c);
+  // writePort_StringF("-ci:%d-", (int)c);
+  if ((c == 0) || (c == 10) || (c == 13)) {
+    if (tibIn > 0) {
+      DBG_LOG("-parseline-");
+      parseLine(TIB);
+      tibIn = 0;
+      TIB[tibIn] = 0;
+    }
+    if (c == 13) { writePort_String(" ok.\n"); }
   } else {
-    writePort_String("\nInput buffer full!");
+    if (tibIn < sizeof(TIB)) {
+      c = (c == 9) ? 0x20 : c;
+      TIB[tibIn++] = c;
+      TIB[tibIn] = 0;
+    } else {
+      writePort_String("\nInput buffer full!");
+    }
   }
-  if (c == 13) {
-    parseLine(TIB);
-    tibIn = 0;
-  }
+  DBG_LOG("-cix-");
 }

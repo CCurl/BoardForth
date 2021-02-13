@@ -68,10 +68,18 @@ void load() {
     }
 }
 
+void sendToVM(char *line) {
+    while (*line) {
+        char_in(*(line++));
+    }
+    char_in(13);
+    char_in(10);
+}
+
 void repl() {
     char buf[128];
     while (1) {
-        printf(" ok.\n");
+        // printf(" ok.\n");
         gets(buf);
         if (strcmp(buf, "bye") == 0) return;
         if (strcmp(buf, "init") == 0) {
@@ -84,7 +92,7 @@ void repl() {
             continue;
         }
         doHistory(buf);
-        parseLine(buf);
+        sendToVM(buf);
     }
 }
 

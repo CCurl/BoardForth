@@ -164,6 +164,7 @@ void parseWord(char *word) {
   if (status) {
     DBG_LOGF("-num:%ld-", val);
     if (STATE) {
+      DBG_LOGF("-lit-", val);
       if (val <= 0xFF) {
         CCOMMA(CLIT);
         CCOMMA(val);
@@ -178,6 +179,7 @@ void parseWord(char *word) {
       WCOMMA(val);
       return;
     } else {
+      DBG_LOGF("-push-", val);
       push(val);
     }
     return;
@@ -234,6 +236,9 @@ void parseWord(char *word) {
     STATE = 0;
     return;
   }
+
+  // DBG_LOG("-pwx-");
+  // return;
 
   if (strcmp("if", word) == 0) {
     CCOMMA(JMPZ);
@@ -348,7 +353,7 @@ void loadLine(char *line) {
 }
 
 void parseLine(char *line) {
-  DBG_LOG("\n---"); DBG_LOG(line); DBG_LOG("---\n");
+  DBG_LOG("\n---pl-"); DBG_LOG(line); DBG_LOG("---\n");
   char word[32];
   toIN = line;
   if (STATE == LOAD_HERE_LAST) {
@@ -360,9 +365,11 @@ void parseLine(char *line) {
       return;
   }
   while (1) {
-    if (nextWord(word) == 0) { return; }
-    if (strcmp("\\", word) == 0) { return; }
-    if (strcmp("//", word) == 0) { return; }
+    int len = nextWord(word);
+    if (len == 0) { break; }
+    if (strcmp("\\", word) == 0) { break; }
+    if (strcmp("//", word) == 0) { break; }
     parseWord(word);
   }
+  DBG_LOG("-plx-\n");
 }

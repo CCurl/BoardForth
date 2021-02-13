@@ -87,18 +87,23 @@ void setup() {
     strcpy_P(buf, src);
     parseLine(buf);
   }
-  writePort_String("\nBoardForth v0.0.1 Written by Chris Curl (2021)");
-  writePort_StringF("\nDictionary size is: %d (0x%lx) bytes.", DICT_SZ, (long)DICT_SZ);
+  writePort_String("BoardForth v0.0.1 Written by Chris Curl (2021)");
+  writePort_StringF("\nDictionary size is: %d ($%04x) bytes.", DICT_SZ, DICT_SZ);
   writePort_String("\nHello.");
+  char_in(13);
 }
 
 void loop() {
+  //DBG_LOG("-a-");
   while (SERIAL_available() > 0) {
     char c = SERIAL_read();
+    // writePort_StringF("-l:%d-", int(c));
+    DBG_LOG("-x-");
     char_in(c);
   }
+  //DBG_LOG("-b-\n");
   // autoRun();
-  vm_FreeAll();
+  // vm_FreeAll();
 }
 
 void DoNothing(const char *str) {}

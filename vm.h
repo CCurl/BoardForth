@@ -2,7 +2,7 @@
 #define __VM_H__
 #include <stdarg.h>
 
-// #define LOG_DEBUG
+#// define LOG_DEBUG
 #define MAX_CYCLES 0
 
 // Board            SRAM    Keyboard  Serial        
@@ -25,7 +25,7 @@
 #else
   #include <avr/pgmspace.h>
   // #include <Keyboard.h>
-  #define MEM_8
+  #define MEM_32
   #define SERIAL Serial
   #define ADDR_SZ 2
   // #define SERIAL SerialUSB
@@ -48,7 +48,7 @@
 
 #ifdef MEM_32
   #define MEM_SZ  32*1024
-  #define DICT_SZ 28*1024
+  #define DICT_SZ 24*1024
 #endif
 
 #ifdef MEM_8
