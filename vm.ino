@@ -1,7 +1,7 @@
 CELL PC;
 byte IR;
 
-char TIB[80];
+char TIB[128];
 byte tibIn = 0;
 
 byte dict[DICT_SZ+1];
