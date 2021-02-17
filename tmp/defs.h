@@ -10,6 +10,11 @@ extern int printf(const char *, ...);
 #define DICT_SZ (16*1024)
 #define STK_SZ 32
 
+#define ADDR_HERE  0x10000001
+#define ADDR_LAST  0x10000002
+#define ADDR_BASE  0x10000003
+#define ADDR_STATE 0x10000004
+
 #define T dstk[DSP]
 #define N dstk[DSP-1]
 #define R rstk[RSP]
@@ -28,6 +33,7 @@ typedef struct {
 } DICT_T;
 
 #define CELL_SZ (4)
+#define WORD_SZ (2)
 #define ADDR_SZ (2)
 #define DICT_SZ (16*1024)
 
@@ -42,6 +48,8 @@ extern BYTE dict[];
 
 void push(CELL);
 CELL pop();
+void rpush(CELL);
+CELL rpop();
 
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
@@ -79,7 +87,7 @@ void ACOMMA(ADDR v);
 #define OP_ADD          27     // +
 #define OP_SUB          28     // -
 #define OP_MULT         29     // *
-#define OP_DIV          30     // /
+#define OP_SLMOD        30     // /mod
 #define OP_LSHIFT       31     // <<
 #define OP_RSHIFT       32     // >>
 #define OP_AND          33     // and
@@ -141,7 +149,7 @@ void fOVER();
 void fADD();
 void fSUB();
 void fMULT();
-void fDIV();
+void fSLMOD();
 void fLSHIFT();
 void fRSHIFT();
 void fAND();

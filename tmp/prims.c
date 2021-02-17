@@ -19,6 +19,41 @@ void ACOMMA(ADDR v) {
     fCOMMA();
 }
 
+CELL cellAt(CELL loc) {
+    CELL x = dict[loc++];
+    x = (dict[loc++] <<  8) + x;
+    x = (dict[loc++] << 16) + x;
+    x = (dict[loc++] << 24) + x;
+    return x;
+}
+
+CELL wordAt(CELL loc) {
+    CELL x = dict[loc++];
+    x = (dict[loc++] <<  8) + x;
+    return x;
+}
+
+CELL addrAt(CELL loc) {         // opcode #16
+    return (ADDR_SZ == 2) ? wordAt(loc) : cellAt(loc);
+}
+
+void wordStore(CELL addr, CELL val) {
+    if ((0 <= addr) && ((addr+2) < DICT_SZ)) {
+        dict[addr++] = (val & 0xFF);
+        dict[addr++] = (val >>  8) & 0xFF;
+    }
+}
+void cellStore(CELL addr, CELL val) {
+    if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
+        dict[addr++] = (val & 0xFF);
+        dict[addr++] = (val >>  8) & 0xFF;
+        dict[addr++] = (val >> 16) & 0xFF;
+        dict[addr++] = (val >> 24) & 0xFF;
+    }
+}
+void addrStore(CELL addr, CELL val) {
+    (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
+}
 // vvvvv -- NimbleText generated -- vvvvv
 FP prims[] = {
     fNOOP,             // opcode #0
@@ -51,7 +86,7 @@ FP prims[] = {
     fADD,              // opcode #27
     fSUB,              // opcode #28
     fMULT,             // opcode #29
-    fDIV,              // opcode #30
+    fSLMOD,            // opcode #30
     fLSHIFT,           // opcode #31
     fRSHIFT,           // opcode #32
     fAND,              // opcode #33
@@ -89,73 +124,116 @@ void fCLIT() {         // opcode #1
     push(dict[PC++]);
 }
 void fWLIT() {         // opcode #2
-    CELL x = dict[PC++];
-    x = (dict[PC++] << 8) + x;
-    push(x);
+    push(wordAt(PC));
+    PC += WORD_SZ;
 }
 void fLIT() {          // opcode #3
-    CELL x = dict[PC++];
-    x = (dict[PC++] << 8) + x;
-    x = (dict[PC++] << 16) + x;
-    x = (dict[PC++] << 24) + x;
-    push(x);
+    push(cellAt(PC));
+    PC += CELL_SZ;
 }
 void fCFETCH() {       // opcode #4
-    N = N*T; push(T); pop();
+    CELL addr = T;
+    if ((0 <= addr) && (addr < DICT_SZ)) {
+        T = dict[addr];
+        return;
+    }
+    printf("Invalid address: %ld ($%04lX)", addr, addr);
 }
 void fWFETCH() {       // opcode #5
-    N = N*T; push(T); pop();
+    CELL addr = T;
+    if ((0 <= addr) && ((addr+2) < DICT_SZ)) {
+        T = wordAt(addr);
+        return;
+    }
+    printf("Invalid address: %ld ($%04lX)", addr, addr);
 }
 void fAFETCH() {       // opcode #6
-    N = N*T; push(T); pop();
+    (ADDR_SZ == 2) ? fWFETCH() : fFETCH();
 }
 void fFETCH() {        // opcode #7
-    N = N*T; push(T); pop();
+    CELL addr = T;
+    if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
+        T = cellAt(addr);
+        return;
+    }
+
+    switch (addr)
+    {
+        case ADDR_HERE:  T = HERE;  break;
+        case ADDR_LAST:  T = LAST;  break;
+        case ADDR_BASE:  T = BASE;  break;
+        case ADDR_STATE: T = STATE; break;
+    
+    default:
+        printf("Invalid address: %ld ($%04lX)", addr, addr);
+    }
 }
 void fCSTORE() {       // opcode #8
-    N = N*T; push(T); pop();
+    CELL addr = pop();
+    CELL val = pop();
+    if ((0 <= addr) && (addr < DICT_SZ)) {
+        dict[addr++] = (val & 0xFF);
+    }
 }
 void fWSTORE() {       // opcode #9
-    N = N*T; push(T); pop();
+    wordStore(pop(), pop());
 }
 void fASTORE() {       // opcode #10
-    N = N*T; push(T); pop();
+    (ADDR_SZ == 2) ? fWSTORE() : fSTORE();
 }
 void fSTORE() {        // opcode #11
-    N = N*T; push(T); pop();
+    CELL addr = pop();
+    CELL val = pop();
+
+    if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
+        cellStore(pop(), pop());
+        return;
+    }
+
+    switch (addr)
+    {
+        case ADDR_HERE:  HERE  = val; break;
+        case ADDR_LAST:  LAST  = val; break;
+        case ADDR_BASE:  BASE  = val; break;
+        case ADDR_STATE: STATE = val; break;
+    
+    default:
+        printf("Invalid address: %ld ($%04lX)", addr, addr);
+    }
 }
 void fCCOMMA() {       // opcode #12
     dict[HERE++] = (BYTE)pop();
 }
 void fWCOMMA() {       // opcode #13
     WORD x = (WORD)pop();
-    dict[HERE++] = (BYTE)(x & 0xFF);
-    dict[HERE++] = (BYTE)((x>>8) & 0xFF);
+    wordStore(HERE, x);
+    HERE += WORD_SZ;
 }
 void fCOMMA() {        // opcode #14
-    CELL x = (CELL)pop();
-    dict[HERE++] = (BYTE)( x        & 0xFF);
-    dict[HERE++] = (BYTE)((x >>  8) & 0xFF);
-    dict[HERE++] = (BYTE)((x >> 16) & 0xFF);
-    dict[HERE++] = (BYTE)((x >> 24) & 0xFF);
+    CELL x = pop();
+    cellStore(HERE, x);
+    HERE += CELL_SZ;
 }
 void fACOMMA() {       // opcode #15
     (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA();
 }
 void fCALL() {         // opcode #16
-    N = N*T; push(T); pop();
+    rpush(PC+ADDR_SZ);
+    PC = addrAt(PC);
 }
 void fRET() {          // opcode #17
-    N = N*T; push(T); pop();
+    // handled in run()
 }
 void fJMP() {          // opcode #18
-    N = N*T; push(T); pop();
+    PC = addrAt(PC);
 }
 void fJMPZ() {         // opcode #19
-    N = N*T; push(T); pop();
+    if (pop() == 0) PC = addrAt(PC);
+    else PC += ADDR_SZ;
 }
 void fJMPNZ() {        // opcode #20
-    N = N*T; push(T); pop();
+    if (pop()) PC = addrAt(PC);
+    else PC += ADDR_SZ;
 }
 void fONEMINUS() {     // opcode #21
     T -= 1;
@@ -167,7 +245,7 @@ void fDUP() {          // opcode #23
     push(T);
 }
 void fSWAP() {         // opcode #24
-    N = N*T; push(T); pop();
+    CELL t = T; T = N; N = t;
 }
 void fDROP() {         // opcode #25
     pop();
@@ -176,43 +254,49 @@ void fOVER() {         // opcode #26
     push(N);
 }
 void fADD() {          // opcode #27
-    N = N*T; push(T); pop();
+    N += T;pop();
 }
 void fSUB() {          // opcode #28
-    N = N*T; push(T); pop();
+    N -= T; pop();
 }
 void fMULT() {         // opcode #29
-    N = N*T; push(T); pop();
+    N *= T; pop();
 }
-void fDIV() {          // opcode #30
-    N = N*T; push(T); pop();
+void fSLMOD() {        // opcode #30
+    CELL x = N, y = T;
+    if (y) {
+        T = x/y;
+        N = x%y;
+    } else {
+        printf("divide by 0!");
+    }
 }
 void fLSHIFT() {       // opcode #31
-    N = N*T; push(T); pop();
+    N = N << T; pop();
 }
 void fRSHIFT() {       // opcode #32
-    N = N*T; push(T); pop();
+    N = N >> T; pop();
 }
 void fAND() {          // opcode #33
-    N = N*T; push(T); pop();
+    N &= T;
 }
 void fOR() {           // opcode #34
-    N = N*T; push(T); pop();
+    N |= T;
 }
 void fXOR() {          // opcode #35
-    N = N*T; push(T); pop();
+    N ^= T;
 }
 void fNOT() {          // opcode #36
-    N = N*T; push(T); pop();
+    T = ~T;
 }
 void fDTOR() {         // opcode #37
-    N = N*T; push(T); pop();
+    rpush(pop());
 }
 void fRFETCH() {       // opcode #38
-    N = N*T; push(T); pop();
+    push(R);
 }
 void fRTOD() {         // opcode #39
-    N = N*T; push(T); pop();
+    push(rpop());
 }
 void fEMIT() {
     printf("%c", (char)pop());
@@ -272,14 +356,14 @@ void fTHRU() {         // opcode #54
     N = N*T; push(T); pop();
 }
 void fBASE() {         // opcode #55
-    N = N*T; push(T); pop();
+    push(ADDR_BASE);
 }
 void fSTATE() {        // opcode #56
-    N = N*T; push(T); pop();
+    push(ADDR_STATE);
 }
 void fHERE() {         // opcode #57
-    N = N*T; push(T); pop();
+    push(ADDR_HERE);
 }
 void fLAST() {         // opcode #58
-    N = N*T; push(T); pop();
+    push(ADDR_LAST);
 }

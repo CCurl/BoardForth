@@ -7,6 +7,7 @@ BYTE IR;
 CELL PC;
 CELL HERE = 0, LAST = 0;
 CELL BASE = 10, STATE = 0;
+BYTE dict[DICT_SZ];
 
 void push(CELL v) {
     DSP = (DSP < STK_SZ) ? DSP+1 : STK_SZ;
@@ -18,10 +19,15 @@ CELL pop() {
     return dstk[DSP+1];
 }
 
-void rpush(CELL v) { if (++RSP > STK_SZ) RSP = STK_SZ; R = v; }
-CELL rpop() { if (--RSP < 1) RSP = 0; return rstk[RSP+1]; }
+void rpush(CELL v) {
+    RSP = (RSP < STK_SZ) ? RSP+1 : STK_SZ;
+    R = v;
+}
 
-BYTE dict[DICT_SZ];
+CELL rpop() {
+    RSP = (RSP > 0) ? RSP-1 : 0;
+    return rstk[RSP+1];
+}
 
 // Align on 2-byte boundary
 CELL align2(CELL val) {
@@ -122,9 +128,11 @@ void run(CELL start, int num_cycles) {
 }
 
 int main() {
-    push(22);
-    CCOMMA(OP_DUP);
-    CCOMMA(OP_ONEPLUS);
+    CCOMMA(OP_CLIT);
+    CCOMMA(123);
+    CCOMMA(OP_CLIT);
+    CCOMMA(100);
+    CCOMMA(OP_SLMOD);
     CCOMMA(OP_CLIT);
     CCOMMA(17);
     CCOMMA(OP_WLIT);
@@ -135,7 +143,7 @@ int main() {
     CCOMMA(OP_RET);
     run(0, 0);
     for (int i = 0; i < HERE; i++) {
-        printf("%02d ", dict[i]);
+        printf(" %02d", dict[i]);
     }
     printf("\n");
 }
