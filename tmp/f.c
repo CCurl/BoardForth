@@ -105,18 +105,12 @@ void run(CELL start, int num_cycles) {
     int callDepth = 1;
     PC = start;
     while (1) {
-        FP prim = NULL;
         BYTE IR = dict[PC++];
         if (IR == OP_RET) {
             if (--callDepth < 1) { return; }
             PC = rpop();
-            continue;
-        }
-        if (IR <= OP_LAST) {
-            prim = prims[IR];
-        }
-        if (prim) {
-            prim();
+        } else if (IR <= OP_LAST) {
+            prims[IR]();
         } else {
             printf("unknown opcode: %d ($%02x)", IR, IR);
         }
@@ -143,11 +137,17 @@ int main() {
     WCOMMA(456);
     CCOMMA(OP_LIT);
     COMMA(99982);
+    CCOMMA(OP_CLIT);
+    CCOMMA('A');
+    CCOMMA(OP_TIB);
+    CCOMMA(OP_ONEPLUS);
+    CCOMMA(OP_CSTORE);
     CCOMMA(OP_DOTS);
     CCOMMA(OP_RET);
     run(ADDR_HERE_BASE, 0);
     for (int i = 0; i < sys->HERE; i++) {
+        if (i % 16 == 0) printf("\n %04x:", i);
         printf(" %02d", dict[i]);
     }
-    printf("\n");
+    printf("\nHERE: %d\n", sys->HERE);
 }

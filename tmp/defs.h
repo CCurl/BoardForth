@@ -19,7 +19,7 @@ typedef unsigned char  BYTE;
 
 #define DICT_SZ (16*1024)
 #define STK_SZ 32
-#define TIB_SZ 0x64
+#define TIB_SZ 0x80
 
 #define DIGITAL_PIN_BASE 0x10000000
 #define ANALOG_PIN_BASE  0x20000000
