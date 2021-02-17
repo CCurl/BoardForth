@@ -159,11 +159,9 @@ void fFETCH() {        // opcode #7
 
     switch (addr)
     {
-        case ADDR_HERE:  T = HERE;  break;
-        case ADDR_LAST:  T = LAST;  break;
-        case ADDR_BASE:  T = BASE;  break;
-        case ADDR_STATE: T = STATE; break;
-    
+        case DIGITAL_PIN_BASE: printf("-@DP_base-"); break;
+        case ANALOG_PIN_BASE:  printf("-@AP_base-"); break;
+
     default:
         printf("Invalid address: %ld ($%04lX)", addr, addr);
     }
@@ -192,27 +190,25 @@ void fSTORE() {        // opcode #11
 
     switch (addr)
     {
-        case ADDR_HERE:  HERE  = val; break;
-        case ADDR_LAST:  LAST  = val; break;
-        case ADDR_BASE:  BASE  = val; break;
-        case ADDR_STATE: STATE = val; break;
+        case DIGITAL_PIN_BASE: printf("-!DP_base-"); break;
+        case ANALOG_PIN_BASE:  printf("-!AP_base-"); break;
     
     default:
         printf("Invalid address: %ld ($%04lX)", addr, addr);
     }
 }
 void fCCOMMA() {       // opcode #12
-    dict[HERE++] = (BYTE)pop();
+    dict[sys->HERE++] = (BYTE)pop();
 }
 void fWCOMMA() {       // opcode #13
     WORD x = (WORD)pop();
-    wordStore(HERE, x);
-    HERE += WORD_SZ;
+    wordStore(sys->HERE, x);
+    sys->HERE += WORD_SZ;
 }
 void fCOMMA() {        // opcode #14
     CELL x = pop();
-    cellStore(HERE, x);
-    HERE += CELL_SZ;
+    cellStore(sys->HERE, x);
+    sys->HERE += CELL_SZ;
 }
 void fACOMMA() {       // opcode #15
     (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA();
@@ -332,7 +328,7 @@ void fBREAK() {        // opcode #46
     N = N*T; push(T); pop();
 }
 void fTIB() {          // opcode #47
-    N = N*T; push(T); pop();
+    push(ADDR_TIB);
 }
 void fNTIB() {         // opcode #48
     N = N*T; push(T); pop();

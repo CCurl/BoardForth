@@ -5,9 +5,8 @@ CELL rstk[STK_SZ+1]; int RSP = 0;
 
 BYTE IR;
 CELL PC;
-CELL HERE = 0, LAST = 0;
-CELL BASE = 10, STATE = 0;
 BYTE dict[DICT_SZ];
+SYSVARS_T *sys;
 
 void push(CELL v) {
     DSP = (DSP < STK_SZ) ? DSP+1 : STK_SZ;
@@ -42,19 +41,19 @@ CELL align4(CELL val) {
 }
 
 void define() {
-    DICT_T *dp = (DICT_T *)align2(HERE);
+    DICT_T *dp = (DICT_T *)align2(sys->HERE);
     FP handler = (FP)pop();
     char *name = (char *)pop();
-    dp->prev = LAST;
+    dp->prev = sys->LAST;
     dp->flags = 0;
     dp->len = strlen(name);
     strcpy(dp->name, name);
-    HERE = align2(HERE + CELL_SZ + 2 + dp->len + 1);
-    LAST = (CELL)dp;
+    sys->HERE = align2(sys->HERE + CELL_SZ + 2 + dp->len + 1);
+    sys->LAST = (CELL)dp;
 }
 
 void doFind() {
-    DICT_T *dp = (DICT_T *)LAST;
+    DICT_T *dp = (DICT_T *)sys->LAST;
     char *name = (char *)pop();
     while (dp) {
         if (strcmp(name, dp->name) == 0) {
@@ -128,21 +127,26 @@ void run(CELL start, int num_cycles) {
 }
 
 int main() {
+    sys = (SYSVARS_T *)dict;
+    sys->HERE = ADDR_HERE_BASE;
+    sys->LAST = 0;
+    sys->BASE = 10;
+    sys->STATE = 0;
     CCOMMA(OP_CLIT);
-    CCOMMA(123);
+    CCOMMA(71);
     CCOMMA(OP_CLIT);
-    CCOMMA(100);
+    CCOMMA(10);
     CCOMMA(OP_SLMOD);
     CCOMMA(OP_CLIT);
-    CCOMMA(17);
+    CCOMMA(92);
     CCOMMA(OP_WLIT);
     WCOMMA(456);
     CCOMMA(OP_LIT);
     COMMA(99982);
     CCOMMA(OP_DOTS);
     CCOMMA(OP_RET);
-    run(0, 0);
-    for (int i = 0; i < HERE; i++) {
+    run(ADDR_HERE_BASE, 0);
+    for (int i = 0; i < sys->HERE; i++) {
         printf(" %02d", dict[i]);
     }
     printf("\n");

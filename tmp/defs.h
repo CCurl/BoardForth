@@ -7,23 +7,26 @@
 
 extern int printf(const char *, ...);
 
-#define DICT_SZ (16*1024)
-#define STK_SZ 32
-
-#define ADDR_HERE  0x10000001
-#define ADDR_LAST  0x10000002
-#define ADDR_BASE  0x10000003
-#define ADDR_STATE 0x10000004
-
-#define T dstk[DSP]
-#define N dstk[DSP-1]
-#define R rstk[RSP]
-
 typedef void (*FP)();
 typedef unsigned long  CELL;
 typedef unsigned short ADDR;
 typedef unsigned short WORD;
 typedef unsigned char  BYTE;
+
+#define CELL_SZ (4)
+#define WORD_SZ (2)
+#define ADDR_SZ (2)
+
+#define DICT_SZ (16*1024)
+#define STK_SZ 32
+#define TIB_SZ 0x64
+
+#define DIGITAL_PIN_BASE 0x10000000
+#define ANALOG_PIN_BASE  0x20000000
+
+#define T dstk[DSP]
+#define N dstk[DSP-1]
+#define R rstk[RSP]
 
 typedef struct {
     CELL prev;
@@ -32,10 +35,28 @@ typedef struct {
     BYTE name[32]; // not really 32 ... but we need a number
 } DICT_T;
 
-#define CELL_SZ (4)
-#define WORD_SZ (2)
-#define ADDR_SZ (2)
-#define DICT_SZ (16*1024)
+typedef struct {
+    CELL autoRun;
+    CELL RESERVED1;
+    CELL RESERVED2;
+    CELL RESERVED3;
+    CELL HERE;
+    CELL LAST;
+    CELL BASE;
+    CELL STATE;
+    char TIB[TIB_SZ];
+} SYSVARS_T;
+
+#define ADDR_AUTORUN    (CELL_SZ*0)
+#define ADDR_RES1       (CELL_SZ*1)
+#define ADDR_RES2       (CELL_SZ*2)
+#define ADDR_RES3       (CELL_SZ*3)
+#define ADDR_HERE       (CELL_SZ*4)
+#define ADDR_LAST       (CELL_SZ*5)
+#define ADDR_BASE       (CELL_SZ*6)
+#define ADDR_STATE      (CELL_SZ*7)
+#define ADDR_TIB        (CELL_SZ*8)
+#define ADDR_HERE_BASE  (ADDR_TIB + TIB_SZ)
 
 extern BYTE IR;
 extern CELL PC;
@@ -45,6 +66,7 @@ extern CELL dstk[], rstk[];
 extern CELL BASE, STATE;
 extern FP prims[];
 extern BYTE dict[];
+extern SYSVARS_T *sys;
 
 void push(CELL);
 CELL pop();
