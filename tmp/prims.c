@@ -1,23 +1,33 @@
 #include "defs.h"
 
-void CCOMMA(BYTE v) {
-    push(v);
-    fCCOMMA();
-}
-void WCOMMA(WORD v) {
-    push(v);
-    fWCOMMA();
+CELL dstk[STK_SZ+1]; int DSP = 0;
+CELL rstk[STK_SZ+1]; int RSP = 0;
+
+BYTE IR;
+CELL PC;
+BYTE dict[DICT_SZ];
+SYSVARS_T *sys;
+
+void push(CELL v) {
+    DSP = (DSP < STK_SZ) ? DSP+1 : STK_SZ;
+    T = v;
 }
 
-void COMMA(CELL v) {
-    push(v);
-    fCOMMA();
+CELL pop() {
+    DSP = (DSP > 0) ? DSP-1 : 0;
+    return dstk[DSP+1];
 }
 
-void ACOMMA(ADDR v) {
-    push(v);
-    fCOMMA();
+void rpush(CELL v) {
+    RSP = (RSP < STK_SZ) ? RSP+1 : STK_SZ;
+    R = v;
 }
+
+CELL rpop() {
+    RSP = (RSP > 0) ? RSP-1 : 0;
+    return rstk[RSP+1];
+}
+
 
 CELL cellAt(CELL loc) {
     CELL x = dict[loc++];
@@ -54,8 +64,9 @@ void cellStore(CELL addr, CELL val) {
 void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
-// vvvvv -- NimbleText generated -- vvvvv
+
 FP prims[] = {
+// vvvvv -- NimbleText generated -- vvvvv
     fNOOP,             // opcode #0
     fCLIT,             // opcode #1
     fWLIT,             // opcode #2
@@ -115,8 +126,9 @@ FP prims[] = {
     fSTATE,            // opcode #56
     fHERE,             // opcode #57
     fLAST,             // opcode #58
-    0 };
+    fBYE,
 // ^^^^^ -- NimbleText generated -- ^^^^^
+    0 };
 
 void fNOOP() {         // opcode #0
 }
@@ -362,4 +374,6 @@ void fHERE() {         // opcode #57
 }
 void fLAST() {         // opcode #58
     push(ADDR_LAST);
+}
+void fBYE() {
 }

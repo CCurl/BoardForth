@@ -138,6 +138,7 @@ void ACOMMA(ADDR v);
 #define OP_STATE        56     // state
 #define OP_HERE         57     // (here)
 #define OP_LAST         58     // (last)
+#define OP_BYE          59     // bye
 // ^^^^^ -- NimbleText generated -- ^^^^^
 
 // vvvvv -- NimbleText generated -- vvvvv
@@ -200,6 +201,7 @@ void fBASE();
 void fSTATE();
 void fHERE();
 void fLAST();
+void fBYE();
 // ^^^^^ -- NimbleText generated -- ^^^^^
 
 #endif // __DEFS_H__

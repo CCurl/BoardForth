@@ -1,32 +1,9 @@
 #include "defs.h"
 
-CELL dstk[STK_SZ+1]; int DSP = 0;
-CELL rstk[STK_SZ+1]; int RSP = 0;
-
-BYTE IR;
-CELL PC;
-BYTE dict[DICT_SZ];
-SYSVARS_T *sys;
-
-void push(CELL v) {
-    DSP = (DSP < STK_SZ) ? DSP+1 : STK_SZ;
-    T = v;
-}
-
-CELL pop() {
-    DSP = (DSP > 0) ? DSP-1 : 0;
-    return dstk[DSP+1];
-}
-
-void rpush(CELL v) {
-    RSP = (RSP < STK_SZ) ? RSP+1 : STK_SZ;
-    R = v;
-}
-
-CELL rpop() {
-    RSP = (RSP > 0) ? RSP-1 : 0;
-    return rstk[RSP+1];
-}
+void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
+void WCOMMA(WORD v) { push(v); fWCOMMA(); }
+void COMMA(CELL v)  { push(v); fCOMMA(); }
+void ACOMMA(ADDR v) { push(v); fACOMMA(); }
 
 // Align on 2-byte boundary
 CELL align2(CELL val) {
@@ -109,7 +86,7 @@ void run(CELL start, int num_cycles) {
         if (IR == OP_RET) {
             if (--callDepth < 1) { return; }
             PC = rpop();
-        } else if (IR <= OP_LAST) {
+        } else if (IR <= OP_BYE) {
             prims[IR]();
         } else {
             printf("unknown opcode: %d ($%02x)", IR, IR);
@@ -147,7 +124,7 @@ int main() {
     run(ADDR_HERE_BASE, 0);
     for (int i = 0; i < sys->HERE; i++) {
         if (i % 16 == 0) printf("\n %04x:", i);
-        printf(" %02d", dict[i]);
+        printf(" %02x", dict[i]);
     }
     printf("\nHERE: %d\n", sys->HERE);
 }

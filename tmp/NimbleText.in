@@ -10,6 +10,10 @@ CSTORE c!
 WSTORE w!
 ASTORE a!
 STORE !
+CCOMMA c,
+WCOMMA w,
+COMMA ,
+ACOMMA a,
 CALL call
 RET ret
 JMP jmp
@@ -53,3 +57,4 @@ BASE base
 STATE state
 HERE (here)
 LAST (last)
+BYE bye
