@@ -341,7 +341,7 @@ void fBREAK() {        // opcode #46
     N = N*T; push(T); pop();
 }
 void fTIB() {          // opcode #47
-    push(ADDR_TIB);
+    push(sys->TIB);
 }
 void fNTIB() {         // opcode #48
     N = N*T; push(T); pop();

@@ -58,7 +58,7 @@ void define(char *name) {
 
 void fFIND() {
     char *name = (char *)&dict[pop()];
-    printf("-lf:%s-", name);
+    printf("-lf:[%s]-", name);
     CELL cl = sys->LAST;
     while (cl) {
         DICT_T *dp = (DICT_T *)&dict[cl];
@@ -123,22 +123,24 @@ void parseWord() {
     char *w = &dict[T];
     printf("-pw[%s]-", w);
     fFIND();
+    if (T) { printf("-FOUND!-"); }
     fDROP();
 }
 
-CELL stringToDict(char *s) {
-    CELL x = 3766;
-    push(x);
-    while (*s) {
-        dict[x++] = *(s++);
-    }
-    dict[x] = 0;
-    return pop();
+CELL curFree;
+
+CELL alloc(CELL sz) {
+    curFree -= (sz+1);
+    return curFree;
+}
+
+void freeAll() {
+    curFree = ADDR_ALLOC_BASE;
 }
 
 void fPARSE_LINE() {
     toIn = pop();
-    CELL buf = sys->HERE + 256;
+    CELL buf = alloc(32);
     push(buf);
     nextWord();
     while (pop()) {
@@ -149,13 +151,18 @@ void fPARSE_LINE() {
     }
 }
 
-void pl(char *word) {
-    toIn = sys->HERE + 0x20;
-    push(toIn);
-    while (*word) {
-        dict[toIn++] = *(word++);
+CELL stringToDict(char *s, CELL to) {
+    if (to == 0) to = alloc(strlen(s)+2);
+    CELL x = to;
+    while (*s) {
+        dict[x++] = *(s++);
     }
-    dict[toIn] = 0;
+    dict[x] = 0;
+    return to;
+}
+
+void pl(char *line) {
+    push(stringToDict(line, sys->TIB));
     fPARSE_LINE();
 }
 
@@ -165,6 +172,9 @@ void loadBaseSystem() {
     sys->LAST = 0;
     sys->BASE = 10;
     sys->STATE = 0;
+    sys->TIB = ADDR_ALLOC_BASE+1;
+
+    define("test");
 
     pl(": test 71 10 /mod 92 ;");
     pl(": main test 456 99982 'A' TIB 1+ c! .s ;");

@@ -38,13 +38,12 @@ typedef struct {
 typedef struct {
     CELL autoRun;
     CELL RESERVED1;
-    CELL RESERVED2;
+    CELL TIB;
     CELL RESERVED3;
     CELL HERE;
     CELL LAST;
     CELL BASE;
     CELL STATE;
-    char TIB[TIB_SZ];
 } SYSVARS_T;
 
 #define ADDR_AUTORUN    (CELL_SZ*0)
@@ -55,8 +54,8 @@ typedef struct {
 #define ADDR_LAST       (CELL_SZ*5)
 #define ADDR_BASE       (CELL_SZ*6)
 #define ADDR_STATE      (CELL_SZ*7)
-#define ADDR_TIB        (CELL_SZ*8)
-#define ADDR_HERE_BASE  (ADDR_TIB + TIB_SZ)
+#define ADDR_HERE_BASE  (CELL_SZ*8)
+#define ADDR_ALLOC_BASE (DICT_SZ - TIB_SZ - 1)
 
 extern BYTE IR;
 extern CELL PC;
