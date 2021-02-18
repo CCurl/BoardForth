@@ -10,7 +10,7 @@ SYSVARS_T *sys;
 
 void run(CELL start, CELL max_cycles) {
     PC = start;
-    printf("\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
+    // printf("\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
     while (1) {
         BYTE IR = dict[PC++];
         if (IR == OP_RET) {
@@ -70,6 +70,11 @@ void cellStore(CELL addr, CELL val) {
 void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
+
+void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
+void WCOMMA(WORD v) { push(v); fWCOMMA(); }
+void COMMA(CELL v)  { push(v); fCOMMA();  }
+void ACOMMA(ADDR v) { push(v); fACOMMA(); }
 
 FP prims[] = {
 // vvvvv -- NimbleText generated -- vvvvv
@@ -234,7 +239,7 @@ void fACOMMA() {       // opcode #15
 void fCALL() {         // opcode #16
     rpush(PC+ADDR_SZ);
     PC = addrAt(PC);
-    printf("-call:%lx-", PC);
+    // printf("-call:%lx-", PC);
 }
 void fRET() {          // opcode #17
     // handled in run()

@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern int printf(const char *, ...);
+#define DICT_SZ (24*1024)
+#define STK_SZ 32
+#define TIB_SZ 0x80
+#define ALLOC_SZ 32
 
 typedef void (*FP)();
 typedef unsigned long  CELL;
@@ -17,16 +20,13 @@ typedef unsigned char  BYTE;
 #define WORD_SZ (2)
 #define ADDR_SZ (2)
 
-#define DICT_SZ (16*1024)
-#define STK_SZ 32
-#define TIB_SZ 0x80
-
 #define DIGITAL_PIN_BASE 0x10000000
 #define ANALOG_PIN_BASE  0x20000000
 
 #define T dstk[DSP]
 #define N dstk[DSP-1]
 #define R rstk[RSP]
+#define F(s) s
 
 typedef struct {
     ADDR prev;
@@ -45,6 +45,12 @@ typedef struct {
     CELL BASE;
     CELL STATE;
 } SYSVARS_T;
+
+typedef struct {
+    CELL addr;
+    BYTE available;
+    WORD sz;
+} ALLOC_T;
 
 #define ADDR_AUTORUN    (CELL_SZ*0)
 #define ADDR_RES1       (CELL_SZ*1)
@@ -73,6 +79,7 @@ void rpush(CELL);
 CELL rpop();
 void run(CELL, CELL);
 
+CELL stringToDict(char *, CELL);
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
 void COMMA(CELL v);

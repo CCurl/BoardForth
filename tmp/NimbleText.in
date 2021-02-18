@@ -28,7 +28,7 @@ OVER over
 ADD +
 SUB -
 MULT *
-DIV /
+SLMOD /mod
 LSHIFT <<
 RSHIFT >>
 AND and
@@ -41,7 +41,7 @@ RTOD r>
 EMIT emit
 DOT .
 DOTS .s
-DOTQUOTE ."
+DOTQUOTE .\"
 PAREN (
 WDTFEED wdtfeed
 BREAK brk

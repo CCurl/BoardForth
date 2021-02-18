@@ -1,28 +1,14 @@
 #include "defs.h"
 
-void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
-void WCOMMA(WORD v) { push(v); fWCOMMA(); }
-void COMMA(CELL v)  { push(v); fCOMMA();  }
-void ACOMMA(ADDR v) { push(v); fACOMMA(); }
-
-CELL stringToDict(char *, CELL);
-
 #pragma region allocation
-#define ALLOC_SZ 24
-typedef struct {
-    CELL addr;
-    BYTE available;
-    WORD sz;
-} ALLOC_T;
 ALLOC_T alloced[ALLOC_SZ];
-
 int num_alloced = 0;
 CELL curFree;
 
 void allocDump() {
     printf("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
     for (int i = 0; i < num_alloced; i++) {
-        printf("\n%2d %04lx %4d %d", i, alloced[i].addr, (int)alloced[i].sz, (int)alloced[i].available);
+        printf("\n%2d %04lx %4d %s", i, alloced[i].addr, (int)alloced[i].sz, (int)alloced[i].available ? "available" : "in-use");
     }
 }
 
@@ -113,7 +99,7 @@ void fCREATE() {
     CELL wa = pop();
     char *name = (char *)&dict[wa];
     sys->HERE = align2(sys->HERE);
-    printf("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
+    // printf("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
 
     DICT_T *dp = (DICT_T *)&dict[sys->HERE];
     dp->prev = (ADDR)sys->LAST;
@@ -122,7 +108,7 @@ void fCREATE() {
     strcpy(dp->name, name);
     sys->LAST = sys->HERE;
     sys->HERE += ADDR_SZ + dp->len + 3;
-    printf(",XT:%d (%lx)-", sys->HERE, sys->HERE);
+    // printf(",XT:%d (%lx)-", sys->HERE, sys->HERE);
 }
 
 void define(char *name) {
@@ -178,12 +164,160 @@ void fNEXTWORD() {
     push(len);
 }
 
+void is_hex(char *word) {
+    CELL num = 0;
+    if (*word == (char)0) { push(0); return; }
+    while (*word) {
+        char c = *(word++);
+        if ((c >= '0') && (c <= '9')) {
+            num *= 0x10;
+            num += (c - '0');
+            continue;
+        }
+        if ((c >= 'A') && (c <= 'F')) {
+            num *= 0x10;
+            num += ((c+10) - 'A');
+            continue;
+        }
+        if ((c >= 'a') && (c <= 'f')) {
+            num *= 0x10;
+            num += ((c+10) - 'a');
+            continue;
+        }
+        push(0);
+        return;
+    }
+    push((CELL)num);
+    push(1);
+}
+
+void is_decimal(char *word) {
+    long num = 0;
+    int is_neg = 0;
+    if (*word == '-') {
+        word++;
+        is_neg = 1;
+    }
+    if (*word == (char)0) { push(0); return; }
+    while (*word) {
+        char c = *(word++);
+        if ((c >= '0') && (c <= '9')) {
+            num *= 10;
+            num += (c - '0');
+        } else {
+            push(0);
+            return;
+        }
+    }
+
+    num = is_neg ? -num : num;
+    push((CELL)num);
+    push(1);
+}
+
+void is_binary(char *word) {
+    CELL num = 0;
+    if (*word == (char)0) { push(0); return; }
+    while (*word) {
+        char c = *(word++);
+        if ((c >= '0') && (c <= '1')) {
+            num *= 2;
+            num += (c - '0');
+        } else {
+            push(0);
+            return;
+        }
+    }
+
+    push((CELL)num);
+    push(1);
+}
+
 // (a -- [n 1] | 0)
 void fISNUMBER() {
-    CELL wa = T;
+    CELL wa = pop();
     char *w = &dict[wa];
-    // printf("-num?[%s]-", w);
-    T = 0;
+
+    if ((*w == '\'') && (*(w+2) == '\'') && (*(w+3) == 0)) {
+        push(*(w+1));
+        push(1);
+        return;
+    }
+
+    if (*w == '#') { is_decimal(w+1); return; }
+    if (*w == '$') { is_hex(w+1);     return; }
+    if (*w == '%') { is_binary(w+1);  return; }
+
+    if (sys->BASE == 10) { is_decimal(w); return; }
+    if (sys->BASE == 16) { is_hex(w);     return; }
+    if (sys->BASE ==  2) { is_binary(w);  return; }
+    push(0);
+}
+
+BYTE getOpcode(char *w) {
+// vvvvv -- NimbleText generated -- vvvvv
+    if (strcmp(w, F("noop")) == 0) return OP_NOOP;
+    if (strcmp(w, F("cliteral")) == 0) return OP_CLIT;
+    if (strcmp(w, F("wliteral")) == 0) return OP_WLIT;
+    if (strcmp(w, F("literal")) == 0) return OP_LIT;
+    if (strcmp(w, F("c@")) == 0) return OP_CFETCH;
+    if (strcmp(w, F("w@")) == 0) return OP_WFETCH;
+    if (strcmp(w, F("a@")) == 0) return OP_AFETCH;
+    if (strcmp(w, F("@")) == 0) return OP_FETCH;
+    if (strcmp(w, F("c!")) == 0) return OP_CSTORE;
+    if (strcmp(w, F("w!")) == 0) return OP_WSTORE;
+    if (strcmp(w, F("a!")) == 0) return OP_ASTORE;
+    if (strcmp(w, F("!")) == 0) return OP_STORE;
+    if (strcmp(w, F("c,")) == 0) return OP_CCOMMA;
+    if (strcmp(w, F("w,")) == 0) return OP_WCOMMA;
+    if (strcmp(w, F(",")) == 0) return OP_COMMA;
+    if (strcmp(w, F("a,")) == 0) return OP_ACOMMA;
+    if (strcmp(w, F("call")) == 0) return OP_CALL;
+    if (strcmp(w, F("ret")) == 0) return OP_RET;
+    if (strcmp(w, F("jmp")) == 0) return OP_JMP;
+    if (strcmp(w, F("jmpz")) == 0) return OP_JMPZ;
+    if (strcmp(w, F("jmpnz")) == 0) return OP_JMPNZ;
+    if (strcmp(w, F("1-")) == 0) return OP_ONEMINUS;
+    if (strcmp(w, F("1+")) == 0) return OP_ONEPLUS;
+    if (strcmp(w, F("dup")) == 0) return OP_DUP;
+    if (strcmp(w, F("swap")) == 0) return OP_SWAP;
+    if (strcmp(w, F("drop")) == 0) return OP_DROP;
+    if (strcmp(w, F("over")) == 0) return OP_OVER;
+    if (strcmp(w, F("+")) == 0) return OP_ADD;
+    if (strcmp(w, F("-")) == 0) return OP_SUB;
+    if (strcmp(w, F("*")) == 0) return OP_MULT;
+    if (strcmp(w, F("/mod")) == 0) return OP_SLMOD;
+    if (strcmp(w, F("<<")) == 0) return OP_LSHIFT;
+    if (strcmp(w, F(">>")) == 0) return OP_RSHIFT;
+    if (strcmp(w, F("and")) == 0) return OP_AND;
+    if (strcmp(w, F("or")) == 0) return OP_OR;
+    if (strcmp(w, F("xor")) == 0) return OP_XOR;
+    if (strcmp(w, F("not")) == 0) return OP_NOT;
+    if (strcmp(w, F(">r")) == 0) return OP_DTOR;
+    if (strcmp(w, F("r@")) == 0) return OP_RFETCH;
+    if (strcmp(w, F("r>")) == 0) return OP_RTOD;
+    if (strcmp(w, F("emit")) == 0) return OP_EMIT;
+    if (strcmp(w, F(".")) == 0) return OP_DOT;
+    if (strcmp(w, F(".s")) == 0) return OP_DOTS;
+    if (strcmp(w, F(".\"")) == 0) return OP_DOTQUOTE;
+    if (strcmp(w, F("(")) == 0) return OP_PAREN;
+    if (strcmp(w, F("wdtfeed")) == 0) return OP_WDTFEED;
+    if (strcmp(w, F("brk")) == 0) return OP_BREAK;
+    if (strcmp(w, F("tib")) == 0) return OP_TIB;
+    if (strcmp(w, F("#tib")) == 0) return OP_NTIB;
+    if (strcmp(w, F(">in")) == 0) return OP_TOIN;
+    if (strcmp(w, F("open-block")) == 0) return OP_OPENBLOCK;
+    if (strcmp(w, F("file-close")) == 0) return OP_FILECLOSE;
+    if (strcmp(w, F("file-read")) == 0) return OP_FILEREAD;
+    if (strcmp(w, F("load")) == 0) return OP_LOAD;
+    if (strcmp(w, F("thru")) == 0) return OP_THRU;
+    if (strcmp(w, F("base")) == 0) return OP_BASE;
+    if (strcmp(w, F("state")) == 0) return OP_STATE;
+    if (strcmp(w, F("(here)")) == 0) return OP_HERE;
+    if (strcmp(w, F("(last)")) == 0) return OP_LAST;
+    if (strcmp(w, F("bye")) == 0) return OP_BYE;
+// ^^^^^ -- NimbleText generated -- ^^^^^
+    return 0xFF;
 }
 
 // ( a -- )
@@ -202,13 +336,22 @@ void fPARSEWORD() {
         } else {
             run(xt, 0);
         }
+        return;
     }
 
     push(wa); fISNUMBER();
     if (pop()) {
         if (sys->STATE == 1) {
-            CCOMMA(OP_LIT);
-            fCOMMA();
+            if (T < 0x0100) {
+                CCOMMA(OP_CLIT);
+                fCCOMMA();
+            } else if (T < 0x010000) {
+                CCOMMA(OP_WLIT);
+                fWCOMMA();
+            } else {
+                CCOMMA(OP_LIT);
+                fCOMMA();
+            }
         }
         return;
     }
@@ -227,7 +370,22 @@ void fPARSEWORD() {
     if (strcmp(w, ";") == 0) {
         CCOMMA(OP_RET);
         sys->STATE = 0;
+        return;
     }
+
+    BYTE op = getOpcode(w);
+    if (op < 0xFF) {
+        if (sys->STATE == 1) {
+            CCOMMA(op);
+        } else {
+            CELL xt = sys->HERE+24;
+            dict[xt] = op;
+            dict[xt+1] = OP_RET;
+            run(xt, 0);
+        }
+        return;
+    }
+    printf("[%s]??", w);
 }
 
 void fPARSE_LINE() {
@@ -268,27 +426,29 @@ void loadBaseSystem() {
     sys->STATE = 0;
     sys->TIB = ADDR_ALLOC_BASE+1;
 
-    parseLine(": tmp 71 10 /mod 92 ;");
-    parseLine(": test-123 71 10 /mod 92 ;");
-    parseLine(": main tmp 456 99982 'A' TIB 1+ c! .s ;");
+    parseLine(F(": tmp 92 . ; : cr #13 emit #10 emit ;"));
+    parseLine(F(": test-123 71 10 /mod swap . . ;"));
+    parseLine(F(": space $20 emit ; : ok space 'o' emit 'k' emit '.' emit space .s cr ;"));
+    parseLine(F(": main cr tmp 456 99982 . . test-123 'A' emit $63 1+ . cr ;"));
+    parseLine(F("cr 'L' emit (last) dup . @ . 33 ok drop 'H' emit (here) dup . @ . ok"));
+    parseLine(F("1 2 3 + + . ok"));
 }
 
 int main() {
     allocFreeAll();
     loadBaseSystem();
-    CELL addr = stringToDict("main", 0);
-    push(addr);
-    fFIND();
-    if (pop()) {
-        fGETXT();
-        run(pop(), 100);
-    }
-    allocFree(addr);
     for (int i = 0; i < sys->HERE; i++) {
         if (i % 16 == 0) printf("\n %04x:", i);
         printf(" %02x", dict[i]);
     }
+    CELL addr = stringToDict("main", 0);
+    push(addr);
+    fFIND();
+    allocFree(addr);
+    if (pop()) {
+        fGETXT();
+        run(pop(), 0);
+    }
     allocDump();
-    printf("\nHERE: %d (%lx)\n", sys->HERE, sys->HERE);
-    fDOTS(); printf("\n");
+    printf("\n");
 }
