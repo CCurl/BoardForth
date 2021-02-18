@@ -228,6 +228,7 @@ void fACOMMA() {       // opcode #15
 void fCALL() {         // opcode #16
     rpush(PC+ADDR_SZ);
     PC = addrAt(PC);
+    printf("-call:%lx-", PC);
 }
 void fRET() {          // opcode #17
     // handled in run()
