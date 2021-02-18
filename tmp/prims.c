@@ -8,38 +8,44 @@ CELL PC;
 BYTE dict[DICT_SZ];
 SYSVARS_T *sys;
 
-void push(CELL v) {
-    DSP = (DSP < STK_SZ) ? DSP+1 : STK_SZ;
-    T = v;
+void run(CELL start, CELL max_cycles) {
+    PC = start;
+    printf("\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
+    while (1) {
+        BYTE IR = dict[PC++];
+        if (IR == OP_RET) {
+            if (RSP < 1) { return; }
+            PC = rpop();
+        } else if (IR <= OP_BYE) {
+            prims[IR]();
+            if (IR == OP_BYE) { return; }
+        } else {
+            printf("unknown opcode: %d ($%02x)", IR, IR);
+        }
+        if (max_cycles) {
+            if (--max_cycles < 1) { return; }
+        }
+    }
 }
 
-CELL pop() {
-    DSP = (DSP > 0) ? DSP-1 : 0;
-    return dstk[DSP+1];
-}
+void push(CELL v) { DSP = (DSP < STK_SZ) ? DSP+1 : STK_SZ; T = v; }
+CELL pop() { DSP = (DSP > 0) ? DSP-1 : 0; return dstk[DSP+1]; }
 
-void rpush(CELL v) {
-    RSP = (RSP < STK_SZ) ? RSP+1 : STK_SZ;
-    R = v;
-}
-
-CELL rpop() {
-    RSP = (RSP > 0) ? RSP-1 : 0;
-    return rstk[RSP+1];
-}
+void rpush(CELL v) { RSP = (RSP < STK_SZ) ? RSP+1 : STK_SZ; R = v; }
+CELL rpop() { RSP = (RSP > 0) ? RSP-1 : 0; return rstk[RSP+1]; }
 
 
 CELL cellAt(CELL loc) {
     CELL x = dict[loc++];
-    x = (dict[loc++] <<  8) + x;
-    x = (dict[loc++] << 16) + x;
-    x = (dict[loc++] << 24) + x;
+    x += (dict[loc++] <<  8);
+    x += (dict[loc++] << 16);
+    x += (dict[loc++] << 24);
     return x;
 }
 
 CELL wordAt(CELL loc) {
     CELL x = dict[loc++];
-    x = (dict[loc++] <<  8) + x;
+    x += (dict[loc] <<  8);
     return x;
 }
 
@@ -376,5 +382,5 @@ void fHERE() {         // opcode #57
 void fLAST() {         // opcode #58
     push(ADDR_LAST);
 }
-void fBYE() {
+void fBYE() {          // opcode #59
 }

@@ -2,12 +2,84 @@
 
 void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
 void WCOMMA(WORD v) { push(v); fWCOMMA(); }
-void COMMA(CELL v)  { push(v); fCOMMA(); }
+void COMMA(CELL v)  { push(v); fCOMMA();  }
 void ACOMMA(ADDR v) { push(v); fACOMMA(); }
 
-CELL fGETXT() {
-    CELL dpa = T;
-    T += CELL_SZ + 1 + 1 + dict[dpa+CELL_SZ+1] + 1;
+CELL stringToDict(char *, CELL);
+
+#pragma region allocation
+#define ALLOC_SZ 24
+typedef struct {
+    CELL addr;
+    BYTE available;
+    WORD sz;
+} ALLOC_T;
+ALLOC_T alloced[ALLOC_SZ];
+
+int num_alloced = 0;
+CELL curFree;
+
+void allocDump() {
+    printf("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
+    for (int i = 0; i < num_alloced; i++) {
+        printf("\n%2d %04lx %4d %d", i, alloced[i].addr, (int)alloced[i].sz, (int)alloced[i].available);
+    }
+}
+
+int allocFind(CELL addr) {
+    for (int i = 0; i < num_alloced; i++) {
+        if (alloced[i].addr == addr) return i;
+    }
+    return -1;
+}
+
+void allocFree(CELL addr) {
+    int x = allocFind(addr);
+    if (x >= 0) {
+        alloced[x].available = 1;
+    }
+}
+
+void allocFreeAll() {
+    curFree = ADDR_ALLOC_BASE;
+    for (int i = 0; i < ALLOC_SZ; i++) alloced[i].available = 1;
+    num_alloced = 0;
+}
+
+int allocFindAvailable(WORD sz) {
+    for (int i = 0; i < num_alloced; i++) {
+        if ((alloced[i].available) && (alloced[i].sz >= sz)) return i;
+    }
+    return -1;
+}
+
+CELL allocSpace(WORD sz) {
+    int x = allocFindAvailable(sz);
+    if (x >= 0) {
+        alloced[x].available = 0;
+        return alloced[x].addr;
+    }
+    curFree -= (sz);
+    if (num_alloced < ALLOC_SZ) {
+        alloced[num_alloced].addr = curFree;
+        alloced[num_alloced].sz = sz;
+        alloced[num_alloced++].available = 0;
+    } else {
+        printf("-alloc tbl too small-");
+    }
+    return curFree;
+}
+#pragma endregion
+
+void fGETXT() {
+    DICT_T *dp = (DICT_T *)&dict[T];
+    T += ADDR_SZ + dp->len + 3;
+}
+
+CELL getXT(CELL addr) {
+    push(addr);
+    fGETXT();
+    return pop();
 }
 
 // Align on 2-byte boundary
@@ -36,37 +108,44 @@ CELL align2(CELL val) {
     return pop();
 }
 
+// ( a -- )
 void fCREATE() {
-    char *name = (char *)pop();
+    CELL wa = pop();
+    char *name = (char *)&dict[wa];
     sys->HERE = align2(sys->HERE);
-    CELL newLAST = sys->HERE;
-    printf("-define [%s] at %d (%lx)-", name, sys->HERE, sys->HERE);
+    printf("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
 
     DICT_T *dp = (DICT_T *)&dict[sys->HERE];
-    dp->prev = sys->LAST;
+    dp->prev = (ADDR)sys->LAST;
     dp->flags = 0;
     dp->len = strlen(name);
     strcpy(dp->name, name);
-    sys->HERE += CELL_SZ + 1 + 1 + dp->len + 1;
-    sys->LAST = newLAST;
+    sys->LAST = sys->HERE;
+    sys->HERE += ADDR_SZ + dp->len + 3;
+    printf(",XT:%d (%lx)-", sys->HERE, sys->HERE);
 }
 
 void define(char *name) {
-    push((CELL)name);
+    CELL tmp = stringToDict(name, 0);
+    push(tmp);
     fCREATE();
+    allocFree(tmp);
 }
 
+// (a1 -- [a2 1] | 0)
 void fFIND() {
     char *name = (char *)&dict[pop()];
-    printf("-lf:[%s]-", name);
+    // printf("-lf:[%s]-", name);
     CELL cl = sys->LAST;
     while (cl) {
         DICT_T *dp = (DICT_T *)&dict[cl];
         if (strcmp(name, dp->name) == 0) {
+            // printf("-FOUND! (%lx)-", cl);
             push(cl);
+            push(1);
             return;
         }
-        cl = dp->prev;
+        cl = (CELL)dp->prev;
     }
     push(0);
 }
@@ -77,26 +156,6 @@ void doCount() {
     push((CELL)*x);
 }
 
-void run(CELL start, int num_cycles) {
-    int callDepth = 1;
-    PC = start;
-    while (1) {
-        BYTE IR = dict[PC++];
-        if (IR == OP_CALL) { ++callDepth; }
-        if (IR == OP_RET) {
-            if (--callDepth < 1) { return; }
-            PC = rpop();
-        } else if (IR <= OP_BYE) {
-            prims[IR]();
-            if (IR == OP_BYE) { return; }
-        } else {
-            printf("unknown opcode: %d ($%02x)", IR, IR);
-        }
-        if (num_cycles) {
-            if (--num_cycles < 1) { return; }
-        }
-    }
-}
 
 CELL toIn = 0;
 BYTE nextChar() {
@@ -104,7 +163,8 @@ BYTE nextChar() {
     return 0;
 }
 
-void nextWord() {
+// ( a -- n )
+void fNEXTWORD() {
     CELL to = pop();
     char c = nextChar();
     int len = 0;
@@ -118,41 +178,74 @@ void nextWord() {
     push(len);
 }
 
-
-void parseWord() {
-    char *w = &dict[T];
-    printf("-pw[%s]-", w);
-    fFIND();
-    if (T) { printf("-FOUND!-"); }
-    fDROP();
+// (a -- [n 1] | 0)
+void fISNUMBER() {
+    CELL wa = T;
+    char *w = &dict[wa];
+    // printf("-num?[%s]-", w);
+    T = 0;
 }
 
-CELL curFree;
+// ( a -- )
+void fPARSEWORD() {
+    CELL wa = pop();
+    char *w = &dict[wa];
+    // printf("-pw[%s]-", w);
+    push(wa); fFIND();
+    if (pop()) {
+        DICT_T *dp = (DICT_T *)&dict[T];
+        fGETXT();
+        CELL xt = pop();
+        if ((sys->STATE == 1) && (dp->flags == 0)) {
+            CCOMMA(OP_CALL);
+            ACOMMA((ADDR)xt);
+        } else {
+            run(xt, 0);
+        }
+    }
 
-CELL alloc(CELL sz) {
-    curFree -= (sz+1);
-    return curFree;
-}
+    push(wa); fISNUMBER();
+    if (pop()) {
+        if (sys->STATE == 1) {
+            CCOMMA(OP_LIT);
+            fCOMMA();
+        }
+        return;
+    }
 
-void freeAll() {
-    curFree = ADDR_ALLOC_BASE;
+    if (strcmp(w, ":") == 0) {
+        push(wa);
+        fNEXTWORD();
+        if (pop()) {
+            push(wa);
+            fCREATE();
+            sys->STATE = 1;
+        }
+        return;
+    }
+
+    if (strcmp(w, ";") == 0) {
+        CCOMMA(OP_RET);
+        sys->STATE = 0;
+    }
 }
 
 void fPARSE_LINE() {
     toIn = pop();
-    CELL buf = alloc(32);
+    CELL buf = allocSpace(32);
     push(buf);
-    nextWord();
+    fNEXTWORD();
     while (pop()) {
         push(buf);
-        parseWord();
+        fPARSEWORD();
         push(buf);
-        nextWord();
+        fNEXTWORD();
     }
+    allocFree(buf);
 }
 
 CELL stringToDict(char *s, CELL to) {
-    if (to == 0) to = alloc(strlen(s)+2);
+    if (to == 0) to = allocSpace(strlen(s)+2);
     CELL x = to;
     while (*s) {
         dict[x++] = *(s++);
@@ -161,8 +254,9 @@ CELL stringToDict(char *s, CELL to) {
     return to;
 }
 
-void pl(char *line) {
-    push(stringToDict(line, sys->TIB));
+void parseLine(char *line) {
+    stringToDict(line, sys->TIB);
+    push(sys->TIB);
     fPARSE_LINE();
 }
 
@@ -174,25 +268,27 @@ void loadBaseSystem() {
     sys->STATE = 0;
     sys->TIB = ADDR_ALLOC_BASE+1;
 
-    define("test");
-
-    pl(": test 71 10 /mod 92 ;");
-    pl(": main test 456 99982 'A' TIB 1+ c! .s ;");
+    parseLine(": tmp 71 10 /mod 92 ;");
+    parseLine(": test-123 71 10 /mod 92 ;");
+    parseLine(": main tmp 456 99982 'A' TIB 1+ c! .s ;");
 }
 
 int main() {
+    allocFreeAll();
     loadBaseSystem();
-    push((CELL)"main");
+    CELL addr = stringToDict("main", 0);
+    push(addr);
     fFIND();
-    if (T) {
+    if (pop()) {
         fGETXT();
-        CELL xt = pop();
-        printf("\nrun: %d (%04lx) ... ", xt, xt);
-        run(xt, 100);
+        run(pop(), 100);
     }
+    allocFree(addr);
     for (int i = 0; i < sys->HERE; i++) {
         if (i % 16 == 0) printf("\n %04x:", i);
         printf(" %02x", dict[i]);
     }
-    printf("\nHERE: %d\n", sys->HERE);
+    allocDump();
+    printf("\nHERE: %d (%lx)\n", sys->HERE, sys->HERE);
+    fDOTS(); printf("\n");
 }

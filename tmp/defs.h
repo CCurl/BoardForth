@@ -29,7 +29,7 @@ typedef unsigned char  BYTE;
 #define R rstk[RSP]
 
 typedef struct {
-    CELL prev;
+    ADDR prev;
     BYTE flags;
     BYTE len;
     BYTE name[32]; // not really 32 ... but we need a number
@@ -71,6 +71,7 @@ void push(CELL);
 CELL pop();
 void rpush(CELL);
 CELL rpop();
+void run(CELL, CELL);
 
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
