@@ -66,4 +66,9 @@ CREATE create
 FIND find
 NEXTWORD next-word
 ISNUMBER number?
+JMP -n-
+JMPZ -n-
+JMPNZ -n-
+NJMPZ -n-
+NJMPNZ -n-
 BYE bye

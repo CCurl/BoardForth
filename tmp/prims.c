@@ -54,6 +54,7 @@ CELL addrAt(CELL loc) {         // opcode #16
 }
 
 void wordStore(CELL addr, CELL val) {
+    // printf("-w! %ld to [%ld]-", val, addr);
     if ((0 <= addr) && ((addr+2) < DICT_SZ)) {
         dict[addr++] = (val & 0xFF);
         dict[addr++] = (val >>  8) & 0xFF;
@@ -71,7 +72,7 @@ void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
 
-// vvvvv -- NimbleText generated -- vvvvv
+// vvvvv - NimbleText generated - vvvvv
 FP prims[] = {
     fNOOP,             // opcode #0
     fCLIT,             // opcode #1
@@ -141,9 +142,11 @@ FP prims[] = {
     fFIND,             // opcode #65
     fNEXTWORD,         // opcode #66
     fISNUMBER,         // opcode #67
-    fBYE,              // opcode #68
-    0 };
-// ^^^^^ -- NimbleText generated -- ^^^^^
+    fNJMPZ,            // opcode #68
+    fNJMPNZ,           // opcode #69
+    fBYE,              // opcode #70
+    0};
+// ^^^^^ - NimbleText generated - ^^^^^
 
 void fNOOP() {         // opcode #0
 }
@@ -201,7 +204,9 @@ void fCSTORE() {       // opcode #8
     }
 }
 void fWSTORE() {       // opcode #9
-    wordStore(pop(), pop());
+    CELL addr = pop();
+    CELL val = pop();
+    wordStore(addr, val);
 }
 void fASTORE() {       // opcode #10
     (ADDR_SZ == 2) ? fWSTORE() : fSTORE();
@@ -209,7 +214,6 @@ void fASTORE() {       // opcode #10
 void fSTORE() {        // opcode #11
     CELL addr = pop();
     CELL val = pop();
-
     if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
         cellStore(addr, val);
         return;
@@ -451,6 +455,62 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
+    if (strcmp(w, "if") == 0) {
+        CCOMMA(OP_JMPZ);
+        push(sys->HERE);
+        ACOMMA(0);
+        return;
+    }
+
+    if (strcmp(w, "if-") == 0) {
+        CCOMMA(OP_NJMPZ);
+        push(sys->HERE);
+        ACOMMA(0);
+        return;
+    }
+
+    if (strcmp(w, "then") == 0) {
+        push(sys->HERE);
+        fSWAP();
+        fASTORE();
+        return;
+    }
+
+    if (strcmp(w, "begin") == 0) {
+        push(sys->HERE);
+        return;
+    }
+
+    if (strcmp(w, "again") == 0) {
+        CCOMMA(OP_JMP);
+        fACOMMA();
+        return;
+    }
+
+    if (strcmp(w, "while") == 0) {
+        CCOMMA(OP_JMPNZ);
+        fACOMMA();
+        return;
+    }
+
+    if (strcmp(w, "until") == 0) {
+        CCOMMA(OP_JMPZ);
+        fACOMMA();
+        return;
+    }
+
+    if (strcmp(w, "while-") == 0) {
+        CCOMMA(OP_NJMPNZ);
+        fACOMMA();
+        return;
+    }
+
+    if (strcmp(w, "until-") == 0) {
+        CCOMMA(OP_NJMPZ);
+        fACOMMA();
+        return;
+    }
+
     BYTE op = getOpcode(w);
     if (op < 0xFF) {
         if (sys->STATE == 1) {
@@ -556,5 +616,13 @@ void fISNUMBER() {     // opcode #67
     if (sys->BASE ==  2) { is_binary(w);  return; }
     push(0);
 }
-void fBYE() {          // opcode #68
+void fNJMPZ() {        // opcode #68
+    if (T == 0) PC = addrAt(PC);
+    else PC += ADDR_SZ;
+}
+void fNJMPNZ() {       // opcode #69
+    if (T) PC = addrAt(PC);
+    else PC += ADDR_SZ;
+}
+void fBYE() {          // opcode #70
 }

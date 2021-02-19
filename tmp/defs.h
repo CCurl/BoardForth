@@ -102,8 +102,10 @@ void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
 void COMMA(CELL v);
 void ACOMMA(ADDR v);
+void parseLine(char *);
+void loadSystem();
 
-// vvvvv -- NimbleText generated -- vvvvv
+// vvvvv - NimbleText generated - vvvvv
 #define OP_NOOP         0     // noop
 #define OP_CLIT         1     // cliteral
 #define OP_WLIT         2     // wliteral
@@ -122,9 +124,9 @@ void ACOMMA(ADDR v);
 #define OP_ACOMMA       15     // a,
 #define OP_CALL         16     // call
 #define OP_RET          17     // ret
-#define OP_JMP          18     // jmp
-#define OP_JMPZ         19     // jmpz
-#define OP_JMPNZ        20     // jmpnz
+#define OP_JMP          18     // -n-
+#define OP_JMPZ         19     // -n-
+#define OP_JMPNZ        20     // -n-
 #define OP_ONEMINUS     21     // 1-
 #define OP_ONEPLUS      22     // 1+
 #define OP_DUP          23     // dup
@@ -172,10 +174,10 @@ void ACOMMA(ADDR v);
 #define OP_FIND         65     // find
 #define OP_NEXTWORD     66     // next-word
 #define OP_ISNUMBER     67     // number?
-#define OP_BYE          68     // bye
-// ^^^^^ -- NimbleText generated -- ^^^^^
-
-// vvvvv -- NimbleText generated -- vvvvv
+#define OP_NJMPZ        68     // -n-
+#define OP_NJMPNZ       69     // -n-
+#define OP_BYE          70     // bye
+// ----- NimbleText generated continues -----
 void fNOOP();
 void fCLIT();
 void fWLIT();
@@ -244,7 +246,9 @@ void fCREATE();
 void fFIND();
 void fNEXTWORD();
 void fISNUMBER();
+void fNJMPZ();
+void fNJMPNZ();
 void fBYE();
-// ^^^^^ -- NimbleText generated -- ^^^^^
+// ^^^^^ - NimbleText generated - ^^^^^
 
 #endif // __DEFS_H__

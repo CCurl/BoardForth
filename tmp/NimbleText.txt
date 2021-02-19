@@ -1,7 +1,12 @@
 $once
 // vvvvv - NimbleText generated - vvvvv
 $each
-#define OP_<%($0 + '               ').substring(0,13)%>$rownum     // ($1)
+#define OP_<%($0 + '               ').substring(0,13)%>$rownum     // $1
+$once
+// ^^^^^ - NimbleText generated - ^^^^^
+// vvvvv - NimbleText generated - vvvvv
+$each
+void f$0();
 $once
 // ^^^^^ - NimbleText generated - ^^^^^
 // vvvvv - NimbleText generated - vvvvv
