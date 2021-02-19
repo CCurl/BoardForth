@@ -1,31 +1,25 @@
-$each
-#define OP_<%($0 + '               ').substring(0,13)%>$rownum     // $1
 $once
-
+// vvvvv - NimbleText generated - vvvvv
 $each
-void f$0();
+#define OP_<%($0 + '               ').substring(0,13)%>$rownum     // ($1)
+$once
+// ^^^^^ - NimbleText generated - ^^^^^
+// vvvvv - NimbleText generated - vvvvv
+FP prims[] = {
 $each
     f<%($0 + ',               ').substring(0,13)%>     // opcode #$rownum
+$once
+    0};
+// ^^^^^ - NimbleText generated - ^^^^^
+// vvvvv - NimbleText generated - vvvvv
+BYTE getOpcode(char *w) {
+$each
+    if (strcmp(w, F("$1")) == 0) return OP_$0;       //  opcode #$rownum
+$once
+    return 0xFF;
+}
+// ^^^^^ - NimbleText generated - ^^^^^
 $each
 void f<%($0 + '() {               ').substring(0,13)%>    // opcode #$rownum
     N = N*T; push(T); pop();
 }
-$each
-    string_$rownum,
-
-$once
-
-$each
-        case $0: 
-          // N = N+T; t1 = T; T = N; N = t1; pop(); push(t1);
-          break;
-
-$each
-const PROGMEM char string_$rownum[] = "$1";
-$once
-
-const char *const builtInWords[] PROGMEM = {
-$each
-    string_$rownum,
-$once
-    0 };

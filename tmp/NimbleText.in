@@ -57,4 +57,13 @@ BASE base
 STATE state
 HERE (here)
 LAST (last)
+PARSEWORD parse-word
+PARSELINE parse-line
+GETXT get-xt
+ALIGN2 align2
+ALIGN4 align4
+CREATE create
+FIND find
+NEXTWORD next-word
+ISNUMBER number?
 BYE bye

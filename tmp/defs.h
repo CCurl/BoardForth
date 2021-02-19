@@ -39,11 +39,15 @@ typedef struct {
     CELL autoRun;
     CELL RESERVED1;
     CELL TIB;
-    CELL RESERVED3;
+    CELL TOIN;
     CELL HERE;
     CELL LAST;
     CELL BASE;
     CELL STATE;
+    CELL RESERVED2;
+    CELL RESERVED3;
+    CELL RESERVED4;
+    CELL RESERVED5;
 } SYSVARS_T;
 
 typedef struct {
@@ -53,15 +57,20 @@ typedef struct {
 } ALLOC_T;
 
 #define ADDR_AUTORUN    (CELL_SZ*0)
-#define ADDR_RES1       (CELL_SZ*1)
-#define ADDR_RES2       (CELL_SZ*2)
-#define ADDR_RES3       (CELL_SZ*3)
+#define ADDR_RES_1      (CELL_SZ*1)
+#define ADDR_TIB        (CELL_SZ*2)
+#define ADDR_TOIN       (CELL_SZ*3)
 #define ADDR_HERE       (CELL_SZ*4)
 #define ADDR_LAST       (CELL_SZ*5)
 #define ADDR_BASE       (CELL_SZ*6)
 #define ADDR_STATE      (CELL_SZ*7)
-#define ADDR_HERE_BASE  (CELL_SZ*8)
-#define ADDR_ALLOC_BASE (DICT_SZ - TIB_SZ - 1)
+#define ADDR_RES_2      (CELL_SZ*8)
+#define ADDR_RES_3      (CELL_SZ*9)
+#define ADDR_RES_4      (CELL_SZ*10)
+#define ADDR_RES_5      (CELL_SZ*11)
+
+#define ADDR_HERE_BASE  (CELL_SZ*12)
+#define ADDR_ALLOC_BASE (DICT_SZ-TIB_SZ-1)
 
 extern BYTE IR;
 extern CELL PC;
@@ -72,14 +81,23 @@ extern CELL BASE, STATE;
 extern FP prims[];
 extern BYTE dict[];
 extern SYSVARS_T *sys;
+extern CELL toIn;
 
 void push(CELL);
 CELL pop();
 void rpush(CELL);
 CELL rpop();
 void run(CELL, CELL);
-
+CELL allocSpace(WORD);
+void allocFree(CELL);
 CELL stringToDict(char *, CELL);
+BYTE getOpcode(char *);
+CELL align2(CELL);
+CELL align4(CELL);
+BYTE nextChar();
+void is_hex(char *);
+void is_decimal(char *);
+void is_binary(char *);
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
 void COMMA(CELL v);
@@ -101,7 +119,7 @@ void ACOMMA(ADDR v);
 #define OP_CCOMMA       12     // c,
 #define OP_WCOMMA       13     // w,
 #define OP_COMMA        14     // ,
-#define OP_ACOMMA       15     // 1,
+#define OP_ACOMMA       15     // a,
 #define OP_CALL         16     // call
 #define OP_RET          17     // ret
 #define OP_JMP          18     // jmp
@@ -129,7 +147,7 @@ void ACOMMA(ADDR v);
 #define OP_EMIT         40     // emit
 #define OP_DOT          41     // .
 #define OP_DOTS         42     // .s
-#define OP_DOTQUOTE     43     // ."
+#define OP_DOTQUOTE     43     // .\"
 #define OP_PAREN        44     // (
 #define OP_WDTFEED      45     // wdtfeed
 #define OP_BREAK        46     // brk
@@ -145,7 +163,16 @@ void ACOMMA(ADDR v);
 #define OP_STATE        56     // state
 #define OP_HERE         57     // (here)
 #define OP_LAST         58     // (last)
-#define OP_BYE          59     // bye
+#define OP_PARSEWORD    59     // parse-word
+#define OP_PARSELINE    60     // parse-line
+#define OP_GETXT        61     // get-xt
+#define OP_ALIGN2       62     // align2
+#define OP_ALIGN4       63     // align4
+#define OP_CREATE       64     // create
+#define OP_FIND         65     // find
+#define OP_NEXTWORD     66     // next-word
+#define OP_ISNUMBER     67     // number?
+#define OP_BYE          68     // bye
 // ^^^^^ -- NimbleText generated -- ^^^^^
 
 // vvvvv -- NimbleText generated -- vvvvv
@@ -208,6 +235,15 @@ void fBASE();
 void fSTATE();
 void fHERE();
 void fLAST();
+void fPARSEWORD();
+void fPARSELINE();
+void fGETXT();
+void fALIGN2();
+void fALIGN4();
+void fCREATE();
+void fFIND();
+void fNEXTWORD();
+void fISNUMBER();
 void fBYE();
 // ^^^^^ -- NimbleText generated -- ^^^^^
 

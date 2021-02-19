@@ -71,13 +71,8 @@ void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
 
-void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
-void WCOMMA(WORD v) { push(v); fWCOMMA(); }
-void COMMA(CELL v)  { push(v); fCOMMA();  }
-void ACOMMA(ADDR v) { push(v); fACOMMA(); }
-
-FP prims[] = {
 // vvvvv -- NimbleText generated -- vvvvv
+FP prims[] = {
     fNOOP,             // opcode #0
     fCLIT,             // opcode #1
     fWLIT,             // opcode #2
@@ -137,9 +132,18 @@ FP prims[] = {
     fSTATE,            // opcode #56
     fHERE,             // opcode #57
     fLAST,             // opcode #58
-    fBYE,
-// ^^^^^ -- NimbleText generated -- ^^^^^
+    fPARSEWORD,        // opcode #59
+    fPARSELINE,        // opcode #60
+    fGETXT,            // opcode #61
+    fALIGN2,           // opcode #62
+    fALIGN4,           // opcode #63
+    fCREATE,           // opcode #64
+    fFIND,             // opcode #65
+    fNEXTWORD,         // opcode #66
+    fISNUMBER,         // opcode #67
+    fBYE,              // opcode #68
     0 };
+// ^^^^^ -- NimbleText generated -- ^^^^^
 
 void fNOOP() {         // opcode #0
 }
@@ -207,7 +211,7 @@ void fSTORE() {        // opcode #11
     CELL val = pop();
 
     if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
-        cellStore(pop(), pop());
+        cellStore(addr, val);
         return;
     }
 
@@ -322,7 +326,14 @@ void fEMIT() {
     printf("%c", (char)pop());
 }
 void fDOT() {
-    printf(" %ld", pop());
+    CELL v = pop();
+    if (sys->BASE == 10) {
+        printf(" %ld", v);
+    } else if (sys->BASE == 16) {
+        printf(" %lx", v);
+    } else {
+        printf(" %ld (in %ld)", v, sys->BASE);
+    }
 }
 void fDOTS() {
     if (DSP) {
@@ -355,10 +366,10 @@ void fTIB() {          // opcode #47
     push(sys->TIB);
 }
 void fNTIB() {         // opcode #48
-    N = N*T; push(T); pop();
+    push(0);
 }
 void fTOIN() {         // opcode #49
-    N = N*T; push(T); pop();
+    push(ADDR_TOIN);
 }
 void fOPENBLOCK() {    // opcode #50
     N = N*T; push(T); pop();
@@ -387,5 +398,163 @@ void fHERE() {         // opcode #57
 void fLAST() {         // opcode #58
     push(ADDR_LAST);
 }
-void fBYE() {          // opcode #59
+// ( a -- )
+void fPARSEWORD() {    // opcode #59
+    CELL wa = pop();
+    char *w = &dict[wa];
+    // printf("-pw[%s]-", w);
+    push(wa); fFIND();
+    if (pop()) {
+        DICT_T *dp = (DICT_T *)&dict[T];
+        fGETXT();
+        CELL xt = pop();
+        if ((sys->STATE == 1) && (dp->flags == 0)) {
+            CCOMMA(OP_CALL);
+            ACOMMA((ADDR)xt);
+        } else {
+            run(xt, 0);
+        }
+        return;
+    }
+
+    push(wa); fISNUMBER();
+    if (pop()) {
+        if (sys->STATE == 1) {
+            if (T < 0x0100) {
+                CCOMMA(OP_CLIT);
+                fCCOMMA();
+            } else if (T < 0x010000) {
+                CCOMMA(OP_WLIT);
+                fWCOMMA();
+            } else {
+                CCOMMA(OP_LIT);
+                fCOMMA();
+            }
+        }
+        return;
+    }
+
+    if (strcmp(w, ":") == 0) {
+        push(wa);
+        fNEXTWORD();
+        if (pop()) {
+            push(wa);
+            fCREATE();
+            sys->STATE = 1;
+        }
+        return;
+    }
+
+    if (strcmp(w, ";") == 0) {
+        CCOMMA(OP_RET);
+        sys->STATE = 0;
+        return;
+    }
+
+    BYTE op = getOpcode(w);
+    if (op < 0xFF) {
+        if (sys->STATE == 1) {
+            CCOMMA(op);
+        } else {
+            CELL xt = sys->HERE+24;
+            dict[xt] = op;
+            dict[xt+1] = OP_RET;
+            run(xt, 0);
+        }
+        return;
+    }
+    printf("[%s]??", w);
+}
+void fPARSELINE() {    // opcode #60
+    sys->TOIN = pop();
+    CELL buf = allocSpace(32);
+    push(buf);
+    fNEXTWORD();
+    while (pop()) {
+        push(buf);
+        fPARSEWORD();
+        push(buf);
+        fNEXTWORD();
+    }
+    allocFree(buf);
+}
+void fGETXT() {        // opcode #61
+    DICT_T *dp = (DICT_T *)&dict[T];
+    T += ADDR_SZ + dp->len + 3;
+}
+void fALIGN2() {       // opcode #62
+    CELL val = T;
+    if (val & 0x01) { ++val; }
+    T = val;
+}
+void fALIGN4() {       // opcode #63
+    CELL val = T;
+    while (val & 0x03) { ++val; }
+    T = val;
+}
+void fCREATE() {       // opcode #64
+    CELL wa = pop();
+    char *name = (char *)&dict[wa];
+    sys->HERE = align2(sys->HERE);
+    // printf("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
+
+    DICT_T *dp = (DICT_T *)&dict[sys->HERE];
+    dp->prev = (ADDR)sys->LAST;
+    dp->flags = 0;
+    dp->len = strlen(name);
+    strcpy(dp->name, name);
+    sys->LAST = sys->HERE;
+    sys->HERE += ADDR_SZ + dp->len + 3;
+    // printf(",XT:%d (%lx)-", sys->HERE, sys->HERE);
+}
+// (a1 -- [a2 1] | 0)
+void fFIND() {         // opcode #65
+    char *name = (char *)&dict[pop()];
+    // printf("-lf:[%s]-", name);
+    CELL cl = sys->LAST;
+    while (cl) {
+        DICT_T *dp = (DICT_T *)&dict[cl];
+        if (strcmp(name, dp->name) == 0) {
+            // printf("-FOUND! (%lx)-", cl);
+            push(cl);
+            push(1);
+            return;
+        }
+        cl = (CELL)dp->prev;
+    }
+    push(0);
+}
+void fNEXTWORD() {     // opcode #66
+    CELL to = pop();
+    char c = nextChar();
+    int len = 0;
+    while (c && (c < 33)) { c = nextChar(); }
+    while (c && (32 < c)) {
+        dict[to++] = c;
+        c = nextChar(); 
+        len++;
+    }
+    dict[to] = 0;
+    push(len);
+}
+void fISNUMBER() {     // opcode #67
+    CELL wa = pop();
+    char *w = &dict[wa];
+
+    if ((*w == '\'') && (*(w+2) == '\'') && (*(w+3) == 0)) {
+        push(*(w+1));
+        push(1);
+        return;
+    }
+
+    if (*w == '#') { is_decimal(w+1); return; }
+    if (*w == '$') { is_hex(w+1);     return; }
+    if (*w == '%') { is_binary(w+1);  return; }
+
+    if (sys->BASE == 10) { is_decimal(w); return; }
+    if (sys->BASE == 16) { is_hex(w);     return; }
+    if (sys->BASE ==  2) { is_binary(w);  return; }
+    push(0);
+}
+void fBYE() {          // opcode #68
 }

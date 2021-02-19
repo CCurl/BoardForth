@@ -57,29 +57,15 @@ CELL allocSpace(WORD sz) {
 }
 #pragma endregion
 
-void fGETXT() {
-    DICT_T *dp = (DICT_T *)&dict[T];
-    T += ADDR_SZ + dp->len + 3;
-}
+void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
+void WCOMMA(WORD v) { push(v); fWCOMMA(); }
+void COMMA(CELL v)  { push(v); fCOMMA();  }
+void ACOMMA(ADDR v) { push(v); fACOMMA(); }
 
 CELL getXT(CELL addr) {
     push(addr);
     fGETXT();
     return pop();
-}
-
-// Align on 2-byte boundary
-void fALIGN2() {
-    CELL val = T;
-    if (val & 0x01) { ++val; }
-    T = val;
-}
-
-// Align on 4-byte boundary
-void fALIGN4() {
-    CELL val = T;
-    while (val & 0x03) { ++val; }
-    T = val;
 }
 
 CELL align4(CELL val) {
@@ -94,74 +80,9 @@ CELL align2(CELL val) {
     return pop();
 }
 
-// ( a -- )
-void fCREATE() {
-    CELL wa = pop();
-    char *name = (char *)&dict[wa];
-    sys->HERE = align2(sys->HERE);
-    // printf("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
-
-    DICT_T *dp = (DICT_T *)&dict[sys->HERE];
-    dp->prev = (ADDR)sys->LAST;
-    dp->flags = 0;
-    dp->len = strlen(name);
-    strcpy(dp->name, name);
-    sys->LAST = sys->HERE;
-    sys->HERE += ADDR_SZ + dp->len + 3;
-    // printf(",XT:%d (%lx)-", sys->HERE, sys->HERE);
-}
-
-void define(char *name) {
-    CELL tmp = stringToDict(name, 0);
-    push(tmp);
-    fCREATE();
-    allocFree(tmp);
-}
-
-// (a1 -- [a2 1] | 0)
-void fFIND() {
-    char *name = (char *)&dict[pop()];
-    // printf("-lf:[%s]-", name);
-    CELL cl = sys->LAST;
-    while (cl) {
-        DICT_T *dp = (DICT_T *)&dict[cl];
-        if (strcmp(name, dp->name) == 0) {
-            // printf("-FOUND! (%lx)-", cl);
-            push(cl);
-            push(1);
-            return;
-        }
-        cl = (CELL)dp->prev;
-    }
-    push(0);
-}
-
-void doCount() {
-    char *x = (char *)T;
-    T++;
-    push((CELL)*x);
-}
-
-
-CELL toIn = 0;
 BYTE nextChar() {
-    if (dict[toIn]) return dict[toIn++];
+    if (dict[sys->TOIN]) return dict[sys->TOIN++];
     return 0;
-}
-
-// ( a -- n )
-void fNEXTWORD() {
-    CELL to = pop();
-    char c = nextChar();
-    int len = 0;
-    while (c && (c < 33)) { c = nextChar(); }
-    while (c && (32 < c)) {
-        dict[to++] = c;
-        c = nextChar(); 
-        len++;
-    }
-    dict[to] = 0;
-    push(len);
 }
 
 void is_hex(char *word) {
@@ -233,29 +154,8 @@ void is_binary(char *word) {
     push(1);
 }
 
-// (a -- [n 1] | 0)
-void fISNUMBER() {
-    CELL wa = pop();
-    char *w = &dict[wa];
-
-    if ((*w == '\'') && (*(w+2) == '\'') && (*(w+3) == 0)) {
-        push(*(w+1));
-        push(1);
-        return;
-    }
-
-    if (*w == '#') { is_decimal(w+1); return; }
-    if (*w == '$') { is_hex(w+1);     return; }
-    if (*w == '%') { is_binary(w+1);  return; }
-
-    if (sys->BASE == 10) { is_decimal(w); return; }
-    if (sys->BASE == 16) { is_hex(w);     return; }
-    if (sys->BASE ==  2) { is_binary(w);  return; }
-    push(0);
-}
-
-BYTE getOpcode(char *w) {
 // vvvvv -- NimbleText generated -- vvvvv
+BYTE getOpcode(char *w) {
     if (strcmp(w, F("noop")) == 0) return OP_NOOP;
     if (strcmp(w, F("cliteral")) == 0) return OP_CLIT;
     if (strcmp(w, F("wliteral")) == 0) return OP_WLIT;
@@ -315,92 +215,19 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("state")) == 0) return OP_STATE;
     if (strcmp(w, F("(here)")) == 0) return OP_HERE;
     if (strcmp(w, F("(last)")) == 0) return OP_LAST;
+    if (strcmp(w, F("parse-word")) == 0) return OP_PARSEWORD;
+    if (strcmp(w, F("parse-line")) == 0) return OP_PARSELINE;
+    if (strcmp(w, F("get-xt")) == 0) return OP_GETXT;
+    if (strcmp(w, F("align2")) == 0) return OP_ALIGN2;
+    if (strcmp(w, F("align4")) == 0) return OP_ALIGN4;
+    if (strcmp(w, F("create")) == 0) return OP_CREATE;
+    if (strcmp(w, F("find")) == 0) return OP_FIND;
+    if (strcmp(w, F("next-word")) == 0) return OP_NEXTWORD;
+    if (strcmp(w, F("number?")) == 0) return OP_ISNUMBER;
     if (strcmp(w, F("bye")) == 0) return OP_BYE;
-// ^^^^^ -- NimbleText generated -- ^^^^^
     return 0xFF;
 }
-
-// ( a -- )
-void fPARSEWORD() {
-    CELL wa = pop();
-    char *w = &dict[wa];
-    // printf("-pw[%s]-", w);
-    push(wa); fFIND();
-    if (pop()) {
-        DICT_T *dp = (DICT_T *)&dict[T];
-        fGETXT();
-        CELL xt = pop();
-        if ((sys->STATE == 1) && (dp->flags == 0)) {
-            CCOMMA(OP_CALL);
-            ACOMMA((ADDR)xt);
-        } else {
-            run(xt, 0);
-        }
-        return;
-    }
-
-    push(wa); fISNUMBER();
-    if (pop()) {
-        if (sys->STATE == 1) {
-            if (T < 0x0100) {
-                CCOMMA(OP_CLIT);
-                fCCOMMA();
-            } else if (T < 0x010000) {
-                CCOMMA(OP_WLIT);
-                fWCOMMA();
-            } else {
-                CCOMMA(OP_LIT);
-                fCOMMA();
-            }
-        }
-        return;
-    }
-
-    if (strcmp(w, ":") == 0) {
-        push(wa);
-        fNEXTWORD();
-        if (pop()) {
-            push(wa);
-            fCREATE();
-            sys->STATE = 1;
-        }
-        return;
-    }
-
-    if (strcmp(w, ";") == 0) {
-        CCOMMA(OP_RET);
-        sys->STATE = 0;
-        return;
-    }
-
-    BYTE op = getOpcode(w);
-    if (op < 0xFF) {
-        if (sys->STATE == 1) {
-            CCOMMA(op);
-        } else {
-            CELL xt = sys->HERE+24;
-            dict[xt] = op;
-            dict[xt+1] = OP_RET;
-            run(xt, 0);
-        }
-        return;
-    }
-    printf("[%s]??", w);
-}
-
-void fPARSE_LINE() {
-    toIn = pop();
-    CELL buf = allocSpace(32);
-    push(buf);
-    fNEXTWORD();
-    while (pop()) {
-        push(buf);
-        fPARSEWORD();
-        push(buf);
-        fNEXTWORD();
-    }
-    allocFree(buf);
-}
+// ^^^^^ -- NimbleText generated -- ^^^^^
 
 CELL stringToDict(char *s, CELL to) {
     if (to == 0) to = allocSpace(strlen(s)+2);
@@ -415,7 +242,7 @@ CELL stringToDict(char *s, CELL to) {
 void parseLine(char *line) {
     stringToDict(line, sys->TIB);
     push(sys->TIB);
-    fPARSE_LINE();
+    fPARSELINE();
 }
 
 void loadBaseSystem() {
@@ -430,8 +257,9 @@ void loadBaseSystem() {
     parseLine(F(": test-123 71 10 /mod swap . . ;"));
     parseLine(F(": space $20 emit ; : ok space 'o' emit 'k' emit '.' emit space .s cr ;"));
     parseLine(F(": main cr tmp 456 99982 . . test-123 'A' emit $63 1+ . cr ;"));
+    parseLine(F(": hex $10 base ! ; : decimal #10 base ! ;"));
     parseLine(F("cr 'L' emit (last) dup . @ . 33 ok drop 'H' emit (here) dup . @ . ok"));
-    parseLine(F("1 2 3 + + . ok"));
+    parseLine(F("1 2 3 + + . >in dup . @ dup . hex . ok"));
 }
 
 int main() {
