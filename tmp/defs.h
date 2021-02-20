@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DICT_SZ (24*1024)
+#define DICT_SZ (28*1024)
 #define STK_SZ 32
-#define TIB_SZ 0x80
+#define TIB_SZ 0x100
 #define ALLOC_SZ 32
 
 typedef void (*FP)();

@@ -16,6 +16,7 @@ $once
 void loadBaseSystem() {
     parseLine(F("// : ! ;"));
     parseLine(F("// : * ;"));
+    parseLine(F(": CELL 4 ; : ADDR 2 ; : CELLS 4 * ;"));
     parseLine(F(": nip swap drop ;"));
     parseLine(F(": tuck swap over ;"));
     parseLine(F(": 2DROP drop drop ;"));
@@ -88,7 +89,7 @@ void loadBaseSystem() {
     parseLine(F(": SAVE-BUFFERS ;"));
     parseLine(F(": SPACE $20 emit ;"));
     parseLine(F(": SPACES ;"));
-    parseLine(F(": TYPE if- begin >r dup emit 1+ r> 1- while- then 2DROP ;"));
+    parseLine(F(": TYPE if- begin >r dup c@ emit 1+ r> 1- while- then 2DROP ;"));
     parseLine(F(": UPDATE ;"));
     parseLine(F(": # ;"));
     parseLine(F(": #> ;"));
@@ -106,6 +107,7 @@ void loadBaseSystem() {
     parseLine(F("// : BASE ;"));
     parseLine(F(": BLK ;"));
     parseLine(F(": CONVERT ;"));
+    parseLine(F(": HEX $10 base ! ;"));
     parseLine(F(": DECIMAL #10 base ! ;"));
     parseLine(F(": DEFINITIONS ;"));
     parseLine(F("// : FIND ;"));
@@ -113,6 +115,7 @@ void loadBaseSystem() {
     parseLine(F(": FORTH ;"));
     parseLine(F(": FORTH-83 ;"));
     parseLine(F(": here (here) @ ;"));
+    parseLine(F(": last (last) @ ;"));
     parseLine(F(": HOLD ;"));
     parseLine(F(": LOAD ;"));
     parseLine(F(": PAD ;"));
@@ -123,7 +126,7 @@ void loadBaseSystem() {
     parseLine(F(": U. ;"));
     parseLine(F("// : WORD ;"));
     parseLine(F(": +LOOP ;"));
-    parseLine(F(": , ;"));
+    parseLine(F("// : , ;"));
     parseLine(F(": .\" ;"));
     parseLine(F("// : : ;"));
     parseLine(F("// : ; ;"));
@@ -148,9 +151,13 @@ void loadBaseSystem() {
     parseLine(F(": VARIABLE ;"));
     parseLine(F(": VOCABULARY ;"));
     parseLine(F("// : WHILE ;"));
-    parseLine(F(": ['] ;"));
+    parseLine(F(": [ 0 state ! ;"));
+    parseLine(F(": ] 1 state ! ;"));
+    parseLine(F(": ['] [ ' ] ;"));
     parseLine(F(": [COMPILE] ;"));
-    parseLine(F(": ] ;"));
+
+    parseLine(F(": .word ADDR + 1+ COUNT TYPE ;"));
+    parseLine(F(": words last begin dup .word SPACE a@ while- drop ;"));
 
 }
 // ^^^^^ - NimbleText generated - ^^^^^

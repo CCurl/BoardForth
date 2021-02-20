@@ -7,6 +7,7 @@ CELL curFree;
 
 void allocDump() {
     printf("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
+    printf("\n-------------------------------");
     for (int i = 0; i < num_alloced; i++) {
         printf("\n%2d %04lx %4d %s", i, alloced[i].addr, (int)alloced[i].sz, (int)alloced[i].available ? "available" : "in-use");
     }
@@ -23,6 +24,7 @@ void allocFree(CELL addr) {
     int x = allocFind(addr);
     if (x >= 0) {
         alloced[x].available = 1;
+        if ((x+1) == num_alloced) { -- num_alloced; }
     }
 }
 
@@ -195,11 +197,26 @@ void vmInit() {
     sys->TIB = ADDR_ALLOC_BASE+1;
 }
 
+void repl() {
+    char *tib = (char *)&dict[sys->TIB];
+    printf("hello.\n");
+    while (1) {
+        gets(tib);
+        if (strcmp(tib, "bye") == 0) return;
+        push(sys->TIB);
+        fPARSELINE();
+        printf(" ok. "); fDOTS(); printf("\n"); 
+    }
+}
+
 int main() {
+    printf("BoardForth v0.0.1 - Chris Curl\n");
+    printf("Documentation: https://github.com/CCurl/BoardForth \n");
     allocFreeAll();
     vmInit();
     loadBaseSystem();
-    runTests();
+    // runTests();
+    repl();
     FILE *fp = fopen("f.bin","wt");
     if (fp) {
         fprintf(fp, "%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
