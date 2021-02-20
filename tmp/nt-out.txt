@@ -1,0 +1,425 @@
+// vvvvv - NimbleText generated - vvvvv
+#define OP_NOOP         0     // (noop)
+#define OP_CLIT         1     // (cliteral)
+#define OP_WLIT         2     // (wliteral)
+#define OP_LIT          3     // (literal)
+#define OP_CFETCH       4     // (c@)
+#define OP_WFETCH       5     // (w@)
+#define OP_AFETCH       6     // (a@)
+#define OP_FETCH        7     // (@)
+#define OP_CSTORE       8     // (c!)
+#define OP_WSTORE       9     // (w!)
+#define OP_ASTORE       10     // (a!)
+#define OP_STORE        11     // (!)
+#define OP_CCOMMA       12     // (c,)
+#define OP_WCOMMA       13     // (w,)
+#define OP_COMMA        14     // (,)
+#define OP_ACOMMA       15     // (a,)
+#define OP_CALL         16     // (call)
+#define OP_RET          17     // (ret)
+#define OP_JMP          18     // (jmp)
+#define OP_JMPZ         19     // (jmpz)
+#define OP_JMPNZ        20     // (jmpnz)
+#define OP_ONEMINUS     21     // (1-)
+#define OP_ONEPLUS      22     // (1+)
+#define OP_DUP          23     // (dup)
+#define OP_SWAP         24     // (swap)
+#define OP_DROP         25     // (drop)
+#define OP_OVER         26     // (over)
+#define OP_ADD          27     // (+)
+#define OP_SUB          28     // (-)
+#define OP_MULT         29     // (*)
+#define OP_SLMOD        30     // (/mod)
+#define OP_LSHIFT       31     // (<<)
+#define OP_RSHIFT       32     // (>>)
+#define OP_AND          33     // (and)
+#define OP_OR           34     // (or)
+#define OP_XOR          35     // (xor)
+#define OP_NOT          36     // (not)
+#define OP_DTOR         37     // (>r)
+#define OP_RFETCH       38     // (r@)
+#define OP_RTOD         39     // (r>)
+#define OP_EMIT         40     // (emit)
+#define OP_DOT          41     // (.)
+#define OP_DOTS         42     // (.s)
+#define OP_DOTQUOTE     43     // (.\")
+#define OP_PAREN        44     // (()
+#define OP_WDTFEED      45     // (wdtfeed)
+#define OP_BREAK        46     // (brk)
+#define OP_TIB          47     // (tib)
+#define OP_NTIB         48     // (#tib)
+#define OP_TOIN         49     // (>in)
+#define OP_OPENBLOCK    50     // (open-block)
+#define OP_FILECLOSE    51     // (file-close)
+#define OP_FILEREAD     52     // (file-read)
+#define OP_LOAD         53     // (load)
+#define OP_THRU         54     // (thru)
+#define OP_BASE         55     // (base)
+#define OP_STATE        56     // (state)
+#define OP_HERE         57     // ((here))
+#define OP_LAST         58     // ((last))
+#define OP_PARSEWORD    59     // (parse-word)
+#define OP_PARSELINE    60     // (parse-line)
+#define OP_GETXT        61     // (get-xt)
+#define OP_ALIGN2       62     // (align2)
+#define OP_ALIGN4       63     // (align4)
+#define OP_CREATE       64     // (create)
+#define OP_FIND         65     // (find)
+#define OP_NEXTWORD     66     // (next-word)
+#define OP_ISNUMBER     67     // (number?)
+#define OP_BYE          68     // (bye)
+// ^^^^^ - NimbleText generated - ^^^^^
+// vvvvv - NimbleText generated - vvvvv
+FP prims[] = {
+    fNOOP,             // opcode #0
+    fCLIT,             // opcode #1
+    fWLIT,             // opcode #2
+    fLIT,              // opcode #3
+    fCFETCH,           // opcode #4
+    fWFETCH,           // opcode #5
+    fAFETCH,           // opcode #6
+    fFETCH,            // opcode #7
+    fCSTORE,           // opcode #8
+    fWSTORE,           // opcode #9
+    fASTORE,           // opcode #10
+    fSTORE,            // opcode #11
+    fCCOMMA,           // opcode #12
+    fWCOMMA,           // opcode #13
+    fCOMMA,            // opcode #14
+    fACOMMA,           // opcode #15
+    fCALL,             // opcode #16
+    fRET,              // opcode #17
+    fJMP,              // opcode #18
+    fJMPZ,             // opcode #19
+    fJMPNZ,            // opcode #20
+    fONEMINUS,         // opcode #21
+    fONEPLUS,          // opcode #22
+    fDUP,              // opcode #23
+    fSWAP,             // opcode #24
+    fDROP,             // opcode #25
+    fOVER,             // opcode #26
+    fADD,              // opcode #27
+    fSUB,              // opcode #28
+    fMULT,             // opcode #29
+    fSLMOD,            // opcode #30
+    fLSHIFT,           // opcode #31
+    fRSHIFT,           // opcode #32
+    fAND,              // opcode #33
+    fOR,               // opcode #34
+    fXOR,              // opcode #35
+    fNOT,              // opcode #36
+    fDTOR,             // opcode #37
+    fRFETCH,           // opcode #38
+    fRTOD,             // opcode #39
+    fEMIT,             // opcode #40
+    fDOT,              // opcode #41
+    fDOTS,             // opcode #42
+    fDOTQUOTE,         // opcode #43
+    fPAREN,            // opcode #44
+    fWDTFEED,          // opcode #45
+    fBREAK,            // opcode #46
+    fTIB,              // opcode #47
+    fNTIB,             // opcode #48
+    fTOIN,             // opcode #49
+    fOPENBLOCK,        // opcode #50
+    fFILECLOSE,        // opcode #51
+    fFILEREAD,         // opcode #52
+    fLOAD,             // opcode #53
+    fTHRU,             // opcode #54
+    fBASE,             // opcode #55
+    fSTATE,            // opcode #56
+    fHERE,             // opcode #57
+    fLAST,             // opcode #58
+    fPARSEWORD,        // opcode #59
+    fPARSELINE,        // opcode #60
+    fGETXT,            // opcode #61
+    fALIGN2,           // opcode #62
+    fALIGN4,           // opcode #63
+    fCREATE,           // opcode #64
+    fFIND,             // opcode #65
+    fNEXTWORD,         // opcode #66
+    fISNUMBER,         // opcode #67
+    fBYE,              // opcode #68
+    0};
+// ^^^^^ - NimbleText generated - ^^^^^
+// vvvvv - NimbleText generated - vvvvv
+BYTE getOpcode(char *w) {
+    if (strcmp(w, F("noop")) == 0) return OP_NOOP;       //  opcode #0
+    if (strcmp(w, F("cliteral")) == 0) return OP_CLIT;       //  opcode #1
+    if (strcmp(w, F("wliteral")) == 0) return OP_WLIT;       //  opcode #2
+    if (strcmp(w, F("literal")) == 0) return OP_LIT;       //  opcode #3
+    if (strcmp(w, F("c@")) == 0) return OP_CFETCH;       //  opcode #4
+    if (strcmp(w, F("w@")) == 0) return OP_WFETCH;       //  opcode #5
+    if (strcmp(w, F("a@")) == 0) return OP_AFETCH;       //  opcode #6
+    if (strcmp(w, F("@")) == 0) return OP_FETCH;       //  opcode #7
+    if (strcmp(w, F("c!")) == 0) return OP_CSTORE;       //  opcode #8
+    if (strcmp(w, F("w!")) == 0) return OP_WSTORE;       //  opcode #9
+    if (strcmp(w, F("a!")) == 0) return OP_ASTORE;       //  opcode #10
+    if (strcmp(w, F("!")) == 0) return OP_STORE;       //  opcode #11
+    if (strcmp(w, F("c,")) == 0) return OP_CCOMMA;       //  opcode #12
+    if (strcmp(w, F("w,")) == 0) return OP_WCOMMA;       //  opcode #13
+    if (strcmp(w, F(",")) == 0) return OP_COMMA;       //  opcode #14
+    if (strcmp(w, F("a,")) == 0) return OP_ACOMMA;       //  opcode #15
+    if (strcmp(w, F("call")) == 0) return OP_CALL;       //  opcode #16
+    if (strcmp(w, F("ret")) == 0) return OP_RET;       //  opcode #17
+    if (strcmp(w, F("jmp")) == 0) return OP_JMP;       //  opcode #18
+    if (strcmp(w, F("jmpz")) == 0) return OP_JMPZ;       //  opcode #19
+    if (strcmp(w, F("jmpnz")) == 0) return OP_JMPNZ;       //  opcode #20
+    if (strcmp(w, F("1-")) == 0) return OP_ONEMINUS;       //  opcode #21
+    if (strcmp(w, F("1+")) == 0) return OP_ONEPLUS;       //  opcode #22
+    if (strcmp(w, F("dup")) == 0) return OP_DUP;       //  opcode #23
+    if (strcmp(w, F("swap")) == 0) return OP_SWAP;       //  opcode #24
+    if (strcmp(w, F("drop")) == 0) return OP_DROP;       //  opcode #25
+    if (strcmp(w, F("over")) == 0) return OP_OVER;       //  opcode #26
+    if (strcmp(w, F("+")) == 0) return OP_ADD;       //  opcode #27
+    if (strcmp(w, F("-")) == 0) return OP_SUB;       //  opcode #28
+    if (strcmp(w, F("*")) == 0) return OP_MULT;       //  opcode #29
+    if (strcmp(w, F("/mod")) == 0) return OP_SLMOD;       //  opcode #30
+    if (strcmp(w, F("<<")) == 0) return OP_LSHIFT;       //  opcode #31
+    if (strcmp(w, F(">>")) == 0) return OP_RSHIFT;       //  opcode #32
+    if (strcmp(w, F("and")) == 0) return OP_AND;       //  opcode #33
+    if (strcmp(w, F("or")) == 0) return OP_OR;       //  opcode #34
+    if (strcmp(w, F("xor")) == 0) return OP_XOR;       //  opcode #35
+    if (strcmp(w, F("not")) == 0) return OP_NOT;       //  opcode #36
+    if (strcmp(w, F(">r")) == 0) return OP_DTOR;       //  opcode #37
+    if (strcmp(w, F("r@")) == 0) return OP_RFETCH;       //  opcode #38
+    if (strcmp(w, F("r>")) == 0) return OP_RTOD;       //  opcode #39
+    if (strcmp(w, F("emit")) == 0) return OP_EMIT;       //  opcode #40
+    if (strcmp(w, F(".")) == 0) return OP_DOT;       //  opcode #41
+    if (strcmp(w, F(".s")) == 0) return OP_DOTS;       //  opcode #42
+    if (strcmp(w, F(".\"")) == 0) return OP_DOTQUOTE;       //  opcode #43
+    if (strcmp(w, F("(")) == 0) return OP_PAREN;       //  opcode #44
+    if (strcmp(w, F("wdtfeed")) == 0) return OP_WDTFEED;       //  opcode #45
+    if (strcmp(w, F("brk")) == 0) return OP_BREAK;       //  opcode #46
+    if (strcmp(w, F("tib")) == 0) return OP_TIB;       //  opcode #47
+    if (strcmp(w, F("#tib")) == 0) return OP_NTIB;       //  opcode #48
+    if (strcmp(w, F(">in")) == 0) return OP_TOIN;       //  opcode #49
+    if (strcmp(w, F("open-block")) == 0) return OP_OPENBLOCK;       //  opcode #50
+    if (strcmp(w, F("file-close")) == 0) return OP_FILECLOSE;       //  opcode #51
+    if (strcmp(w, F("file-read")) == 0) return OP_FILEREAD;       //  opcode #52
+    if (strcmp(w, F("load")) == 0) return OP_LOAD;       //  opcode #53
+    if (strcmp(w, F("thru")) == 0) return OP_THRU;       //  opcode #54
+    if (strcmp(w, F("base")) == 0) return OP_BASE;       //  opcode #55
+    if (strcmp(w, F("state")) == 0) return OP_STATE;       //  opcode #56
+    if (strcmp(w, F("(here)")) == 0) return OP_HERE;       //  opcode #57
+    if (strcmp(w, F("(last)")) == 0) return OP_LAST;       //  opcode #58
+    if (strcmp(w, F("parse-word")) == 0) return OP_PARSEWORD;       //  opcode #59
+    if (strcmp(w, F("parse-line")) == 0) return OP_PARSELINE;       //  opcode #60
+    if (strcmp(w, F("get-xt")) == 0) return OP_GETXT;       //  opcode #61
+    if (strcmp(w, F("align2")) == 0) return OP_ALIGN2;       //  opcode #62
+    if (strcmp(w, F("align4")) == 0) return OP_ALIGN4;       //  opcode #63
+    if (strcmp(w, F("create")) == 0) return OP_CREATE;       //  opcode #64
+    if (strcmp(w, F("find")) == 0) return OP_FIND;       //  opcode #65
+    if (strcmp(w, F("next-word")) == 0) return OP_NEXTWORD;       //  opcode #66
+    if (strcmp(w, F("number?")) == 0) return OP_ISNUMBER;       //  opcode #67
+    if (strcmp(w, F("bye")) == 0) return OP_BYE;       //  opcode #68
+    return 0xFF;
+}
+// ^^^^^ - NimbleText generated - ^^^^^
+void fNOOP() {         // opcode #0
+    N = N*T; push(T); pop();
+}
+void fCLIT() {         // opcode #1
+    N = N*T; push(T); pop();
+}
+void fWLIT() {         // opcode #2
+    N = N*T; push(T); pop();
+}
+void fLIT() {          // opcode #3
+    N = N*T; push(T); pop();
+}
+void fCFETCH() {       // opcode #4
+    N = N*T; push(T); pop();
+}
+void fWFETCH() {       // opcode #5
+    N = N*T; push(T); pop();
+}
+void fAFETCH() {       // opcode #6
+    N = N*T; push(T); pop();
+}
+void fFETCH() {        // opcode #7
+    N = N*T; push(T); pop();
+}
+void fCSTORE() {       // opcode #8
+    N = N*T; push(T); pop();
+}
+void fWSTORE() {       // opcode #9
+    N = N*T; push(T); pop();
+}
+void fASTORE() {       // opcode #10
+    N = N*T; push(T); pop();
+}
+void fSTORE() {        // opcode #11
+    N = N*T; push(T); pop();
+}
+void fCCOMMA() {       // opcode #12
+    N = N*T; push(T); pop();
+}
+void fWCOMMA() {       // opcode #13
+    N = N*T; push(T); pop();
+}
+void fCOMMA() {        // opcode #14
+    N = N*T; push(T); pop();
+}
+void fACOMMA() {       // opcode #15
+    N = N*T; push(T); pop();
+}
+void fCALL() {         // opcode #16
+    N = N*T; push(T); pop();
+}
+void fRET() {          // opcode #17
+    N = N*T; push(T); pop();
+}
+void fJMP() {          // opcode #18
+    N = N*T; push(T); pop();
+}
+void fJMPZ() {         // opcode #19
+    N = N*T; push(T); pop();
+}
+void fJMPNZ() {        // opcode #20
+    N = N*T; push(T); pop();
+}
+void fONEMINUS() {     // opcode #21
+    N = N*T; push(T); pop();
+}
+void fONEPLUS() {      // opcode #22
+    N = N*T; push(T); pop();
+}
+void fDUP() {          // opcode #23
+    N = N*T; push(T); pop();
+}
+void fSWAP() {         // opcode #24
+    N = N*T; push(T); pop();
+}
+void fDROP() {         // opcode #25
+    N = N*T; push(T); pop();
+}
+void fOVER() {         // opcode #26
+    N = N*T; push(T); pop();
+}
+void fADD() {          // opcode #27
+    N = N*T; push(T); pop();
+}
+void fSUB() {          // opcode #28
+    N = N*T; push(T); pop();
+}
+void fMULT() {         // opcode #29
+    N = N*T; push(T); pop();
+}
+void fSLMOD() {        // opcode #30
+    N = N*T; push(T); pop();
+}
+void fLSHIFT() {       // opcode #31
+    N = N*T; push(T); pop();
+}
+void fRSHIFT() {       // opcode #32
+    N = N*T; push(T); pop();
+}
+void fAND() {          // opcode #33
+    N = N*T; push(T); pop();
+}
+void fOR() {           // opcode #34
+    N = N*T; push(T); pop();
+}
+void fXOR() {          // opcode #35
+    N = N*T; push(T); pop();
+}
+void fNOT() {          // opcode #36
+    N = N*T; push(T); pop();
+}
+void fDTOR() {         // opcode #37
+    N = N*T; push(T); pop();
+}
+void fRFETCH() {       // opcode #38
+    N = N*T; push(T); pop();
+}
+void fRTOD() {         // opcode #39
+    N = N*T; push(T); pop();
+}
+void fEMIT() {         // opcode #40
+    N = N*T; push(T); pop();
+}
+void fDOT() {          // opcode #41
+    N = N*T; push(T); pop();
+}
+void fDOTS() {         // opcode #42
+    N = N*T; push(T); pop();
+}
+void fDOTQUOTE() {     // opcode #43
+    N = N*T; push(T); pop();
+}
+void fPAREN() {        // opcode #44
+    N = N*T; push(T); pop();
+}
+void fWDTFEED() {      // opcode #45
+    N = N*T; push(T); pop();
+}
+void fBREAK() {        // opcode #46
+    N = N*T; push(T); pop();
+}
+void fTIB() {          // opcode #47
+    N = N*T; push(T); pop();
+}
+void fNTIB() {         // opcode #48
+    N = N*T; push(T); pop();
+}
+void fTOIN() {         // opcode #49
+    N = N*T; push(T); pop();
+}
+void fOPENBLOCK() {    // opcode #50
+    N = N*T; push(T); pop();
+}
+void fFILECLOSE() {    // opcode #51
+    N = N*T; push(T); pop();
+}
+void fFILEREAD() {     // opcode #52
+    N = N*T; push(T); pop();
+}
+void fLOAD() {         // opcode #53
+    N = N*T; push(T); pop();
+}
+void fTHRU() {         // opcode #54
+    N = N*T; push(T); pop();
+}
+void fBASE() {         // opcode #55
+    N = N*T; push(T); pop();
+}
+void fSTATE() {        // opcode #56
+    N = N*T; push(T); pop();
+}
+void fHERE() {         // opcode #57
+    N = N*T; push(T); pop();
+}
+void fLAST() {         // opcode #58
+    N = N*T; push(T); pop();
+}
+void fPARSEWORD() {    // opcode #59
+    N = N*T; push(T); pop();
+}
+void fPARSELINE() {    // opcode #60
+    N = N*T; push(T); pop();
+}
+void fGETXT() {        // opcode #61
+    N = N*T; push(T); pop();
+}
+void fALIGN2() {       // opcode #62
+    N = N*T; push(T); pop();
+}
+void fALIGN4() {       // opcode #63
+    N = N*T; push(T); pop();
+}
+void fCREATE() {       // opcode #64
+    N = N*T; push(T); pop();
+}
+void fFIND() {         // opcode #65
+    N = N*T; push(T); pop();
+}
+void fNEXTWORD() {     // opcode #66
+    N = N*T; push(T); pop();
+}
+void fISNUMBER() {     // opcode #67
+    N = N*T; push(T); pop();
+}
+void fBYE() {          // opcode #68
+    N = N*T; push(T); pop();
+}

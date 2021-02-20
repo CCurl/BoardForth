@@ -20,7 +20,7 @@ void run(CELL start, CELL max_cycles) {
             prims[IR]();
             if (IR == OP_BYE) { return; }
         } else {
-            printf("unknown opcode: %d ($%02x)", IR, IR);
+            printf("-%04lx: unknown opcode: %d ($%02x)-", PC-1, IR, IR);
         }
         if (max_cycles) {
             if (--max_cycles < 1) { return; }
@@ -300,10 +300,10 @@ void fSLMOD() {        // opcode #30
     }
 }
 void fLSHIFT() {       // opcode #31
-    N = N << T; pop();
+    T = T << 1;
 }
 void fRSHIFT() {       // opcode #32
-    N = N >> T; pop();
+    T = T >> 1;
 }
 void fAND() {          // opcode #33
     N &= T;
@@ -370,7 +370,7 @@ void fTIB() {          // opcode #47
     push(sys->TIB);
 }
 void fNTIB() {         // opcode #48
-    push(0);
+    N = N*T; push(T); pop();
 }
 void fTOIN() {         // opcode #49
     push(ADDR_TOIN);
@@ -511,6 +511,33 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
+    if (strcmp(w, "variable") == 0) {
+        push(wa);
+        fNEXTWORD();
+        if (pop()) {
+            push(wa);
+            fCREATE();
+            CCOMMA(OP_LIT);
+            COMMA(sys->HERE+CELL_SZ+1);
+            CCOMMA(OP_RET);
+            COMMA(0);
+        }
+        return;
+    }
+
+    if (strcmp(w, "constant") == 0) {
+        push(wa);
+        fNEXTWORD();
+        if (pop()) {
+            push(wa);
+            fCREATE();
+            CCOMMA(OP_LIT);
+            fCOMMA();
+            CCOMMA(OP_RET);
+        }
+        return;
+    }
+
     BYTE op = getOpcode(w);
     if (op < 0xFF) {
         if (sys->STATE == 1) {
@@ -528,9 +555,12 @@ void fPARSEWORD() {    // opcode #59
 void fPARSELINE() {    // opcode #60
     sys->TOIN = pop();
     CELL buf = allocSpace(32);
+    char *w = (char *)&dict[buf];
     push(buf);
     fNEXTWORD();
     while (pop()) {
+        if (strcmp(w, "//") == 0) { break; }
+        if (strcmp(w, "\\") == 0) { break; }
         push(buf);
         fPARSEWORD();
         push(buf);

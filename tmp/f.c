@@ -187,8 +187,8 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("-")) == 0) return OP_SUB;       //  opcode #28
     if (strcmp(w, F("*")) == 0) return OP_MULT;       //  opcode #29
     if (strcmp(w, F("/mod")) == 0) return OP_SLMOD;       //  opcode #30
-    if (strcmp(w, F("<<")) == 0) return OP_LSHIFT;       //  opcode #31
-    if (strcmp(w, F(">>")) == 0) return OP_RSHIFT;       //  opcode #32
+    if (strcmp(w, F("2*")) == 0) return OP_LSHIFT;       //  opcode #31
+    if (strcmp(w, F("2/")) == 0) return OP_RSHIFT;       //  opcode #32
     if (strcmp(w, F("and")) == 0) return OP_AND;       //  opcode #33
     if (strcmp(w, F("or")) == 0) return OP_OR;       //  opcode #34
     if (strcmp(w, F("xor")) == 0) return OP_XOR;       //  opcode #35
@@ -217,7 +217,7 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("(last)")) == 0) return OP_LAST;       //  opcode #58
     if (strcmp(w, F("parse-word")) == 0) return OP_PARSEWORD;       //  opcode #59
     if (strcmp(w, F("parse-line")) == 0) return OP_PARSELINE;       //  opcode #60
-    if (strcmp(w, F("get-xt")) == 0) return OP_GETXT;       //  opcode #61
+    if (strcmp(w, F(">body")) == 0) return OP_GETXT;       //  opcode #61
     if (strcmp(w, F("align2")) == 0) return OP_ALIGN2;       //  opcode #62
     if (strcmp(w, F("align4")) == 0) return OP_ALIGN4;       //  opcode #63
     if (strcmp(w, F("create")) == 0) return OP_CREATE;       //  opcode #64
@@ -247,6 +247,19 @@ void parseLine(char *line) {
     fPARSELINE();
 }
 
+void runTests() {
+    parseLine(F(": ok SPACE 'o' emit 'k' emit SPACE .s CR ;"));
+    parseLine(F("1 2 tuck . . . ok"));
+    parseLine(F("1 2 1 nip . . ok"));
+    parseLine(F("45 10 /mod . . ok"));
+    parseLine(F("45 10 / . ok"));
+    parseLine(F("45 10 mod . ok"));
+    parseLine(F("1 2 3 .s ROT .s ROT .s ROT .s 2DROP drop .s ok"));
+    parseLine(F("222 constant con con . .s ok"));
+    parseLine(F("variable x con 2* x ! x @ . x @ 2/ . .s ok"));
+    
+}
+
 void loadBaseSystem() {
     sys = (SYSVARS_T *)dict;
     sys->HERE = ADDR_HERE_BASE;
@@ -260,9 +273,15 @@ void loadBaseSystem() {
 int main() {
     allocFreeAll();
     loadBaseSystem();
-    for (int i = 0; i < sys->HERE; i++) {
-        if (i % 16 == 0) printf("\n %04x:", i);
-        printf(" %02x", dict[i]);
+    runTests();
+    FILE *fp = fopen("f.bin","wt");
+    if (fp) {
+        fprintf(fp, "%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
+        for (int i = 0; i < sys->HERE; i++) {
+            if (i % 16 == 0) fprintf(fp, "\n %04x:", i);
+            fprintf(fp, " %02x", dict[i]);
+        }
+        fclose(fp);
     }
     allocDump();
     printf("\n");
