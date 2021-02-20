@@ -72,79 +72,89 @@ void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
 
+/* NimbleText script
+$once
 // vvvvv - NimbleText generated - vvvvv
 FP prims[] = {
-    fNOOP,             // opcode #0
-    fCLIT,             // opcode #1
-    fWLIT,             // opcode #2
-    fLIT,              // opcode #3
-    fCFETCH,           // opcode #4
-    fWFETCH,           // opcode #5
-    fAFETCH,           // opcode #6
-    fFETCH,            // opcode #7
-    fCSTORE,           // opcode #8
-    fWSTORE,           // opcode #9
-    fASTORE,           // opcode #10
-    fSTORE,            // opcode #11
-    fCCOMMA,           // opcode #12
-    fWCOMMA,           // opcode #13
-    fCOMMA,            // opcode #14
-    fACOMMA,           // opcode #15
-    fCALL,             // opcode #16
-    fRET,              // opcode #17
-    fJMP,              // opcode #18
-    fJMPZ,             // opcode #19
-    fJMPNZ,            // opcode #20
-    fONEMINUS,         // opcode #21
-    fONEPLUS,          // opcode #22
-    fDUP,              // opcode #23
-    fSWAP,             // opcode #24
-    fDROP,             // opcode #25
-    fOVER,             // opcode #26
-    fADD,              // opcode #27
-    fSUB,              // opcode #28
-    fMULT,             // opcode #29
-    fSLMOD,            // opcode #30
-    fLSHIFT,           // opcode #31
-    fRSHIFT,           // opcode #32
-    fAND,              // opcode #33
-    fOR,               // opcode #34
-    fXOR,              // opcode #35
-    fNOT,              // opcode #36
-    fDTOR,             // opcode #37
-    fRFETCH,           // opcode #38
-    fRTOD,             // opcode #39
-    fEMIT,             // opcode #40
-    fDOT,              // opcode #41
-    fDOTS,             // opcode #42
-    fDOTQUOTE,         // opcode #43
-    fPAREN,            // opcode #44
-    fWDTFEED,          // opcode #45
-    fBREAK,            // opcode #46
-    fTIB,              // opcode #47
-    fNTIB,             // opcode #48
-    fTOIN,             // opcode #49
-    fOPENBLOCK,        // opcode #50
-    fFILECLOSE,        // opcode #51
-    fFILEREAD,         // opcode #52
-    fLOAD,             // opcode #53
-    fTHRU,             // opcode #54
-    fBASE,             // opcode #55
-    fSTATE,            // opcode #56
-    fHERE,             // opcode #57
-    fLAST,             // opcode #58
-    fPARSEWORD,        // opcode #59
-    fPARSELINE,        // opcode #60
-    fGETXT,            // opcode #61
-    fALIGN2,           // opcode #62
-    fALIGN4,           // opcode #63
-    fCREATE,           // opcode #64
-    fFIND,             // opcode #65
-    fNEXTWORD,         // opcode #66
-    fISNUMBER,         // opcode #67
-    fNJMPZ,            // opcode #68
-    fNJMPNZ,           // opcode #69
-    fBYE,              // opcode #70
+$each
+    f<%($0 + ',               ').substring(0,13)%>     // OP_$0 (#$rownum, $1)
+$once
+    0};
+// ^^^^^ - NimbleText generated - ^^^^^
+*/
+// vvvvv - NimbleText generated - vvvvv
+FP prims[] = {
+    fNOOP,             // OP_NOOP (#0, noop)
+    fCLIT,             // OP_CLIT (#1, cliteral)
+    fWLIT,             // OP_WLIT (#2, wliteral)
+    fLIT,              // OP_LIT (#3, literal)
+    fCFETCH,           // OP_CFETCH (#4, c@)
+    fWFETCH,           // OP_WFETCH (#5, w@)
+    fAFETCH,           // OP_AFETCH (#6, a@)
+    fFETCH,            // OP_FETCH (#7, @)
+    fCSTORE,           // OP_CSTORE (#8, c!)
+    fWSTORE,           // OP_WSTORE (#9, w!)
+    fASTORE,           // OP_ASTORE (#10, a!)
+    fSTORE,            // OP_STORE (#11, !)
+    fCCOMMA,           // OP_CCOMMA (#12, c,)
+    fWCOMMA,           // OP_WCOMMA (#13, w,)
+    fCOMMA,            // OP_COMMA (#14, ,)
+    fACOMMA,           // OP_ACOMMA (#15, a,)
+    fCALL,             // OP_CALL (#16, call)
+    fRET,              // OP_RET (#17, ret)
+    fJMP,              // OP_JMP (#18, -n-)
+    fJMPZ,             // OP_JMPZ (#19, -n-)
+    fJMPNZ,            // OP_JMPNZ (#20, -n-)
+    fONEMINUS,         // OP_ONEMINUS (#21, 1-)
+    fONEPLUS,          // OP_ONEPLUS (#22, 1+)
+    fDUP,              // OP_DUP (#23, dup)
+    fSWAP,             // OP_SWAP (#24, swap)
+    fDROP,             // OP_DROP (#25, drop)
+    fOVER,             // OP_OVER (#26, over)
+    fADD,              // OP_ADD (#27, +)
+    fSUB,              // OP_SUB (#28, -)
+    fMULT,             // OP_MULT (#29, *)
+    fSLMOD,            // OP_SLMOD (#30, /mod)
+    fLSHIFT,           // OP_LSHIFT (#31, <<)
+    fRSHIFT,           // OP_RSHIFT (#32, >>)
+    fAND,              // OP_AND (#33, and)
+    fOR,               // OP_OR (#34, or)
+    fXOR,              // OP_XOR (#35, xor)
+    fNOT,              // OP_NOT (#36, not)
+    fDTOR,             // OP_DTOR (#37, >r)
+    fRFETCH,           // OP_RFETCH (#38, r@)
+    fRTOD,             // OP_RTOD (#39, r>)
+    fEMIT,             // OP_EMIT (#40, emit)
+    fDOT,              // OP_DOT (#41, .)
+    fDOTS,             // OP_DOTS (#42, .s)
+    fDOTQUOTE,         // OP_DOTQUOTE (#43, .\")
+    fPAREN,            // OP_PAREN (#44, ()
+    fWDTFEED,          // OP_WDTFEED (#45, wdtfeed)
+    fBREAK,            // OP_BREAK (#46, brk)
+    fTIB,              // OP_TIB (#47, tib)
+    fNTIB,             // OP_NTIB (#48, #tib)
+    fTOIN,             // OP_TOIN (#49, >in)
+    fOPENBLOCK,        // OP_OPENBLOCK (#50, open-block)
+    fFILECLOSE,        // OP_FILECLOSE (#51, file-close)
+    fFILEREAD,         // OP_FILEREAD (#52, file-read)
+    fLOAD,             // OP_LOAD (#53, load)
+    fTHRU,             // OP_THRU (#54, thru)
+    fBASE,             // OP_BASE (#55, base)
+    fSTATE,            // OP_STATE (#56, state)
+    fHERE,             // OP_HERE (#57, (here))
+    fLAST,             // OP_LAST (#58, (last))
+    fPARSEWORD,        // OP_PARSEWORD (#59, parse-word)
+    fPARSELINE,        // OP_PARSELINE (#60, parse-line)
+    fGETXT,            // OP_GETXT (#61, get-xt)
+    fALIGN2,           // OP_ALIGN2 (#62, align2)
+    fALIGN4,           // OP_ALIGN4 (#63, align4)
+    fCREATE,           // OP_CREATE (#64, create)
+    fFIND,             // OP_FIND (#65, find)
+    fNEXTWORD,         // OP_NEXTWORD (#66, next-word)
+    fISNUMBER,         // OP_ISNUMBER (#67, number?)
+    fNJMPZ,            // OP_NJMPZ (#68, -n-)
+    fNJMPNZ,           // OP_NJMPNZ (#69, -n-)
+    fBYE,              // OP_BYE (#70, bye)
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -656,3 +666,15 @@ void fNJMPNZ() {       // opcode #69
 }
 void fBYE() {          // opcode #70
 }
+
+
+/* NimbleText script
+// vvvvv - NimbleText generated - vvvvv
+$each
+// OP_$0 (#$rownum)    : $1 ( TODO -- TODO ) ... ;
+void f<%($0 + '() {               ').substring(0,13)%>
+    // TODO N = N*T; push(T); pop();
+}
+$once
+// ^^^^^ - NimbleText generated - ^^^^^
+*/

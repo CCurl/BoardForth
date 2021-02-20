@@ -13,7 +13,7 @@ $once
 */
 
 // vvvvv - NimbleText generated - vvvvv
-void loadSystem() {
+void loadBaseSystem() {
     parseLine(F("// : ! ;"));
     parseLine(F("// : * ;"));
     parseLine(F(": nip swap drop ;"));
@@ -71,7 +71,8 @@ void loadSystem() {
     parseLine(F("// : R> ;"));
     parseLine(F("// : R@ ;"));
     parseLine(F(": ROLL ;"));
-    parseLine(F(": ROT swap >r swap r> ;"));
+    parseLine(F(": ROT >r swap r> swap ;"));
+    parseLine(F(": -ROT swap >r swap r> ;"));
     parseLine(F("// : SWAP ;"));
     parseLine(F(": U< ;"));
     parseLine(F(": UM* ;"));

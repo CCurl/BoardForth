@@ -1,30 +1,12 @@
+/* NimbleText script
 $once
 // vvvvv - NimbleText generated - vvvvv
 $each
-#define OP_<%($0 + '               ').substring(0,13)%>$rownum     // $1
+#define OP_<%($0 + '               ').substring(0,13)%> $rownum     // $1
+$once
+// ------- NimbleText generated continues
+$each
+void f<%($0 + '();               ').substring(0,13)%>      // OP_$0 (#$1)
 $once
 // ^^^^^ - NimbleText generated - ^^^^^
-// vvvvv - NimbleText generated - vvvvv
-$each
-void f$0();
-$once
-// ^^^^^ - NimbleText generated - ^^^^^
-// vvvvv - NimbleText generated - vvvvv
-FP prims[] = {
-$each
-    f<%($0 + ',               ').substring(0,13)%>     // opcode #$rownum
-$once
-    0};
-// ^^^^^ - NimbleText generated - ^^^^^
-// vvvvv - NimbleText generated - vvvvv
-BYTE getOpcode(char *w) {
-$each
-    if (strcmp(w, F("$1")) == 0) return OP_$0;       //  opcode #$rownum
-$once
-    return 0xFF;
-}
-// ^^^^^ - NimbleText generated - ^^^^^
-$each
-void f<%($0 + '() {               ').substring(0,13)%>    // opcode #$rownum
-    N = N*T; push(T); pop();
-}
+*/

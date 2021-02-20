@@ -16,9 +16,9 @@ COMMA ,
 ACOMMA a,
 CALL call
 RET ret
-JMP jmp
-JMPZ jmpz
-JMPNZ jmpnz
+JMP -n-
+JMPZ -n-
+JMPNZ -n-
 ONEMINUS 1-
 ONEPLUS 1+
 DUP dup
@@ -66,9 +66,6 @@ CREATE create
 FIND find
 NEXTWORD next-word
 ISNUMBER number?
-JMP -n-
-JMPZ -n-
-JMPNZ -n-
 NJMPZ -n-
 NJMPNZ -n-
 BYE bye
