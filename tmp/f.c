@@ -3,7 +3,7 @@
 #pragma region allocation
 ALLOC_T alloced[ALLOC_SZ];
 int num_alloced = 0;
-CELL curFree;
+CELL allocAddrBase = 0, allocCurFree = 0;
 
 void allocDump() {
     printf("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
@@ -29,7 +29,7 @@ void allocFree(CELL addr) {
 }
 
 void allocFreeAll() {
-    curFree = ADDR_ALLOC_BASE;
+    allocCurFree = allocAddrBase;
     for (int i = 0; i < ALLOC_SZ; i++) alloced[i].available = 1;
     num_alloced = 0;
 }
@@ -47,15 +47,15 @@ CELL allocSpace(WORD sz) {
         alloced[x].available = 0;
         return alloced[x].addr;
     }
-    curFree -= (sz);
+    allocCurFree -= (sz);
     if (num_alloced < ALLOC_SZ) {
-        alloced[num_alloced].addr = curFree;
+        alloced[num_alloced].addr = allocCurFree;
         alloced[num_alloced].sz = sz;
         alloced[num_alloced++].available = 0;
     } else {
         printf("-alloc tbl too small-");
     }
-    return curFree;
+    return allocCurFree;
 }
 #pragma endregion
 
@@ -194,7 +194,17 @@ void vmInit() {
     sys->LAST = 0;
     sys->BASE = 10;
     sys->STATE = 0;
-    sys->TIB = ADDR_ALLOC_BASE+1;
+    sys->DSP = 0;
+    sys->RSP = 0;
+    allocAddrBase = DICT_SZ;
+    allocCurFree = DICT_SZ;
+    sys->DSTACK = allocSpace(CELL_SZ*STK_SZ);
+    sys->RSTACK = allocSpace(CELL_SZ*STK_SZ);
+    sys->TIB = allocSpace(TIB_SZ);
+    allocAddrBase = allocCurFree;
+    allocFreeAll();
+    dstk = (CELL *)&dict[sys->DSTACK];
+    rstk = (CELL *)&dict[sys->RSTACK];
 }
 
 void repl() {
@@ -212,7 +222,6 @@ void repl() {
 int main() {
     printf("BoardForth v0.0.1 - Chris Curl\n");
     printf("Source: https://github.com/CCurl/BoardForth \n");
-    allocFreeAll();
     vmInit();
     loadBaseSystem();
     // runTests();

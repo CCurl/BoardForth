@@ -16,8 +16,16 @@ $once
 void loadBaseSystem() {
     parseLine(F("// : ! ;"));
     parseLine(F("// : * ;"));
-    parseLine(F(": CELL 4 ; : ADDR 2 ; : CELLS 4 * ;"));
-    parseLine(F(": nip swap drop ;"));
+    parseLine(F(": TIB   8 @ ;     : >IN   12 ;"));
+    parseLine(F(": (H)  16   ;     : (L)   20 ;"));
+    parseLine(F(": BASE 24   ;     : STATE 28 ; "));
+    parseLine(F(": SP0  32 @ ;     : RP0   36 @ ; "));
+    parseLine(F(": (DSP) 40  ;     : (RSP) 44 ; "));
+    parseLine(F(": DSP (DSP) @ ;   : RSP (RSP) @ ;"));
+    parseLine(F(": !SP 0 (DSP) ! ; : !RSP 0 (RSP) ! ;"));
+    parseLine(F(": HERE (H) @ ;    : LAST (L) @ ;"));
+    parseLine(F(": CELL 4 ;        : ADDR 2 ; "));
+    parseLine(F(": CELLS 4 * ;     : CELL+ 4 + ;"));
     parseLine(F(": nip swap drop ;"));
     parseLine(F(": tuck swap over ;"));
     parseLine(F(": 2DROP drop drop ;"));
@@ -69,7 +77,8 @@ void loadBaseSystem() {
     parseLine(F(": MIN 2DUP < if drop else nip then ;"));
     parseLine(F("// : OR ;"));
     parseLine(F("// : OVER ;"));
-    parseLine(F(": PICK ;"));
+    parseLine(F(": DEPTH DSP 1- ;"));
+    parseLine(F(": PICK DEPTH swap - 1- CELLS SP0 + @ ;"));
     parseLine(F("// : R> ;"));
     parseLine(F("// : R@ ;"));
     parseLine(F(": ROLL ;"));
@@ -108,15 +117,13 @@ void loadBaseSystem() {
     parseLine(F("// : BASE ;"));
     parseLine(F(": BLK ;"));
     parseLine(F(": CONVERT ;"));
-    parseLine(F(": HEX $10 base ! ;"));
-    parseLine(F(": DECIMAL #10 base ! ;"));
+    parseLine(F(": HEX $10 BASE ! ;"));
+    parseLine(F(": DECIMAL #10 BASE ! ;"));
     parseLine(F(": DEFINITIONS ;"));
     parseLine(F("// : FIND ;"));
     parseLine(F(": FORGET ;"));
     parseLine(F(": FORTH ;"));
     parseLine(F(": FORTH-83 ;"));
-    parseLine(F(": here (here) @ ;"));
-    parseLine(F(": last (last) @ ;"));
     parseLine(F(": HOLD ;"));
     parseLine(F(": LOAD ;"));
     parseLine(F(": PAD ;"));
@@ -132,7 +139,7 @@ void loadBaseSystem() {
     parseLine(F("// : : ;"));
     parseLine(F("// : ; ;"));
     parseLine(F(": ABORT\" ;"));
-    parseLine(F(": ALLOT here + (here) ! ;"));
+    parseLine(F(": ALLOT HERE + (H) ! ;"));
     parseLine(F("// : BEGIN ;"));
     parseLine(F(": COMPILE ;"));
     parseLine(F("// : CONSTANT ;"));
@@ -141,22 +148,21 @@ void loadBaseSystem() {
     parseLine(F(": DOES> ;"));
     parseLine(F("// : ELSE ;"));
     parseLine(F("// : IF ;"));
-    parseLine(F(": IMMEDIATE ;"));
+    parseLine(F(": IMMEDIATE 1 LAST ADDR + c! ;"));
     parseLine(F("// : LEAVE ;"));
     parseLine(F(": LITERAL ;"));
     parseLine(F(": LOOP ;"));
     parseLine(F(": REPEAT ;"));
-    parseLine(F("// : STATE ;"));
     parseLine(F("// : THEN ;"));
     parseLine(F("// : UNTIL ;"));
     parseLine(F("// : VARIABLE ;"));
     parseLine(F(": VOCABULARY ;"));
     parseLine(F("// : WHILE ;"));
-    parseLine(F(": [ 0 state ! ;"));
-    parseLine(F(": ] 1 state ! ;"));
-    parseLine(F(": ['] [ ' ] ;"));
+    parseLine(F(": [ 0 STATE ! ; IMMEDIATE"));
+    parseLine(F(": ] 1 STATE ! ;"));
+    parseLine(F(": ['] ' ; IMMEDIATE"));
     parseLine(F(": [COMPILE] ;"));
     parseLine(F(": .word ADDR + 1+ COUNT TYPE ;"));
-    parseLine(F(": words last begin dup .word SPACE a@ while- drop ;"));
+    parseLine(F(": words LAST begin dup .word SPACE a@ while- drop ;"));
 }
 // ^^^^^ - NimbleText generated - ^^^^^

@@ -1,7 +1,7 @@
 #include "defs.h"
 
-CELL dstk[STK_SZ+1]; int DSP = 0;
-CELL rstk[STK_SZ+1]; int RSP = 0;
+CELL *dstk;
+CELL *rstk;
 
 BYTE IR;
 CELL PC;
@@ -14,7 +14,7 @@ void run(CELL start, CELL max_cycles) {
     while (1) {
         BYTE IR = dict[PC++];
         if (IR == OP_RET) {
-            if (RSP < 1) { return; }
+            if (sys->RSP < 1) { return; }
             PC = rpop();
         } else if (IR <= OP_BYE) {
             prims[IR]();
@@ -28,11 +28,11 @@ void run(CELL start, CELL max_cycles) {
     }
 }
 
-void push(CELL v) { DSP = (DSP < STK_SZ) ? DSP+1 : STK_SZ; T = v; }
-CELL pop() { DSP = (DSP > 0) ? DSP-1 : 0; return dstk[DSP+1]; }
+void push(CELL v) { sys->DSP = (sys->DSP < STK_SZ) ? sys->DSP+1 : STK_SZ; T = v; }
+CELL pop() { sys->DSP = (sys->DSP > 0) ? sys->DSP-1 : 0; return dstk[sys->DSP+1]; }
 
-void rpush(CELL v) { RSP = (RSP < STK_SZ) ? RSP+1 : STK_SZ; R = v; }
-CELL rpop() { RSP = (RSP > 0) ? RSP-1 : 0; return rstk[RSP+1]; }
+void rpush(CELL v) { sys->RSP = (sys->RSP < STK_SZ) ? sys->RSP+1 : STK_SZ; R = v; }
+CELL rpop() { sys->RSP = (sys->RSP > 0) ? sys->RSP-1 : 0; return rstk[sys->RSP+1]; }
 
 
 CELL cellAt(CELL loc) {
@@ -353,9 +353,9 @@ void fDOT() {
     }
 }
 void fDOTS() {
-    if (DSP) {
+    if (sys->DSP) {
         push('('); fEMIT();
-        for (int i = 1; i <= DSP; i++) {
+        for (int i = 1; i <= sys->DSP; i++) {
             push(dstk[i]);
             fDOT();
         }

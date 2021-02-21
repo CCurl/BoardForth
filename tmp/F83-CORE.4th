@@ -1,7 +1,15 @@
 // : ! ;
 // : * ;
-: CELL 4 ; : ADDR 2 ; : CELLS 4 * ; : CELL+ 4 + ;
-: nip swap drop ;
+: TIB   8 @ ;     : >IN   12 ;
+: (H)  16 ;       : (L)   20 ;
+: BASE 24 ;       : STATE 28 ; 
+: SP0  32 @ ;     : RP0   36 @ ; 
+: (DSP) 40 ;      : (RSP) 44 ; 
+: DSP (DSP) @ ;   : RSP (RSP) @ ;
+: !SP 0 (DSP) ! ; : !RSP 0 (RSP) ! ;
+: HERE (H) @ ;    : LAST (L) @ ;
+: CELL 4 ;        : ADDR 2 ; 
+: CELLS 4 * ;     : CELL+ 4 + ;
 : nip swap drop ;
 : tuck swap over ;
 : 2DROP drop drop ;
@@ -53,7 +61,8 @@
 : MIN 2DUP < if drop else nip then ;
 // : OR ;
 // : OVER ;
-: PICK ;
+: DEPTH DSP 1- ;
+: PICK DEPTH swap - 1- CELLS SP0 + @ ;
 // : R> ;
 // : R@ ;
 : ROLL ;

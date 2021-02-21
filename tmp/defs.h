@@ -24,10 +24,10 @@ typedef unsigned char  BYTE;
 #define DIGITAL_PIN_BASE 0x10000000
 #define ANALOG_PIN_BASE  0x20000000
 
-#define T dstk[DSP]
-#define N dstk[DSP-1]
-#define R rstk[RSP]
-#define F(s) s
+#define T dstk[sys->DSP]
+#define N dstk[sys->DSP-1]
+#define R rstk[sys->RSP]
+#define F(str) str
 
 typedef struct {
     ADDR prev;
@@ -45,10 +45,10 @@ typedef struct {
     CELL LAST;
     CELL BASE;
     CELL STATE;
-    CELL RESERVED2;
-    CELL RESERVED3;
-    CELL RESERVED4;
-    CELL RESERVED5;
+    CELL DSTACK;
+    CELL RSTACK;
+    CELL DSP;
+    CELL RSP;
 } SYSVARS_T;
 
 typedef struct {
@@ -65,19 +65,18 @@ typedef struct {
 #define ADDR_LAST       (CELL_SZ*5)
 #define ADDR_BASE       (CELL_SZ*6)
 #define ADDR_STATE      (CELL_SZ*7)
-#define ADDR_RES_2      (CELL_SZ*8)
-#define ADDR_RES_3      (CELL_SZ*9)
-#define ADDR_RES_4      (CELL_SZ*10)
-#define ADDR_RES_5      (CELL_SZ*11)
+#define ADDR_DSTK       (CELL_SZ*8)
+#define ADDR_RSTK       (CELL_SZ*9)
+#define ADDR_DSP        (CELL_SZ*10)
+#define ADDR_RSP        (CELL_SZ*11)
 
 #define ADDR_HERE_BASE  (CELL_SZ*12)
-#define ADDR_ALLOC_BASE (DICT_SZ-TIB_SZ-1)
 
 extern BYTE IR;
 extern CELL PC;
 extern int DSP, RSP;
 extern CELL HERE, LAST;
-extern CELL dstk[], rstk[];
+extern CELL *dstk, *rstk;
 extern CELL BASE, STATE;
 extern FP prims[];
 extern BYTE dict[];
