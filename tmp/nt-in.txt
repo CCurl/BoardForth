@@ -45,18 +45,18 @@ DOTQUOTE .\" ( -- )
 PAREN ( ( -- )
 WDTFEED WDTFEED ( -- )
 BREAK BRK ( -- )
-TIB TIB ( -- A )
-NTIB #TIB ( -- N )
-TOIN >IN ( -- A )
+UNUSED1 -n- ( -- )
+UNUSED2 -n- ( -- )
+UNUSED3 -n- ( -- )
 OPENBLOCK OPEN-BLOCK
 FILECLOSE FILE-CLOSE
 FILEREAD FILE-READ
 LOAD LOAD
 THRU THRU
-BASE BASE ( -- A )
-STATE STATE ( -- A )
-HERE (HERE) ( -- N )
-LAST (LAST) ( -- A )
+UNUSED4 -n- ( -- )
+UNUSED5 -n- ( -- )
+UNUSED6 -n- ( -- )
+UNUSED7 -n- ( -- )
 PARSEWORD PARSE-WORD ( A -- )
 PARSELINE PARSE-LINE (A -- )
 GETXT >BODY ( A1 -- A2 )

@@ -73,8 +73,6 @@ void loadBaseSystem() {
     parseLine(F(": I ;"));
     parseLine(F(": J ;"));
     parseLine(F("// : ELSE ;"));
-    parseLine(F(": MAX 2DUP > IF DROP ELSE NIP THEN ;"));
-    parseLine(F(": MIN 2DUP < IF DROP ELSE NIP THEN ;"));
     parseLine(F("// : OR ;"));
     parseLine(F("// : OVER ;"));
     parseLine(F(": DEPTH DSP 1- ;"));
@@ -84,6 +82,9 @@ void loadBaseSystem() {
     parseLine(F(": ROLL ;"));
     parseLine(F(": ROT >R SWAP R> SWAP ;"));
     parseLine(F(": -ROT SWAP >R SWAP R> ;"));
+    parseLine(F(": MIN 2DUP < IF DROP ELSE NIP THEN ;"));
+    parseLine(F(": MAX 2DUP > IF DROP ELSE NIP THEN ;"));
+    parseLine(F(": BETWEEN ROT DUP >R MIN MAX R> = ;"));
     parseLine(F("// : SWAP ;"));
     parseLine(F(": U< ;"));
     parseLine(F(": UM* ;"));
@@ -124,8 +125,6 @@ void loadBaseSystem() {
     parseLine(F(": FORGET ;"));
     parseLine(F(": FORTH ;"));
     parseLine(F(": FORTH-83 ;"));
-    parseLine(F(": HERE (HERE) @ ;"));
-    parseLine(F(": LAST (LAST) @ ;"));
     parseLine(F(": HOLD ;"));
     parseLine(F(": LOAD ;"));
     parseLine(F(": PAD ;"));
@@ -141,7 +140,7 @@ void loadBaseSystem() {
     parseLine(F("// : : ;"));
     parseLine(F("// : ; ;"));
     parseLine(F(": ABORT\" ;"));
-    parseLine(F(": ALLOT HERE + (HERE) ! ;"));
+    parseLine(F(": ALLOT HERE + (H) ! ;"));
     parseLine(F("// : BEGIN ;"));
     parseLine(F(": COMPILE ;"));
     parseLine(F("// : CONSTANT ;"));

@@ -132,18 +132,18 @@ FP prims[] = {
     fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
     fWDTFEED,          // OP_WDTFEED (#45) ***WDTFEED WDTFEED ( -- )***
     fBREAK,            // OP_BREAK (#46) ***BREAK BRK ( -- )***
-    fTIB,              // OP_TIB (#47) ***TIB TIB ( -- A )***
-    fNTIB,             // OP_NTIB (#48) ***NTIB #TIB ( -- N )***
-    fTOIN,             // OP_TOIN (#49) ***TOIN >IN ( -- A )***
+    fNOOP,             // OP_UNUSED1 (#48) ***xxx ( -- )***
+    fNOOP,             // OP_UNUSED1 (#48) ***xxx ( -- )***
+    fNOOP,             // OP_UNUSED1 (#49) ***xxx ( -- )***
     fOPENBLOCK,        // OP_OPENBLOCK (#50) ***OPENBLOCK OPEN-BLOCK***
     fFILECLOSE,        // OP_FILECLOSE (#51) ***FILECLOSE FILE-CLOSE***
     fFILEREAD,         // OP_FILEREAD (#52) ***FILEREAD FILE-READ***
     fLOAD,             // OP_LOAD (#53) ***LOAD LOAD***
     fTHRU,             // OP_THRU (#54) ***THRU THRU***
-    fBASE,             // OP_BASE (#55) ***BASE BASE ( -- A )***
-    fSTATE,            // OP_STATE (#56) ***STATE STATE ( -- A )***
-    fHERE,             // OP_HERE (#57) ***HERE (HERE) ( -- N )***
-    fLAST,             // OP_LAST (#58) ***LAST (LAST) ( -- A )***
+    fNOOP,             // OP_UNUSED1 (#55) ***xxx ( -- )***
+    fNOOP,             // OP_UNUSED1 (#56) ***xxx ( -- )***
+    fNOOP,             // OP_UNUSED1 (#57) ***xxx ( -- )***
+    fNOOP,             // OP_UNUSED2 (#58) ***xxx ( -- )***
     fPARSEWORD,        // OP_PARSEWORD (#59) ***PARSEWORD PARSE-WORD ( A -- )***
     fPARSELINE,        // OP_PARSELINE (#60) ***PARSELINE PARSE-LINE (A -- )***
     fGETXT,            // OP_GETXT (#61) ***GETXT >BODY ( A1 -- A2 )***
@@ -380,14 +380,11 @@ void fWDTFEED() {      // opcode #45
 void fBREAK() {        // opcode #46
     N = N*T; push(T); pop();
 }
-void fTIB() {          // opcode #47
-    push(sys->TIB);
+void fUNUSED1() {          // opcode #47
 }
-void fNTIB() {         // opcode #48
-    N = N*T; push(T); pop();
+void fUNUSED2() {         // opcode #48
 }
-void fTOIN() {         // opcode #49
-    push(ADDR_TOIN);
+void fUNUSED3() {         // opcode #49
 }
 void fOPENBLOCK() {    // opcode #50
     N = N*T; push(T); pop();
@@ -404,17 +401,13 @@ void fLOAD() {         // opcode #53
 void fTHRU() {         // opcode #54
     N = N*T; push(T); pop();
 }
-void fBASE() {         // opcode #55
-    push(ADDR_BASE);
+void fUNUSED4() {         // opcode #55
 }
-void fSTATE() {        // opcode #56
-    push(ADDR_STATE);
+void fUNUSED5() {        // opcode #56
 }
-void fHERE() {         // opcode #57
-    push(ADDR_HERE);
+void fUNUSED6() {         // opcode #57
 }
-void fLAST() {         // opcode #58
-    push(ADDR_LAST);
+void fUNUSED7() {         // opcode #58
 }
 // ( a -- )
 void fPARSEWORD() {    // opcode #59

@@ -57,8 +57,6 @@
 : I ;
 : J ;
 //: ELSE ;
-: MAX 2DUP > IF DROP ELSE NIP THEN ;
-: MIN 2DUP < IF DROP ELSE NIP THEN ;
 // : OR ;
 // : OVER ;
 : DEPTH DSP 1- ;
@@ -68,6 +66,9 @@
 : ROLL ;
 : ROT >R SWAP R> SWAP ;
 : -ROT SWAP >R SWAP R> ;
+: MIN 2DUP < IF DROP ELSE NIP THEN ;
+: MAX 2DUP > IF DROP ELSE NIP THEN ;
+: BETWEEN ROT DUP >R MIN MAX R> = ;
 // : SWAP ;
 : U< ;
 : UM* ;
@@ -108,8 +109,6 @@
 : FORGET ;
 : FORTH ;
 : FORTH-83 ;
-: HERE (HERE) @ ;
-: LAST (LAST) @ ;
 : HOLD ;
 : LOAD ;
 : PAD ;
