@@ -77,87 +77,88 @@ $once
 // vvvvv - NimbleText generated - vvvvv
 FP prims[] = {
 $each
-    f<%($0 + ',               ').substring(0,13)%>     // OP_$0 (#$rownum, $1)
+    f<%($0 + ',               ').substring(0,13)%>     // OP_$0 (#$rownum) ***$row***
 $once
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 */
+
 // vvvvv - NimbleText generated - vvvvv
 FP prims[] = {
-    fNOOP,             // OP_NOOP (#0, noop)
-    fCLIT,             // OP_CLIT (#1, cliteral)
-    fWLIT,             // OP_WLIT (#2, wliteral)
-    fLIT,              // OP_LIT (#3, literal)
-    fCFETCH,           // OP_CFETCH (#4, c@)
-    fWFETCH,           // OP_WFETCH (#5, w@)
-    fAFETCH,           // OP_AFETCH (#6, a@)
-    fFETCH,            // OP_FETCH (#7, @)
-    fCSTORE,           // OP_CSTORE (#8, c!)
-    fWSTORE,           // OP_WSTORE (#9, w!)
-    fASTORE,           // OP_ASTORE (#10, a!)
-    fSTORE,            // OP_STORE (#11, !)
-    fCCOMMA,           // OP_CCOMMA (#12, c,)
-    fWCOMMA,           // OP_WCOMMA (#13, w,)
-    fCOMMA,            // OP_COMMA (#14, ,)
-    fACOMMA,           // OP_ACOMMA (#15, a,)
-    fCALL,             // OP_CALL (#16, call)
-    fRET,              // OP_RET (#17, ret)
-    fJMP,              // OP_JMP (#18, -n-)
-    fJMPZ,             // OP_JMPZ (#19, -n-)
-    fJMPNZ,            // OP_JMPNZ (#20, -n-)
-    fONEMINUS,         // OP_ONEMINUS (#21, 1-)
-    fONEPLUS,          // OP_ONEPLUS (#22, 1+)
-    fDUP,              // OP_DUP (#23, dup)
-    fSWAP,             // OP_SWAP (#24, swap)
-    fDROP,             // OP_DROP (#25, drop)
-    fOVER,             // OP_OVER (#26, over)
-    fADD,              // OP_ADD (#27, +)
-    fSUB,              // OP_SUB (#28, -)
-    fMULT,             // OP_MULT (#29, *)
-    fSLMOD,            // OP_SLMOD (#30, /mod)
-    fLSHIFT,           // OP_LSHIFT (#31, <<)
-    fRSHIFT,           // OP_RSHIFT (#32, >>)
-    fAND,              // OP_AND (#33, and)
-    fOR,               // OP_OR (#34, or)
-    fXOR,              // OP_XOR (#35, xor)
-    fNOT,              // OP_NOT (#36, not)
-    fDTOR,             // OP_DTOR (#37, >r)
-    fRFETCH,           // OP_RFETCH (#38, r@)
-    fRTOD,             // OP_RTOD (#39, r>)
-    fEMIT,             // OP_EMIT (#40, emit)
-    fDOT,              // OP_DOT (#41, .)
-    fDOTS,             // OP_DOTS (#42, .s)
-    fDOTQUOTE,         // OP_DOTQUOTE (#43, .\")
-    fPAREN,            // OP_PAREN (#44, ()
-    fWDTFEED,          // OP_WDTFEED (#45, wdtfeed)
-    fBREAK,            // OP_BREAK (#46, brk)
-    fTIB,              // OP_TIB (#47, tib)
-    fNTIB,             // OP_NTIB (#48, #tib)
-    fTOIN,             // OP_TOIN (#49, >in)
-    fOPENBLOCK,        // OP_OPENBLOCK (#50, open-block)
-    fFILECLOSE,        // OP_FILECLOSE (#51, file-close)
-    fFILEREAD,         // OP_FILEREAD (#52, file-read)
-    fLOAD,             // OP_LOAD (#53, load)
-    fTHRU,             // OP_THRU (#54, thru)
-    fBASE,             // OP_BASE (#55, base)
-    fSTATE,            // OP_STATE (#56, state)
-    fHERE,             // OP_HERE (#57, (here))
-    fLAST,             // OP_LAST (#58, (last))
-    fPARSEWORD,        // OP_PARSEWORD (#59, parse-word)
-    fPARSELINE,        // OP_PARSELINE (#60, parse-line)
-    fGETXT,            // OP_GETXT (#61, get-xt)
-    fALIGN2,           // OP_ALIGN2 (#62, align2)
-    fALIGN4,           // OP_ALIGN4 (#63, align4)
-    fCREATE,           // OP_CREATE (#64, create)
-    fFIND,             // OP_FIND (#65, find)
-    fNEXTWORD,         // OP_NEXTWORD (#66, next-word)
-    fISNUMBER,         // OP_ISNUMBER (#67, number?)
-    fNJMPZ,            // OP_NJMPZ (#68, -n-)
-    fNJMPNZ,           // OP_NJMPNZ (#69, -n-)
-    fLESS,             // OP_LESS (#70, <)
-    fEQUALS,           // OP_EQUALS (#71, =)
-    fGREATER,          // OP_GREATER (#72, >)
-    fBYE,              // OP_BYE (#73, bye)
+    fNOOP,             // OP_NOOP (#0) ***NOOP NOOP***
+    fCLIT,             // OP_CLIT (#1) ***CLIT CLITERAL ( -- N8 )***
+    fWLIT,             // OP_WLIT (#2) ***WLIT WLITERAL ( -- N16 )***
+    fLIT,              // OP_LIT (#3) ***LIT LITERAL ( -- N )***
+    fCFETCH,           // OP_CFETCH (#4) ***CFETCH C@ (A -- N8)***
+    fWFETCH,           // OP_WFETCH (#5) ***WFETCH W@ (A -- N16)***
+    fAFETCH,           // OP_AFETCH (#6) ***AFETCH A@ (A -- N)***
+    fFETCH,            // OP_FETCH (#7) ***FETCH @ (A -- N8)***
+    fCSTORE,           // OP_CSTORE (#8) ***CSTORE C! ( N A -- )***
+    fWSTORE,           // OP_WSTORE (#9) ***WSTORE W! ( N A -- )***
+    fASTORE,           // OP_ASTORE (#10) ***ASTORE A! ( N A -- )***
+    fSTORE,            // OP_STORE (#11) ***STORE ! (  N A -- )***
+    fCCOMMA,           // OP_CCOMMA (#12) ***CCOMMA C, ( N -- )***
+    fWCOMMA,           // OP_WCOMMA (#13) ***WCOMMA W, ( N -- )***
+    fCOMMA,            // OP_COMMA (#14) ***COMMA , ( N -- )***
+    fACOMMA,           // OP_ACOMMA (#15) ***ACOMMA A, ( N -- )***
+    fCALL,             // OP_CALL (#16) ***CALL CALL ( -- )***
+    fRET,              // OP_RET (#17) ***RET RET ( -- )***
+    fJMP,              // OP_JMP (#18) ***JMP -N- ( -- ) ***
+    fJMPZ,             // OP_JMPZ (#19) ***JMPZ -N- ( N -- )***
+    fJMPNZ,            // OP_JMPNZ (#20) ***JMPNZ -N- ( N -- )***
+    fONEMINUS,         // OP_ONEMINUS (#21) ***ONEMINUS 1- ( N -- N-1 )***
+    fONEPLUS,          // OP_ONEPLUS (#22) ***ONEPLUS 1+ ( N -- N+1 )***
+    fDUP,              // OP_DUP (#23) ***DUP DUP ( N -- N N )***
+    fSWAP,             // OP_SWAP (#24) ***SWAP SWAP ( N1 N2 -- N2 N1 )***
+    fDROP,             // OP_DROP (#25) ***DROP DROP (N -- )***
+    fOVER,             // OP_OVER (#26) ***OVER OVER ( N1 N2 -- N1 N2 N1 )***
+    fADD,              // OP_ADD (#27) ***ADD + ( N1 N2 -- N3 )***
+    fSUB,              // OP_SUB (#28) ***SUB - ( N1 N2 -- N3 )***
+    fMULT,             // OP_MULT (#29) ***MULT * ( N1 N2 -- N3 )***
+    fSLMOD,            // OP_SLMOD (#30) ***SLMOD /MOD ( N1 N2 -- N3 N4 )***
+    fLSHIFT,           // OP_LSHIFT (#31) ***LSHIFT << ( N -- N*2 )***
+    fRSHIFT,           // OP_RSHIFT (#32) ***RSHIFT >> ( N -- N/2 )***
+    fAND,              // OP_AND (#33) ***AND AND  ( N1 N2 -- N3 )***
+    fOR,               // OP_OR (#34) ***OR OR ( N1 N2 -- N3 )***
+    fXOR,              // OP_XOR (#35) ***XOR XOR ( N1 N2 -- N3 )***
+    fNOT,              // OP_NOT (#36) ***NOT NOT ( N1 -- N2 )***
+    fDTOR,             // OP_DTOR (#37) ***DTOR >R ( N -- )***
+    fRFETCH,           // OP_RFETCH (#38) ***RFETCH R@ (-- N )***
+    fRTOD,             // OP_RTOD (#39) ***RTOD R> ( -- N )***
+    fEMIT,             // OP_EMIT (#40) ***EMIT EMIT (N -- )***
+    fDOT,              // OP_DOT (#41) ***DOT . (N -- )***
+    fDOTS,             // OP_DOTS (#42) ***DOTS .S ( -- )***
+    fDOTQUOTE,         // OP_DOTQUOTE (#43) ***DOTQUOTE .\" ( -- )***
+    fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
+    fWDTFEED,          // OP_WDTFEED (#45) ***WDTFEED WDTFEED ( -- )***
+    fBREAK,            // OP_BREAK (#46) ***BREAK BRK ( -- )***
+    fTIB,              // OP_TIB (#47) ***TIB TIB ( -- A )***
+    fNTIB,             // OP_NTIB (#48) ***NTIB #TIB ( -- N )***
+    fTOIN,             // OP_TOIN (#49) ***TOIN >IN ( -- A )***
+    fOPENBLOCK,        // OP_OPENBLOCK (#50) ***OPENBLOCK OPEN-BLOCK***
+    fFILECLOSE,        // OP_FILECLOSE (#51) ***FILECLOSE FILE-CLOSE***
+    fFILEREAD,         // OP_FILEREAD (#52) ***FILEREAD FILE-READ***
+    fLOAD,             // OP_LOAD (#53) ***LOAD LOAD***
+    fTHRU,             // OP_THRU (#54) ***THRU THRU***
+    fBASE,             // OP_BASE (#55) ***BASE BASE ( -- A )***
+    fSTATE,            // OP_STATE (#56) ***STATE STATE ( -- A )***
+    fHERE,             // OP_HERE (#57) ***HERE (HERE) ( -- N )***
+    fLAST,             // OP_LAST (#58) ***LAST (LAST) ( -- A )***
+    fPARSEWORD,        // OP_PARSEWORD (#59) ***PARSEWORD PARSE-WORD ( A -- )***
+    fPARSELINE,        // OP_PARSELINE (#60) ***PARSELINE PARSE-LINE (A -- )***
+    fGETXT,            // OP_GETXT (#61) ***GETXT >BODY ( A1 -- A2 )***
+    fALIGN2,           // OP_ALIGN2 (#62) ***ALIGN2 ALIGN2 ( N1 -- N2 )***
+    fALIGN4,           // OP_ALIGN4 (#63) ***ALIGN4 ALIGN4 ( N1 -- N2 )***
+    fCREATE,           // OP_CREATE (#64) ***CREATE CREATE ( A -- )***
+    fFIND,             // OP_FIND (#65) ***FIND FIND ( A1 -- (A1 1)|0 )***
+    fNEXTWORD,         // OP_NEXTWORD (#66) ***NEXTWORD NEXT-WORD ( A -- )***
+    fISNUMBER,         // OP_ISNUMBER (#67) ***ISNUMBER NUMBER? ( A -- (N 1)|0 )***
+    fNJMPZ,            // OP_NJMPZ (#68) ***NJMPZ -N- ( N -- N )***
+    fNJMPNZ,           // OP_NJMPNZ (#69) ***NJMPNZ -N- ( N -- N )***
+    fLESS,             // OP_LESS (#70) ***LESS < ( N1 N2 -- N3 )***
+    fEQUALS,           // OP_EQUALS (#71) ***EQUALS = ( N1 N2 -- N3 )***
+    fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
+    fBYE,              // OP_BYE (#73) ***BYE BYE ( -- )***
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -468,63 +469,74 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "if") == 0) {
+    if (strcmp(w, "IF") == 0) {
         CCOMMA(OP_JMPZ);
         push(sys->HERE);
         ACOMMA(0);
         return;
     }
 
-    if (strcmp(w, "if-") == 0) {
+    if (strcmp(w, "IF-") == 0) {
         CCOMMA(OP_NJMPZ);
         push(sys->HERE);
         ACOMMA(0);
         return;
     }
 
-    if (strcmp(w, "then") == 0) {
+    if (strcmp(w, "ELSE") == 0) {
+        CCOMMA(OP_JMP);
+        push(sys->HERE);
+        fSWAP();
+        ACOMMA(0);
         push(sys->HERE);
         fSWAP();
         fASTORE();
         return;
     }
 
-    if (strcmp(w, "begin") == 0) {
+    if (strcmp(w, "THEN") == 0) {
+        push(sys->HERE);
+        fSWAP();
+        fASTORE();
+        return;
+    }
+
+    if (strcmp(w, "BEGIN") == 0) {
         push(sys->HERE);
         return;
     }
 
-    if (strcmp(w, "again") == 0) {
+    if (strcmp(w, "AGAIN") == 0) {
         CCOMMA(OP_JMP);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "while") == 0) {
+    if (strcmp(w, "WHILE") == 0) {
         CCOMMA(OP_JMPNZ);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "until") == 0) {
+    if (strcmp(w, "UNTIL") == 0) {
         CCOMMA(OP_JMPZ);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "while-") == 0) {
+    if (strcmp(w, "WHILE-") == 0) {
         CCOMMA(OP_NJMPNZ);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "until-") == 0) {
+    if (strcmp(w, "UNTIL-") == 0) {
         CCOMMA(OP_NJMPZ);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "variable") == 0) {
+    if (strcmp(w, "VARIABLE") == 0) {
         push(wa);
         fNEXTWORD();
         if (pop()) {
@@ -538,7 +550,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "constant") == 0) {
+    if (strcmp(w, "CONSTANT") == 0) {
         push(wa);
         fNEXTWORD();
         if (pop()) {
@@ -677,7 +689,7 @@ void fEQUALS() {
 }
 // OP_GREATER (#72)    : > ( TODO -- TODO ) ... ;
 void fGREATER() {  
-    N = (N < T) ? 1 : 0; pop();
+    N = (N > T) ? 1 : 0; pop();
 }
 void fBYE() {          // opcode #70
 }
