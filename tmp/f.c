@@ -199,19 +199,19 @@ void vmInit() {
 
 void repl() {
     char *tib = (char *)&dict[sys->TIB];
-    printf("hello.\n");
+    printf("Hello.");
     while (1) {
+        printf(" ok. "); fDOTS(); printf("\n"); 
         gets(tib);
         if (strcmp(tib, "bye") == 0) return;
         push(sys->TIB);
         fPARSELINE();
-        printf(" ok. "); fDOTS(); printf("\n"); 
     }
 }
 
 int main() {
     printf("BoardForth v0.0.1 - Chris Curl\n");
-    printf("Documentation: https://github.com/CCurl/BoardForth \n");
+    printf("Source: https://github.com/CCurl/BoardForth \n");
     allocFreeAll();
     vmInit();
     loadBaseSystem();

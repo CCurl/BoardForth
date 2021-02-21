@@ -1,6 +1,6 @@
 // : ! ;
 // : * ;
-: CELL 4 ; : ADDR 2 ; : CELLS 4 * ;
+: CELL 4 ; : ADDR 2 ; : CELLS 4 * ; : CELL+ 4 + ;
 : nip swap drop ;
 : nip swap drop ;
 : tuck swap over ;
@@ -14,12 +14,12 @@
 : +! tuck @ + swap ! ;
 // : - ;
 // : /MOD ;
-: < ;
-: = ;
-: > ;
-: NOT ;
+// : < ;
+// : = ;
+// : > ;
+// : NOT ;
 : 0< 0 < ;
-: 0= NOT ;
+: 0= 0 = ;
 : 0> 0 > ;
 // : 1+ ;
 // : 1- ;
@@ -49,8 +49,8 @@
 : I ;
 : J ;
 : else ;
-: MAX over over > if drop else nip then ;
-: MIN over over < if drop else nip then ;
+: MAX 2DUP > if drop else nip then ;
+: MIN 2DUP < if drop else nip then ;
 // : OR ;
 // : OVER ;
 : PICK ;
@@ -73,7 +73,7 @@
 : KEY ;
 : SAVE-BUFFERS ;
 : SPACE $20 emit ;
-: SPACES ;
+: SPACES if- begin SPACE 1- while- then drop ;
 : TYPE if- begin >r dup c@ emit 1+ r> 1- while- then 2DROP ;
 : UPDATE ;
 : # ;
@@ -87,7 +87,7 @@
 : .( ;
 : <# ;
 // : >BODY ;
-: >IN ;
+// : >IN ;
 : ABORT ;
 // : BASE ;
 : BLK ;
@@ -119,7 +119,7 @@
 : ALLOT here + (here) ! ;
 // : BEGIN ;
 : COMPILE ;
-: CONSTANT ;
+// : CONSTANT ;
 // : CREATE ;
 : DO ;
 : DOES> ;
@@ -133,7 +133,7 @@
 // : STATE ;
 // : THEN ;
 // : UNTIL ;
-: VARIABLE ;
+// : VARIABLE ;
 : VOCABULARY ;
 // : WHILE ;
 : [ 0 state ! ;

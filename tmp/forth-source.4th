@@ -8,4 +8,5 @@
 'L' emit (last) dup . @ . ok
 'H' emit (here) dup . @ . ok
 1 2 3 + + . >in    dup . @ . ok
-main
+main words
+bye

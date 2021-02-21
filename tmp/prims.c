@@ -154,7 +154,10 @@ FP prims[] = {
     fISNUMBER,         // OP_ISNUMBER (#67, number?)
     fNJMPZ,            // OP_NJMPZ (#68, -n-)
     fNJMPNZ,           // OP_NJMPNZ (#69, -n-)
-    fBYE,              // OP_BYE (#70, bye)
+    fLESS,             // OP_LESS (#70, <)
+    fEQUALS,           // OP_EQUALS (#71, =)
+    fGREATER,          // OP_GREATER (#72, >)
+    fBYE,              // OP_BYE (#73, bye)
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -664,11 +667,24 @@ void fNJMPNZ() {       // opcode #69
     if (T) PC = addrAt(PC);
     else PC += ADDR_SZ;
 }
+// OP_LESS (#70)    : < ( TODO -- TODO ) ... ;
+void fLESS() {     
+    N = (N < T) ? 1 : 0; pop();
+}
+// OP_EQUALS (#71)    : = ( TODO -- TODO ) ... ;
+void fEQUALS() {   
+    N = (N == T) ? 1 : 0; pop();
+}
+// OP_GREATER (#72)    : > ( TODO -- TODO ) ... ;
+void fGREATER() {  
+    N = (N < T) ? 1 : 0; pop();
+}
 void fBYE() {          // opcode #70
 }
 
 
 /* NimbleText script
+$once
 // vvvvv - NimbleText generated - vvvvv
 $each
 // OP_$0 (#$rownum)    : $1 ( TODO -- TODO ) ... ;
@@ -678,3 +694,5 @@ void f<%($0 + '() {               ').substring(0,13)%>
 $once
 // ^^^^^ - NimbleText generated - ^^^^^
 */
+
+

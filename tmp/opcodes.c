@@ -1,8 +1,8 @@
 #include "defs.h"
 
 /* -- NimbleText script:
-// vvvvv - NimbleText generated - vvvvv
 $once
+// vvvvv - NimbleText generated - vvvvv
 BYTE getOpcode(char *w) {
 $each
     if (strcmp(w, F("$1")) == 0) return OP_$0;       //  opcode #$rownum
@@ -84,7 +84,10 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("number?")) == 0) return OP_ISNUMBER;       //  opcode #67
     // if (strcmp(w, F("-n-")) == 0) return OP_NJMPZ;       //  opcode #68
     // if (strcmp(w, F("-n-")) == 0) return OP_NJMPNZ;       //  opcode #69
-    if (strcmp(w, F("bye")) == 0) return OP_BYE;       //  opcode #70
+    if (strcmp(w, F("<")) == 0) return OP_LESS;       //  opcode #70
+    if (strcmp(w, F("=")) == 0) return OP_EQUALS;       //  opcode #71
+    if (strcmp(w, F(">")) == 0) return OP_GREATER;       //  opcode #72
+    if (strcmp(w, F("bye")) == 0) return OP_BYE;       //  opcode #73
     return 0xFF;
 }
 // ^^^^^ - NimbleText generated - ^^^^^

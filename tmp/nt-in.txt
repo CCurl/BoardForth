@@ -68,4 +68,7 @@ NEXTWORD next-word
 ISNUMBER number?
 NJMPZ -n-
 NJMPNZ -n-
+LESS <
+EQUALS =
+GREATER >
 BYE bye
