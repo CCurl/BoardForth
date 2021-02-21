@@ -45,9 +45,9 @@ DOTQUOTE .\" ( -- )
 PAREN ( ( -- )
 WDTFEED WDTFEED ( -- )
 BREAK BRK ( -- )
-UNUSED1 -n- ( -- )
-UNUSED2 -n- ( -- )
-UNUSED3 -n- ( -- )
+CMOVE CMOVE ( a1 a2 u -- )
+CMOVE2 CMOVE> ( a1 a2 u -- )
+FILL FILL ( a u n -- )
 OPENBLOCK OPEN-BLOCK
 FILECLOSE FILE-CLOSE
 FILEREAD FILE-READ

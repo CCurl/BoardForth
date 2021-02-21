@@ -32,9 +32,9 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("A,")) == 0) return OP_ACOMMA;       //  opcode #15
     if (strcmp(w, F("CALL")) == 0) return OP_CALL;       //  opcode #16
     if (strcmp(w, F("RET")) == 0) return OP_RET;       //  opcode #17
-    if (strcmp(w, F("-N-")) == 0) return OP_JMP;       //  opcode #18
-    if (strcmp(w, F("-N-")) == 0) return OP_JMPZ;       //  opcode #19
-    if (strcmp(w, F("-N-")) == 0) return OP_JMPNZ;       //  opcode #20
+    // if (strcmp(w, F("-N-")) == 0) return OP_JMP;       //  opcode #18
+    // if (strcmp(w, F("-N-")) == 0) return OP_JMPZ;       //  opcode #19
+    // if (strcmp(w, F("-N-")) == 0) return OP_JMPNZ;       //  opcode #20
     if (strcmp(w, F("1-")) == 0) return OP_ONEMINUS;       //  opcode #21
     if (strcmp(w, F("1+")) == 0) return OP_ONEPLUS;       //  opcode #22
     if (strcmp(w, F("DUP")) == 0) return OP_DUP;       //  opcode #23
@@ -61,18 +61,18 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("(")) == 0) return OP_PAREN;       //  opcode #44
     if (strcmp(w, F("WDTFEED")) == 0) return OP_WDTFEED;       //  opcode #45
     if (strcmp(w, F("BRK")) == 0) return OP_BREAK;       //  opcode #46
-    // if (strcmp(w, F("TIB")) == 0) return OP_TIB;       //  opcode #47
-    // if (strcmp(w, F("#TIB")) == 0) return OP_NTIB;       //  opcode #48
-    // if (strcmp(w, F(">IN")) == 0) return OP_TOIN;       //  opcode #49
+    if (strcmp(w, F("CMOVE")) == 0) return OP_CMOVE;       //  opcode #47
+    if (strcmp(w, F("CMOVE>")) == 0) return OP_CMOVE2;       //  opcode #48
+    if (strcmp(w, F("FILL")) == 0) return OP_FILL;       //  opcode #49
     if (strcmp(w, F("OPEN-BLOCK")) == 0) return OP_OPENBLOCK;       //  opcode #50
     if (strcmp(w, F("FILE-CLOSE")) == 0) return OP_FILECLOSE;       //  opcode #51
     if (strcmp(w, F("FILE-READ")) == 0) return OP_FILEREAD;       //  opcode #52
     if (strcmp(w, F("LOAD")) == 0) return OP_LOAD;       //  opcode #53
     if (strcmp(w, F("THRU")) == 0) return OP_THRU;       //  opcode #54
-    // if (strcmp(w, F("BASE")) == 0) return OP_BASE;       //  opcode #55
-    // if (strcmp(w, F("STATE")) == 0) return OP_STATE;       //  opcode #56
-    // if (strcmp(w, F("(HERE)")) == 0) return OP_HERE;       //  opcode #57
-    // if (strcmp(w, F("(LAST)")) == 0) return OP_LAST;       //  opcode #58
+    // if (strcmp(w, F("-n-")) == 0) return OP_UNUSED4;       //  opcode #55
+    // if (strcmp(w, F("-n-")) == 0) return OP_UNUSED5;       //  opcode #56
+    // if (strcmp(w, F("-n-")) == 0) return OP_UNUSED6;       //  opcode #57
+    // if (strcmp(w, F("-n-")) == 0) return OP_UNUSED7;       //  opcode #58
     if (strcmp(w, F("PARSE-WORD")) == 0) return OP_PARSEWORD;       //  opcode #59
     if (strcmp(w, F("PARSE-LINE")) == 0) return OP_PARSELINE;       //  opcode #60
     if (strcmp(w, F(">BODY")) == 0) return OP_GETXT;       //  opcode #61
@@ -87,7 +87,7 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("<")) == 0) return OP_LESS;       //  opcode #70
     if (strcmp(w, F("=")) == 0) return OP_EQUALS;       //  opcode #71
     if (strcmp(w, F(">")) == 0) return OP_GREATER;       //  opcode #72
-    // if (strcmp(w, F("BYE")) == 0) return OP_BYE;       //  opcode #73
+    if (strcmp(w, F("BYE")) == 0) return OP_BYE;       //  opcode #73
     return 0xFF;
 }
 // ^^^^^ - NimbleText generated - ^^^^^

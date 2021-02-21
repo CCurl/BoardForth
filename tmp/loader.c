@@ -58,8 +58,8 @@ void loadBaseSystem() {
     parseLine(F("// : AND ;"));
     parseLine(F("// : C! ;"));
     parseLine(F("// : C@ ;"));
-    parseLine(F(": CMOVE ;"));
-    parseLine(F(": CMOVE> ;"));
+    parseLine(F("// : CMOVE ;"));
+    parseLine(F("// : CMOVE> ;"));
     parseLine(F(": COUNT DUP 1+ SWAP C@ ;"));
     parseLine(F(": D+ ;"));
     parseLine(F(": D< ;"));
@@ -69,7 +69,7 @@ void loadBaseSystem() {
     parseLine(F("// : DUP ;"));
     parseLine(F(": EXECUTE ;"));
     parseLine(F(": EXIT ;"));
-    parseLine(F(": FILL ;"));
+    parseLine(F("// : FILL ;"));
     parseLine(F(": I ;"));
     parseLine(F(": J ;"));
     parseLine(F("// : ELSE ;"));

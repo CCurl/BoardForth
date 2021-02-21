@@ -42,8 +42,8 @@
 // : AND ;
 // : C! ;
 // : C@ ;
-: CMOVE ;
-: CMOVE> ;
+//: CMOVE ;
+//: CMOVE> ;
 : COUNT DUP 1+ SWAP C@ ;
 : D+ ;
 : D< ;
@@ -51,9 +51,9 @@
 : DNEGATE ;
 // : DROP ;
 // : DUP ;
-: EXECUTE ;
+: EXECUTE >R ;
 : EXIT ;
-: FILL ;
+// : FILL ;
 : I ;
 : J ;
 //: ELSE ;
@@ -86,6 +86,7 @@
 : SPACES IF- BEGIN SPACE 1- WHILE- THEN DROP ;
 : TYPE IF- BEGIN >R DUP C@ EMIT 1+ R> 1- WHILE- THEN 2DROP ;
 : UPDATE ;
+: <# ;
 : # ;
 : #> ;
 : #S ;
@@ -95,7 +96,6 @@
 : -TRAILING ;
 // : . ;
 : .( ;
-: <# ;
 // : >BODY ;
 // : >IN ;
 : ABORT ;

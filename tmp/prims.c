@@ -132,18 +132,18 @@ FP prims[] = {
     fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
     fWDTFEED,          // OP_WDTFEED (#45) ***WDTFEED WDTFEED ( -- )***
     fBREAK,            // OP_BREAK (#46) ***BREAK BRK ( -- )***
-    fNOOP,             // OP_UNUSED1 (#48) ***xxx ( -- )***
-    fNOOP,             // OP_UNUSED1 (#48) ***xxx ( -- )***
-    fNOOP,             // OP_UNUSED1 (#49) ***xxx ( -- )***
+    fCMOVE,            // OP_CMOVE (#47) ***CMOVE CMOVE ( a1 a2 u -- )***
+    fCMOVE2,           // OP_CMOVE2 (#48) ***CMOVE2 CMOVE> ( a1 a2 u -- )***
+    fFILL,             // OP_FILL (#49) ***FILL FILL ( a u n -- )***
     fOPENBLOCK,        // OP_OPENBLOCK (#50) ***OPENBLOCK OPEN-BLOCK***
     fFILECLOSE,        // OP_FILECLOSE (#51) ***FILECLOSE FILE-CLOSE***
     fFILEREAD,         // OP_FILEREAD (#52) ***FILEREAD FILE-READ***
     fLOAD,             // OP_LOAD (#53) ***LOAD LOAD***
     fTHRU,             // OP_THRU (#54) ***THRU THRU***
-    fNOOP,             // OP_UNUSED1 (#55) ***xxx ( -- )***
-    fNOOP,             // OP_UNUSED1 (#56) ***xxx ( -- )***
-    fNOOP,             // OP_UNUSED1 (#57) ***xxx ( -- )***
-    fNOOP,             // OP_UNUSED2 (#58) ***xxx ( -- )***
+    fUNUSED4,          // OP_UNUSED4 (#55) ***UNUSED4 -n- ( -- )***
+    fUNUSED5,          // OP_UNUSED5 (#56) ***UNUSED5 -n- ( -- )***
+    fUNUSED6,          // OP_UNUSED6 (#57) ***UNUSED6 -n- ( -- )***
+    fUNUSED7,          // OP_UNUSED7 (#58) ***UNUSED7 -n- ( -- )***
     fPARSEWORD,        // OP_PARSEWORD (#59) ***PARSEWORD PARSE-WORD ( A -- )***
     fPARSELINE,        // OP_PARSELINE (#60) ***PARSELINE PARSE-LINE (A -- )***
     fGETXT,            // OP_GETXT (#61) ***GETXT >BODY ( A1 -- A2 )***
@@ -380,11 +380,39 @@ void fWDTFEED() {      // opcode #45
 void fBREAK() {        // opcode #46
     N = N*T; push(T); pop();
 }
-void fUNUSED1() {          // opcode #47
+// OP_CMOVE (#47)    : CMOVE ( TODO -- TODO ) ... ;
+void fCMOVE() {    
+    CELL num = pop();
+    CELL to = pop();
+    CELL from = pop();
+    while (num > 0) {
+        dict[to++] = dict[from++];
+        num--;
+    }
 }
-void fUNUSED2() {         // opcode #48
+// OP_CMOVE2 (#48)    : CMOVE> ( TODO -- TODO ) ... ;
+void fCMOVE2() {   
+    CELL num = pop();
+    CELL to = pop();
+    CELL from = pop();
+
+    to += (num-1);
+    from += (num-1);
+
+    while (num > 0) {
+        dict[to--] = dict[from--];
+        num--;
+    }
 }
-void fUNUSED3() {         // opcode #49
+// OP_FILL (#49)    : FILL ( TODO -- TODO ) ... ;
+void fFILL() {    
+    CELL val = pop();
+    CELL num = pop();
+    CELL to = pop();
+    while (num > 0) {
+        dict[to++] = val;
+        num--;
+    }
 }
 void fOPENBLOCK() {    // opcode #50
     N = N*T; push(T); pop();

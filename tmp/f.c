@@ -235,6 +235,6 @@ int main() {
         }
         fclose(fp);
     }
-    allocDump();
-    printf("\n");
+    // allocDump();
+    // printf("\n");
 }
