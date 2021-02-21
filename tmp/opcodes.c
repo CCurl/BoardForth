@@ -31,7 +31,7 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F(",")) == 0) return OP_COMMA;       //  opcode #14
     if (strcmp(w, F("A,")) == 0) return OP_ACOMMA;       //  opcode #15
     if (strcmp(w, F("CALL")) == 0) return OP_CALL;       //  opcode #16
-    if (strcmp(w, F("RET")) == 0) return OP_RET;       //  opcode #17
+    if (strcmp(w, F("EXIT")) == 0) return OP_RET;       //  opcode #17
     // if (strcmp(w, F("-N-")) == 0) return OP_JMP;       //  opcode #18
     // if (strcmp(w, F("-N-")) == 0) return OP_JMPZ;       //  opcode #19
     // if (strcmp(w, F("-N-")) == 0) return OP_JMPNZ;       //  opcode #20
