@@ -1,64 +1,5 @@
 #include "defs.h"
 
-#pragma region allocation
-ALLOC_T alloced[ALLOC_SZ];
-int num_alloced = 0;
-CELL allocAddrBase = 0, allocCurFree = 0;
-
-void allocDump() {
-    printf("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
-    printf("\n-------------------------------");
-    for (int i = 0; i < num_alloced; i++) {
-        printf("\n%2d %04lx %4d %s", i, alloced[i].addr, (int)alloced[i].sz, (int)alloced[i].available ? "available" : "in-use");
-    }
-}
-
-int allocFind(CELL addr) {
-    for (int i = 0; i < num_alloced; i++) {
-        if (alloced[i].addr == addr) return i;
-    }
-    return -1;
-}
-
-void allocFree(CELL addr) {
-    int x = allocFind(addr);
-    if (x >= 0) {
-        alloced[x].available = 1;
-        if ((x+1) == num_alloced) { -- num_alloced; }
-    }
-}
-
-void allocFreeAll() {
-    allocCurFree = allocAddrBase;
-    for (int i = 0; i < ALLOC_SZ; i++) alloced[i].available = 1;
-    num_alloced = 0;
-}
-
-int allocFindAvailable(WORD sz) {
-    for (int i = 0; i < num_alloced; i++) {
-        if ((alloced[i].available) && (alloced[i].sz >= sz)) return i;
-    }
-    return -1;
-}
-
-CELL allocSpace(WORD sz) {
-    int x = allocFindAvailable(sz);
-    if (x >= 0) {
-        alloced[x].available = 0;
-        return alloced[x].addr;
-    }
-    allocCurFree -= (sz);
-    if (num_alloced < ALLOC_SZ) {
-        alloced[num_alloced].addr = allocCurFree;
-        alloced[num_alloced].sz = sz;
-        alloced[num_alloced++].available = 0;
-    } else {
-        printf("-alloc tbl too small-");
-    }
-    return allocCurFree;
-}
-#pragma endregion
-
 void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
 void WCOMMA(WORD v) { push(v); fWCOMMA(); }
 void COMMA(CELL v)  { push(v); fCOMMA();  }
@@ -188,30 +129,12 @@ void runTests() {
     parseLine(F(": bm 's' emit begin 1- while- drop 'e' emit ; 100 mil bm ok"));
 }
 
-void vmInit() {
-    sys = (SYSVARS_T *)dict;
-    sys->HERE = ADDR_HERE_BASE;
-    sys->LAST = 0;
-    sys->BASE = 10;
-    sys->STATE = 0;
-    sys->DSP = 0;
-    sys->RSP = 0;
-    allocAddrBase = DICT_SZ;
-    allocCurFree = DICT_SZ;
-    sys->DSTACK = allocSpace(CELL_SZ*STK_SZ);
-    sys->RSTACK = allocSpace(CELL_SZ*STK_SZ);
-    sys->TIB = allocSpace(TIB_SZ);
-    allocAddrBase = allocCurFree;
-    allocFreeAll();
-    dstk = (CELL *)&dict[sys->DSTACK];
-    rstk = (CELL *)&dict[sys->RSTACK];
-}
 
 void repl() {
     char *tib = (char *)&dict[sys->TIB];
-    printf("Hello.");
+    printStringF("Hello.");
     while (1) {
-        printf(" ok. "); fDOTS(); printf("\n"); 
+        printString(" ok. "); fDOTS(); printString("\n"); 
         gets(tib);
         if (strcmp(tib, "bye") == 0) return;
         push(sys->TIB);
@@ -219,9 +142,10 @@ void repl() {
     }
 }
 
+#ifndef __DEV_DOARD__
 int main() {
-    printf("BoardForth v0.0.1 - Chris Curl\n");
-    printf("Source: https://github.com/CCurl/BoardForth \n");
+    printString("BoardForth v0.0.1 - Chris Curl\n");
+    printString("Source: https://github.com/CCurl/BoardForth \n");
     vmInit();
     loadBaseSystem();
     // runTests();
@@ -236,5 +160,6 @@ int main() {
         fclose(fp);
     }
     // allocDump();
-    // printf("\n");
+    // printStringF("\n");
 }
+#endif

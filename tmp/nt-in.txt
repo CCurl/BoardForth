@@ -53,9 +53,9 @@ FILECLOSE FILE-CLOSE
 FILEREAD FILE-READ
 LOAD LOAD
 THRU THRU
-UNUSED4 -n- ( -- )
-UNUSED5 -n- ( -- )
-UNUSED6 -n- ( -- )
+DO DO ( f t -- )
+LOOP LOOP ( -- )
+LOOPP LOOP+  ( n -- )
 UNUSED7 -n- ( -- )
 PARSEWORD PARSE-WORD ( A -- )
 PARSELINE PARSE-LINE (A -- )
@@ -71,4 +71,6 @@ NJMPNZ -N- ( N -- N )
 LESS < ( N1 N2 -- N3 )
 EQUALS = ( N1 N2 -- N3 )
 GREATER > ( N1 N2 -- N3 )
+I I ( -- n )
+J J ( -- n )
 BYE BYE ( -- )

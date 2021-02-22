@@ -71,8 +71,8 @@ void loadBaseSystem() {
     parseLine(F(": EXECUTE ;"));
     parseLine(F("// : EXIT ; IMMEDIATE"));
     parseLine(F("// : FILL ;"));
-    parseLine(F(": I ;"));
-    parseLine(F(": J ;"));
+    parseLine(F("// : I ;"));
+    parseLine(F("// : J ;"));
     parseLine(F("// : ELSE ;"));
     parseLine(F("// : OR ;"));
     parseLine(F("// : OVER ;"));
@@ -135,7 +135,7 @@ void loadBaseSystem() {
     parseLine(F("// : TIB ;"));
     parseLine(F(": U. ;"));
     parseLine(F("// : WORD ;"));
-    parseLine(F(": +LOOP ;"));
+    parseLine(F("// : +LOOP ;"));
     parseLine(F("// : , ;"));
     parseLine(F(": .\" ;"));
     parseLine(F("// : : ;"));
@@ -146,13 +146,13 @@ void loadBaseSystem() {
     parseLine(F(": COMPILE ;"));
     parseLine(F("// : CONSTANT ;"));
     parseLine(F("// : CREATE ;"));
-    parseLine(F(": DO ;"));
+    parseLine(F("// : DO ;"));
     parseLine(F(": DOES> ;"));
     parseLine(F("// : ELSE ;"));
     parseLine(F("// : IF ;"));
     parseLine(F("// : LEAVE ;"));
     parseLine(F(": LITERAL ;"));
-    parseLine(F(": LOOP ;"));
+    parseLine(F("// : LOOP ;"));
     parseLine(F(": REPEAT ;"));
     parseLine(F("// : STATE ;"));
     parseLine(F("// : THEN ;"));

@@ -5,10 +5,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __DEV_BOARD__
+#define DICT_SZ (8*1024)
+#define STK_SZ 32
+#define TIB_SZ 0x100
+#define ALLOC_SZ 32
+#else
 #define DICT_SZ (28*1024)
 #define STK_SZ 32
 #define TIB_SZ 0x100
 #define ALLOC_SZ 32
+#define F(str)  str
+#endif
 
 typedef void (*FP)();
 typedef long  CELL;
@@ -82,7 +90,11 @@ extern FP prims[];
 extern BYTE dict[];
 extern SYSVARS_T *sys;
 extern CELL toIn;
+extern CELL allocAddrBase;
+extern CELL allocCurFree;
+extern CELL loopDepth;
 
+void vmInit();
 void push(CELL);
 CELL pop();
 void rpush(CELL);
@@ -105,7 +117,11 @@ void ACOMMA(ADDR v);
 void parseLine(char *);
 void loadBaseSystem();
 BYTE getOpcode(char *w);
+void allocFreeAll();
+void printString(const char *str);
+void printStringF(const char *fmt, ...);
 
+// ---------------------------------------------------------------------
 /* NimbleText script for below (https://nimbletext.com/Live)
 $once
 // vvvvv - NimbleText generated - vvvvv
@@ -137,7 +153,7 @@ $once
 #define OP_COMMA         14     // ,
 #define OP_ACOMMA        15     // A,
 #define OP_CALL          16     // CALL
-#define OP_RET           17     // RET
+#define OP_RET           17     // EXIT
 #define OP_JMP           18     // -N-
 #define OP_JMPZ          19     // -N-
 #define OP_JMPNZ         20     // -N-
@@ -169,15 +185,15 @@ $once
 #define OP_BREAK         46     // BRK
 #define OP_CMOVE         47     // CMOVE
 #define OP_CMOVE2        48     // CMOVE>
-#define OP_FILL          49     // -n-
+#define OP_FILL          49     // FILL
 #define OP_OPENBLOCK     50     // OPEN-BLOCK
 #define OP_FILECLOSE     51     // FILE-CLOSE
 #define OP_FILEREAD      52     // FILE-READ
 #define OP_LOAD          53     // LOAD
 #define OP_THRU          54     // THRU
-#define OP_UNUSED4       55     // -n-
-#define OP_UNUSED5       56     // -n-
-#define OP_UNUSED6       57     // -n-
+#define OP_DO            55     // DO
+#define OP_LOOP          56     // LOOP
+#define OP_LOOPP         57     // LOOP+
 #define OP_UNUSED7       58     // -n-
 #define OP_PARSEWORD     59     // PARSE-WORD
 #define OP_PARSELINE     60     // PARSE-LINE
@@ -193,7 +209,9 @@ $once
 #define OP_LESS          70     // <
 #define OP_EQUALS        71     // =
 #define OP_GREATER       72     // >
-#define OP_BYE           73     // BYE
+#define OP_I             73     // I
+#define OP_J             74     // J
+#define OP_BYE           75     // BYE
 // ------- NimbleText generated continues
 void fNOOP();            // OP_NOOP
 void fCLIT();            // OP_CLIT
@@ -250,9 +268,9 @@ void fFILECLOSE();       // OP_FILECLOSE
 void fFILEREAD();        // OP_FILEREAD
 void fLOAD();            // OP_LOAD
 void fTHRU();            // OP_THRU
-void fUNUSED4();         // OP_UNUSED4
-void fUNUSED5();         // OP_UNUSED5
-void fUNUSED6();         // OP_UNUSED6
+void fDO();              // OP_DO
+void fLOOP();            // OP_LOOP
+void fLOOPP();           // OP_LOOPP
 void fUNUSED7();         // OP_UNUSED7
 void fPARSEWORD();       // OP_PARSEWORD
 void fPARSELINE();       // OP_PARSELINE
@@ -268,6 +286,8 @@ void fNJMPNZ();          // OP_NJMPNZ
 void fLESS();            // OP_LESS
 void fEQUALS();          // OP_EQUALS
 void fGREATER();         // OP_GREATER
+void fI();               // OP_I
+void fJ();               // OP_J
 void fBYE();             // OP_BYE
 // ^^^^^ - NimbleText generated - ^^^^^
 

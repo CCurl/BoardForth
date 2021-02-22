@@ -32,9 +32,9 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("A,")) == 0) return OP_ACOMMA;       //  opcode #15
     if (strcmp(w, F("CALL")) == 0) return OP_CALL;       //  opcode #16
     if (strcmp(w, F("EXIT")) == 0) return OP_RET;       //  opcode #17
-    // if (strcmp(w, F("-N-")) == 0) return OP_JMP;       //  opcode #18
-    // if (strcmp(w, F("-N-")) == 0) return OP_JMPZ;       //  opcode #19
-    // if (strcmp(w, F("-N-")) == 0) return OP_JMPNZ;       //  opcode #20
+    if (strcmp(w, F("-N-")) == 0) return OP_JMP;       //  opcode #18
+    if (strcmp(w, F("-N-")) == 0) return OP_JMPZ;       //  opcode #19
+    if (strcmp(w, F("-N-")) == 0) return OP_JMPNZ;       //  opcode #20
     if (strcmp(w, F("1-")) == 0) return OP_ONEMINUS;       //  opcode #21
     if (strcmp(w, F("1+")) == 0) return OP_ONEPLUS;       //  opcode #22
     if (strcmp(w, F("DUP")) == 0) return OP_DUP;       //  opcode #23
@@ -69,10 +69,10 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("FILE-READ")) == 0) return OP_FILEREAD;       //  opcode #52
     if (strcmp(w, F("LOAD")) == 0) return OP_LOAD;       //  opcode #53
     if (strcmp(w, F("THRU")) == 0) return OP_THRU;       //  opcode #54
-    // if (strcmp(w, F("-n-")) == 0) return OP_UNUSED4;       //  opcode #55
-    // if (strcmp(w, F("-n-")) == 0) return OP_UNUSED5;       //  opcode #56
-    // if (strcmp(w, F("-n-")) == 0) return OP_UNUSED6;       //  opcode #57
-    // if (strcmp(w, F("-n-")) == 0) return OP_UNUSED7;       //  opcode #58
+    if (strcmp(w, F("DO")) == 0) return OP_DO;       //  opcode #55
+    if (strcmp(w, F("LOOP")) == 0) return OP_LOOP;       //  opcode #56
+    if (strcmp(w, F("LOOP+")) == 0) return OP_LOOPP;       //  opcode #57
+    if (strcmp(w, F("-n-")) == 0) return OP_UNUSED7;       //  opcode #58
     if (strcmp(w, F("PARSE-WORD")) == 0) return OP_PARSEWORD;       //  opcode #59
     if (strcmp(w, F("PARSE-LINE")) == 0) return OP_PARSELINE;       //  opcode #60
     if (strcmp(w, F(">BODY")) == 0) return OP_GETXT;       //  opcode #61
@@ -82,12 +82,14 @@ BYTE getOpcode(char *w) {
     if (strcmp(w, F("FIND")) == 0) return OP_FIND;       //  opcode #65
     if (strcmp(w, F("NEXT-WORD")) == 0) return OP_NEXTWORD;       //  opcode #66
     if (strcmp(w, F("NUMBER?")) == 0) return OP_ISNUMBER;       //  opcode #67
-    // if (strcmp(w, F("-N-")) == 0) return OP_NJMPZ;       //  opcode #68
-    // if (strcmp(w, F("-N-")) == 0) return OP_NJMPNZ;       //  opcode #69
+    if (strcmp(w, F("-N-")) == 0) return OP_NJMPZ;       //  opcode #68
+    if (strcmp(w, F("-N-")) == 0) return OP_NJMPNZ;       //  opcode #69
     if (strcmp(w, F("<")) == 0) return OP_LESS;       //  opcode #70
     if (strcmp(w, F("=")) == 0) return OP_EQUALS;       //  opcode #71
     if (strcmp(w, F(">")) == 0) return OP_GREATER;       //  opcode #72
-    if (strcmp(w, F("BYE")) == 0) return OP_BYE;       //  opcode #73
+    if (strcmp(w, F("I")) == 0) return OP_I;       //  opcode #73
+    if (strcmp(w, F("J")) == 0) return OP_J;       //  opcode #74
+    if (strcmp(w, F("BYE")) == 0) return OP_BYE;       //  opcode #75
     return 0xFF;
 }
 // ^^^^^ - NimbleText generated - ^^^^^

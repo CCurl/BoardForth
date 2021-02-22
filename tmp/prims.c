@@ -1,4 +1,5 @@
 #include "defs.h"
+#include <stdarg.h>
 
 CELL *dstk;
 CELL *rstk;
@@ -7,10 +8,15 @@ BYTE IR;
 CELL PC;
 BYTE dict[DICT_SZ];
 SYSVARS_T *sys;
+CELL loopSTK[12];
+CELL loopDepth;
+ALLOC_T alloced[ALLOC_SZ];
+int num_alloced = 0;
+CELL allocAddrBase = 0, allocCurFree = 0;
 
 void run(CELL start, CELL max_cycles) {
     PC = start;
-    // printf("\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
+    // printStringF("\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
     while (1) {
         BYTE IR = dict[PC++];
         if (IR == OP_RET) {
@@ -20,7 +26,7 @@ void run(CELL start, CELL max_cycles) {
             prims[IR]();
             if (IR == OP_BYE) { return; }
         } else {
-            printf("-%04lx: unknown opcode: %d ($%02x)-", PC-1, IR, IR);
+            printStringF("-%04lx: unknown opcode: %d ($%02x)-", PC-1, IR, IR);
         }
         if (max_cycles) {
             if (--max_cycles < 1) { return; }
@@ -34,6 +40,46 @@ CELL pop() { sys->DSP = (sys->DSP > 0) ? sys->DSP-1 : 0; return dstk[sys->DSP+1]
 void rpush(CELL v) { sys->RSP = (sys->RSP < STK_SZ) ? sys->RSP+1 : STK_SZ; R = v; }
 CELL rpop() { sys->RSP = (sys->RSP > 0) ? sys->RSP-1 : 0; return rstk[sys->RSP+1]; }
 
+void vmInit() {
+    sys = (SYSVARS_T *)dict;
+    sys->HERE = ADDR_HERE_BASE;
+    sys->LAST = 0;
+    sys->BASE = 10;
+    sys->STATE = 0;
+    sys->DSP = 0;
+    sys->RSP = 0;
+    allocAddrBase = DICT_SZ;
+    allocCurFree = DICT_SZ;
+    sys->DSTACK = allocSpace(CELL_SZ*STK_SZ);
+    sys->RSTACK = allocSpace(CELL_SZ*STK_SZ);
+    sys->TIB = allocSpace(TIB_SZ);
+    allocAddrBase = allocCurFree;
+    allocFreeAll();
+    dstk = (CELL *)&dict[sys->DSTACK];
+    rstk = (CELL *)&dict[sys->RSTACK];
+    loopDepth = 0;
+}
+
+// ---------------------------------------------------------------------
+void printString(const char *str)
+{
+#ifdef __DEV_BOARD__
+    Serial.print(str);
+#else
+    printf("%s", str);
+#endif
+}
+
+// ---------------------------------------------------------------------
+void printStringF(const char *fmt, ...)
+{
+    char buf[64];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    printString(buf);
+}
 
 CELL cellAt(CELL loc) {
     CELL x = dict[loc++];
@@ -54,7 +100,7 @@ CELL addrAt(CELL loc) {         // opcode #16
 }
 
 void wordStore(CELL addr, CELL val) {
-    // printf("-w! %ld to [%ld]-", val, addr);
+    // printStringF("-w! %ld to [%ld]-", val, addr);
     if ((0 <= addr) && ((addr+2) < DICT_SZ)) {
         dict[addr++] = (val & 0xFF);
         dict[addr++] = (val >>  8) & 0xFF;
@@ -71,6 +117,61 @@ void cellStore(CELL addr, CELL val) {
 void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
+
+#pragma region allocation
+void allocDump() {
+    printStringF("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
+    printStringF("\n-------------------------------");
+    for (int i = 0; i < num_alloced; i++) {
+        printStringF("\n%2d %04lx %4d %s", i, alloced[i].addr, (int)alloced[i].sz, (int)alloced[i].available ? "available" : "in-use");
+    }
+}
+
+int allocFind(CELL addr) {
+    for (int i = 0; i < num_alloced; i++) {
+        if (alloced[i].addr == addr) return i;
+    }
+    return -1;
+}
+
+void allocFree(CELL addr) {
+    int x = allocFind(addr);
+    if (x >= 0) {
+        alloced[x].available = 1;
+        if ((x+1) == num_alloced) { -- num_alloced; }
+    }
+}
+
+void allocFreeAll() {
+    allocCurFree = allocAddrBase;
+    for (int i = 0; i < ALLOC_SZ; i++) alloced[i].available = 1;
+    num_alloced = 0;
+}
+
+int allocFindAvailable(WORD sz) {
+    for (int i = 0; i < num_alloced; i++) {
+        if ((alloced[i].available) && (alloced[i].sz >= sz)) return i;
+    }
+    return -1;
+}
+
+CELL allocSpace(WORD sz) {
+    int x = allocFindAvailable(sz);
+    if (x >= 0) {
+        alloced[x].available = 0;
+        return alloced[x].addr;
+    }
+    allocCurFree -= (sz);
+    if (num_alloced < ALLOC_SZ) {
+        alloced[num_alloced].addr = allocCurFree;
+        alloced[num_alloced].sz = sz;
+        alloced[num_alloced++].available = 0;
+    } else {
+        printStringF("-alloc tbl too small-");
+    }
+    return allocCurFree;
+}
+#pragma endregion
 
 /* NimbleText script
 $once
@@ -102,7 +203,7 @@ FP prims[] = {
     fCOMMA,            // OP_COMMA (#14) ***COMMA , ( N -- )***
     fACOMMA,           // OP_ACOMMA (#15) ***ACOMMA A, ( N -- )***
     fCALL,             // OP_CALL (#16) ***CALL CALL ( -- )***
-    fRET,              // OP_RET (#17) ***RET RET ( -- )***
+    fRET,              // OP_RET (#17) ***RET EXIT ( -- )***
     fJMP,              // OP_JMP (#18) ***JMP -N- ( -- ) ***
     fJMPZ,             // OP_JMPZ (#19) ***JMPZ -N- ( N -- )***
     fJMPNZ,            // OP_JMPNZ (#20) ***JMPNZ -N- ( N -- )***
@@ -140,9 +241,9 @@ FP prims[] = {
     fFILEREAD,         // OP_FILEREAD (#52) ***FILEREAD FILE-READ***
     fLOAD,             // OP_LOAD (#53) ***LOAD LOAD***
     fTHRU,             // OP_THRU (#54) ***THRU THRU***
-    fUNUSED4,          // OP_UNUSED4 (#55) ***UNUSED4 -n- ( -- )***
-    fUNUSED5,          // OP_UNUSED5 (#56) ***UNUSED5 -n- ( -- )***
-    fUNUSED6,          // OP_UNUSED6 (#57) ***UNUSED6 -n- ( -- )***
+    fDO,               // OP_DO (#55) ***DO DO ( f t -- )***
+    fLOOP,             // OP_LOOP (#56) ***LOOP LOOP ( -- )***
+    fLOOPP,            // OP_LOOPP (#57) ***LOOPP LOOP+  ( n -- )***
     fUNUSED7,          // OP_UNUSED7 (#58) ***UNUSED7 -n- ( -- )***
     fPARSEWORD,        // OP_PARSEWORD (#59) ***PARSEWORD PARSE-WORD ( A -- )***
     fPARSELINE,        // OP_PARSELINE (#60) ***PARSELINE PARSE-LINE (A -- )***
@@ -158,9 +259,12 @@ FP prims[] = {
     fLESS,             // OP_LESS (#70) ***LESS < ( N1 N2 -- N3 )***
     fEQUALS,           // OP_EQUALS (#71) ***EQUALS = ( N1 N2 -- N3 )***
     fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
-    fBYE,              // OP_BYE (#73) ***BYE BYE ( -- )***
+    fI,                // OP_I (#73) ***I I ( -- n )***
+    fJ,                // OP_J (#74) ***J J ( -- n )***
+    fBYE,              // OP_BYE (#75) ***BYE BYE ( -- )***
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
+
 
 void fNOOP() {         // opcode #0
 }
@@ -181,7 +285,7 @@ void fCFETCH() {       // opcode #4
         T = dict[addr];
         return;
     }
-    printf("Invalid address: %ld ($%04lX)", addr, addr);
+    printStringF("Invalid address: %ld ($%04lX)", addr, addr);
 }
 void fWFETCH() {       // opcode #5
     CELL addr = T;
@@ -189,7 +293,7 @@ void fWFETCH() {       // opcode #5
         T = wordAt(addr);
         return;
     }
-    printf("Invalid address: %ld ($%04lX)", addr, addr);
+    printStringF("Invalid address: %ld ($%04lX)", addr, addr);
 }
 void fAFETCH() {       // opcode #6
     (ADDR_SZ == 2) ? fWFETCH() : fFETCH();
@@ -203,11 +307,11 @@ void fFETCH() {        // opcode #7
 
     switch (addr)
     {
-        case DIGITAL_PIN_BASE: printf("-@DP_base-"); break;
-        case ANALOG_PIN_BASE:  printf("-@AP_base-"); break;
+        case DIGITAL_PIN_BASE: printStringF("-@DP_base-"); break;
+        case ANALOG_PIN_BASE:  printStringF("-@AP_base-"); break;
 
     default:
-        printf("Invalid address: %ld ($%04lX)", addr, addr);
+        printStringF("Invalid address: %ld ($%04lX)", addr, addr);
     }
 }
 void fCSTORE() {       // opcode #8
@@ -235,11 +339,11 @@ void fSTORE() {        // opcode #11
 
     switch (addr)
     {
-        case DIGITAL_PIN_BASE: printf("-!DP_base-"); break;
-        case ANALOG_PIN_BASE:  printf("-!AP_base-"); break;
+        case DIGITAL_PIN_BASE: printStringF("-!DP_base-"); break;
+        case ANALOG_PIN_BASE:  printStringF("-!AP_base-"); break;
     
     default:
-        printf("Invalid address: %ld ($%04lX)", addr, addr);
+        printStringF("Invalid address: %ld ($%04lX)", addr, addr);
     }
 }
 void fCCOMMA() {       // opcode #12
@@ -261,7 +365,7 @@ void fACOMMA() {       // opcode #15
 void fCALL() {         // opcode #16
     rpush(PC+ADDR_SZ);
     PC = addrAt(PC);
-    // printf("-call:%lx-", PC);
+    // printStringF("-call:%lx-", PC);
 }
 void fRET() {          // opcode #17
     // handled in run()
@@ -310,7 +414,7 @@ void fSLMOD() {        // opcode #30
         T = x/y;
         N = x%y;
     } else {
-        printf("divide by 0!");
+        printStringF("divide by 0!");
     }
 }
 void fLSHIFT() {       // opcode #31
@@ -341,16 +445,16 @@ void fRTOD() {         // opcode #39
     push(rpop());
 }
 void fEMIT() {
-    printf("%c", (char)pop());
+    printStringF("%c", (char)pop());
 }
 void fDOT() {
     CELL v = pop();
     if (sys->BASE == 10) {
-        printf(" %ld", v);
+        printStringF(" %ld", v);
     } else if (sys->BASE == 16) {
-        printf(" %lx", v);
+        printStringF(" %lx", v);
     } else {
-        printf(" %ld (in %ld)", v, sys->BASE);
+        printStringF(" %ld (in %ld)", v, sys->BASE);
     }
 }
 void fDOTS() {
@@ -429,11 +533,53 @@ void fLOAD() {         // opcode #53
 void fTHRU() {         // opcode #54
     N = N*T; push(T); pop();
 }
-void fUNUSED4() {         // opcode #55
+// OP_DO (#55)    : DO ( f t -- ) ... ;
+void fDO() {       
+    if (loopDepth < 4) {
+        CELL t = pop();
+        CELL f = pop();
+        int x = loopDepth * 3;
+        loopSTK[x] = f;
+        loopSTK[x+1] = t;
+        loopSTK[x+2] = f;
+        ++loopDepth;
+    } else {
+        printStringF("-DO:too deep-");
+    }
 }
-void fUNUSED5() {        // opcode #56
+// OP_LOOP (#56)    : LOOP ( -- ) ... ;
+void fLOOP() {     
+    if (loopDepth > 0) {
+        int x = (loopDepth-1) * 3;
+        CELL f = loopSTK[x] = f;
+        CELL t = loopSTK[x+1];
+        loopSTK[x+2] += 1;
+        CELL i = loopSTK[x+2];
+        if ((f < i) && (i < t)) { push(1); return; }
+        if ((t < i) && (i < f)) { push(1); return; }
+        loopDepth -= 1;
+        push(0);
+    }
+    else {
+        printStringF("-LOOP:no DO-");
+    }
 }
-void fUNUSED6() {         // opcode #57
+// OP_LOOPP (#57)    : LOOP+ ( n -- ) ... ;
+void fLOOPP() {    
+    if (loopDepth > 0) {
+        int x = (loopDepth-1) * 3;
+        CELL f = loopSTK[x] = f;
+        CELL t = loopSTK[x+1];
+        loopSTK[x+2] += pop();
+        CELL i = loopSTK[x+2];
+        if ((f < i) && (i < t)) { push(1); return; }
+        if ((t < i) && (i < f)) { push(1); return; }
+        loopDepth -= 1;
+        push(0);
+    }
+    else {
+        printStringF("-LOOP:no DO-");
+    }
 }
 void fUNUSED7() {         // opcode #58
 }
@@ -441,7 +587,7 @@ void fUNUSED7() {         // opcode #58
 void fPARSEWORD() {    // opcode #59
     CELL wa = pop();
     char *w = &dict[wa];
-    // printf("-pw[%s]-", w);
+    // printStringF("-pw[%s]-", w);
     push(wa); fFIND();
     if (pop()) {
         DICT_T *dp = (DICT_T *)&dict[T];
@@ -557,6 +703,26 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
+    if (strcmp(w, "DO") == 0) {
+        push(sys->HERE);
+        CCOMMA(OP_DO);
+        return;
+    }
+
+    if (strcmp(w, "LOOP") == 0) {
+        CCOMMA(OP_LOOP);
+        CCOMMA(OP_JMPNZ);
+        fACOMMA();
+        return;
+    }
+
+    if (strcmp(w, "LOOP+") == 0) {
+        CCOMMA(OP_LOOPP);
+        CCOMMA(OP_JMPNZ);
+        fACOMMA();
+        return;
+    }
+
     if (strcmp(w, "VARIABLE") == 0) {
         push(wa);
         fNEXTWORD();
@@ -596,7 +762,7 @@ void fPARSEWORD() {    // opcode #59
         }
         return;
     }
-    printf("[%s]??", w);
+    printStringF("[%s]??", w);
 }
 void fPARSELINE() {    // opcode #60
     sys->TOIN = pop();
@@ -632,7 +798,7 @@ void fCREATE() {       // opcode #64
     CELL wa = pop();
     char *name = (char *)&dict[wa];
     sys->HERE = align2(sys->HERE);
-    // printf("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
+    // printStringF("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
 
     DICT_T *dp = (DICT_T *)&dict[sys->HERE];
     dp->prev = (ADDR)sys->LAST;
@@ -641,17 +807,17 @@ void fCREATE() {       // opcode #64
     strcpy(dp->name, name);
     sys->LAST = sys->HERE;
     sys->HERE += ADDR_SZ + dp->len + 3;
-    // printf(",XT:%d (%lx)-", sys->HERE, sys->HERE);
+    // printStringF(",XT:%d (%lx)-", sys->HERE, sys->HERE);
 }
 // (a1 -- [a2 1] | 0)
 void fFIND() {         // opcode #65
     char *name = (char *)&dict[pop()];
-    // printf("-lf:[%s]-", name);
+    // printStringF("-lf:[%s]-", name);
     CELL cl = sys->LAST;
     while (cl) {
         DICT_T *dp = (DICT_T *)&dict[cl];
         if (strcmp(name, dp->name) == 0) {
-            // printf("-FOUND! (%lx)-", cl);
+            // printStringF("-FOUND! (%lx)-", cl);
             push(cl);
             push(1);
             return;
@@ -712,7 +878,29 @@ void fEQUALS() {
 void fGREATER() {  
     N = (N > T) ? 1 : 0; pop();
 }
-void fBYE() {          // opcode #70
+// OP_I (#73)    : I ( -- n ) ... ;
+void fI() {        
+    if (loopDepth > 0) {
+        int x = (loopDepth-1) * 3;
+        push(loopSTK[x+2]);
+    }
+    else {
+        printStringF("-I:no DO-");
+    }
+}
+// OP_J (#74)    : J ( -- n ) ... ;
+void fJ() {        
+    if (loopDepth > 1) {
+        int x = (loopDepth-2) * 3;
+        push(loopSTK[x+2]);
+    }
+    else {
+        printStringF("-J:no DO-");
+    }
+}
+// OP_BYE (#75)    : BYE ( TODO -- TODO ) ... ;
+void fBYE() {      
+    // TODO N = N*T; push(T); pop();
 }
 
 
@@ -727,5 +915,3 @@ void f<%($0 + '() {               ').substring(0,13)%>
 $once
 // ^^^^^ - NimbleText generated - ^^^^^
 */
-
-
