@@ -129,6 +129,13 @@ void runTests() {
     parseLine(F(": bm 's' emit begin 1- while- drop 'e' emit ; 100 mil bm ok"));
 }
 
+void doHistory(char *l) {
+    FILE *fp = fopen("history.txt", "at");
+    if (fp) {
+        fprintf(fp, "%s\n", l);
+        fclose(fp);
+    }
+}
 
 void repl() {
     char *tib = (char *)&dict[sys->TIB];
@@ -137,9 +144,16 @@ void repl() {
         printString(" ok. "); fDOTS(); printString("\n"); 
         gets(tib);
         if (strcmp(tib, "bye") == 0) return;
+        doHistory(tib);
         push(sys->TIB);
         fPARSELINE();
     }
+}
+
+void loadUserWords() {
+    parseLine(": >lh 2DUP > IF SWAP THEN ;");
+    parseLine(": dump >lh DO I C@ . LOOP ;");
+    // parseLine("XXX");
 }
 
 #ifndef __DEV_DOARD__
@@ -148,6 +162,7 @@ int main() {
     printString("Source: https://github.com/CCurl/BoardForth \n");
     vmInit();
     loadBaseSystem();
+    loadUserWords();
     // runTests();
     repl();
     FILE *fp = fopen("f.bin","wt");

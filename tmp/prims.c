@@ -121,7 +121,7 @@ void addrStore(CELL addr, CELL val) {
 #pragma region allocation
 void allocDump() {
     printStringF("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
-    printStringF("\n-------------------------------");
+    printString("\n-------------------------------");
     for (int i = 0; i < num_alloced; i++) {
         printStringF("\n%2d %04lx %4d %s", i, alloced[i].addr, (int)alloced[i].sz, (int)alloced[i].available ? "available" : "in-use");
     }
@@ -167,11 +167,25 @@ CELL allocSpace(WORD sz) {
         alloced[num_alloced].sz = sz;
         alloced[num_alloced++].available = 0;
     } else {
-        printStringF("-alloc tbl too small-");
+        printString("-alloc tbl too small-");
     }
     return allocCurFree;
 }
 #pragma endregion
+
+int compiling(char *w, int errIfNot) {
+    if ((sys->STATE == 0) && (errIfNot)) {
+        printStringF("[%s]: Compile only.", w);
+    }
+    return (sys->STATE == 0) ? 0 : 1;
+}
+
+int interpreting(char *w, int errIfNot) {
+    if ((sys->STATE != 0) && (errIfNot)) {
+        printStringF("[%s]: Interpreting only.", w);
+    }
+    return (sys->STATE == 0) ? 1 : 0;
+}
 
 /* NimbleText script
 $once
@@ -307,8 +321,8 @@ void fFETCH() {        // opcode #7
 
     switch (addr)
     {
-        case DIGITAL_PIN_BASE: printStringF("-@DP_base-"); break;
-        case ANALOG_PIN_BASE:  printStringF("-@AP_base-"); break;
+        case DIGITAL_PIN_BASE: printString("-@DP_base-"); break;
+        case ANALOG_PIN_BASE:  printString("-@AP_base-"); break;
 
     default:
         printStringF("Invalid address: %ld ($%04lX)", addr, addr);
@@ -339,8 +353,8 @@ void fSTORE() {        // opcode #11
 
     switch (addr)
     {
-        case DIGITAL_PIN_BASE: printStringF("-!DP_base-"); break;
-        case ANALOG_PIN_BASE:  printStringF("-!AP_base-"); break;
+        case DIGITAL_PIN_BASE: printString("-!DP_base-"); break;
+        case ANALOG_PIN_BASE:  printString("-!AP_base-"); break;
     
     default:
         printStringF("Invalid address: %ld ($%04lX)", addr, addr);
@@ -414,7 +428,7 @@ void fSLMOD() {        // opcode #30
         T = x/y;
         N = x%y;
     } else {
-        printStringF("divide by 0!");
+        printString("divide by 0!");
     }
 }
 void fLSHIFT() {       // opcode #31
@@ -545,7 +559,7 @@ void fDO() {
         loopSTK[x+2] = f;
         ++loopDepth;
     } else {
-        printStringF("-DO:too deep-");
+        printString("-DO:too deep-");
     }
 }
 // OP_LOOP (#56)    : LOOP ( -- ) ... ;
@@ -556,7 +570,7 @@ void fLOOP() {
         CELL t = loopSTK[x+1];
         loopSTK[x+2] += 1;
         CELL i = loopSTK[x+2];
-        // printStringF("-LOOP(%ld,%ld,%d)-", f, t, i);
+        // printString("-LOOP(%ld,%ld,%d)-", f, t, i);
         if ((f < i) && (i < t)) { push(1); return; }
         loopDepth -= 1;
         push(0);
@@ -581,7 +595,7 @@ void fLOOPP() {
         push(0);
     }
     else {
-        printStringF("-LOOP:depthErr-");
+        printString("-LOOP:depthErr-");
         push(0);
     }
 }
@@ -597,7 +611,7 @@ void fPARSEWORD() {    // opcode #59
         DICT_T *dp = (DICT_T *)&dict[T];
         fGETXT();
         CELL xt = pop();
-        if ((sys->STATE == 1) && (dp->flags == 0)) {
+        if ((compiling(w, 0)) && (dp->flags == 0)) {
             CCOMMA(OP_CALL);
             ACOMMA((ADDR)xt);
         } else {
@@ -608,7 +622,7 @@ void fPARSEWORD() {    // opcode #59
 
     push(wa); fISNUMBER();
     if (pop()) {
-        if (sys->STATE == 1) {
+        if (compiling(w, 0)) {
             if ((0x0000 <= T) && (T < 0x0100)) {
                 CCOMMA(OP_CLIT);
                 fCCOMMA();
@@ -623,24 +637,15 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, ":") == 0) {
-        push(wa);
-        fNEXTWORD();
-        if (pop()) {
-            push(wa);
-            fCREATE();
-            sys->STATE = 1;
-        }
-        return;
-    }
-
     if (strcmp(w, ";") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_RET);
         sys->STATE = 0;
         return;
     }
 
     if (strcmp(w, "IF") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPZ);
         push(sys->HERE);
         ACOMMA(0);
@@ -648,6 +653,7 @@ void fPARSEWORD() {    // opcode #59
     }
 
     if (strcmp(w, "IF-") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_NJMPZ);
         push(sys->HERE);
         ACOMMA(0);
@@ -655,6 +661,7 @@ void fPARSEWORD() {    // opcode #59
     }
 
     if (strcmp(w, "ELSE") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMP);
         push(sys->HERE);
         fSWAP();
@@ -666,6 +673,7 @@ void fPARSEWORD() {    // opcode #59
     }
 
     if (strcmp(w, "THEN") == 0) {
+        if (! compiling(w, 1)) { return; }
         push(sys->HERE);
         fSWAP();
         fASTORE();
@@ -673,47 +681,61 @@ void fPARSEWORD() {    // opcode #59
     }
 
     if (strcmp(w, "BEGIN") == 0) {
+        if (! compiling(w, 1)) { return; }
         push(sys->HERE);
         return;
     }
 
     if (strcmp(w, "AGAIN") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMP);
         fACOMMA();
         return;
     }
 
     if (strcmp(w, "WHILE") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPNZ);
         fACOMMA();
         return;
     }
 
     if (strcmp(w, "UNTIL") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPZ);
         fACOMMA();
         return;
     }
 
     if (strcmp(w, "WHILE-") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_NJMPNZ);
         fACOMMA();
         return;
     }
 
     if (strcmp(w, "UNTIL-") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_NJMPZ);
         fACOMMA();
         return;
     }
 
     if (strcmp(w, "DO") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_DO);
         push(sys->HERE);
         return;
     }
 
+    if (strcmp(w, "LEAVE") == 0) {
+        if (! compiling(w, 1)) { return; }
+        printString("WARNING: LEAVE not supported!");
+        return;
+    }
+
     if (strcmp(w, "LOOP") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_LOOP);
         CCOMMA(OP_JMPNZ);
         fACOMMA();
@@ -721,13 +743,27 @@ void fPARSEWORD() {    // opcode #59
     }
 
     if (strcmp(w, "LOOP+") == 0) {
+        if (! compiling(w, 1)) { return; }
         CCOMMA(OP_LOOPP);
         CCOMMA(OP_JMPNZ);
         fACOMMA();
         return;
     }
 
+    if (strcmp(w, ":") == 0) {
+        if (! interpreting(w, 1)) { return; }
+        push(wa);
+        fNEXTWORD();
+        if (pop()) {
+            push(wa);
+            fCREATE();
+            sys->STATE = 1;
+        }
+        return;
+    }
+
     if (strcmp(w, "VARIABLE") == 0) {
+        if (! interpreting(w, 1)) { return; }
         push(wa);
         fNEXTWORD();
         if (pop()) {
@@ -742,6 +778,7 @@ void fPARSEWORD() {    // opcode #59
     }
 
     if (strcmp(w, "CONSTANT") == 0) {
+        if (! interpreting(w, 1)) { return; }
         push(wa);
         fNEXTWORD();
         if (pop()) {
@@ -756,16 +793,17 @@ void fPARSEWORD() {    // opcode #59
 
     BYTE op = getOpcode(w);
     if (op < 0xFF) {
-        if (sys->STATE == 1) {
+        if (compiling(w, 0)) {
             CCOMMA(op);
         } else {
-            CELL xt = sys->HERE+24;
+            CELL xt = sys->HERE+0x20;
             dict[xt] = op;
             dict[xt+1] = OP_RET;
             run(xt, 0);
         }
         return;
     }
+    sys->STATE = 0;
     printStringF("[%s]??", w);
 }
 void fPARSELINE() {    // opcode #60
@@ -889,7 +927,7 @@ void fI() {
         push(loopSTK[x+2]);
     }
     else {
-        printStringF("-I:depthErr-");
+        printString("-I:depthErr-");
         push(0);
     }
 }
@@ -900,7 +938,7 @@ void fJ() {
         push(loopSTK[x+2]);
     }
     else {
-        printStringF("-J:depthErr-");
+        printString("-J:depthErr-");
         push(0);
     }
 }
