@@ -539,6 +539,7 @@ void fDO() {
         CELL t = pop();
         CELL f = pop();
         int x = loopDepth * 3;
+        // printStringF("-DO(%ld,%ld,%d)-", f, t, f);
         loopSTK[x] = f;
         loopSTK[x+1] = t;
         loopSTK[x+2] = f;
@@ -551,34 +552,37 @@ void fDO() {
 void fLOOP() {     
     if (loopDepth > 0) {
         int x = (loopDepth-1) * 3;
-        CELL f = loopSTK[x] = f;
+        CELL f = loopSTK[x];
         CELL t = loopSTK[x+1];
         loopSTK[x+2] += 1;
         CELL i = loopSTK[x+2];
+        // printStringF("-LOOP(%ld,%ld,%d)-", f, t, i);
         if ((f < i) && (i < t)) { push(1); return; }
-        if ((t < i) && (i < f)) { push(1); return; }
         loopDepth -= 1;
         push(0);
     }
     else {
-        printStringF("-LOOP:no DO-");
+        printString("-LOOP:depthErr-");
+        push(0);
     }
 }
 // OP_LOOPP (#57)    : LOOP+ ( n -- ) ... ;
 void fLOOPP() {    
     if (loopDepth > 0) {
         int x = (loopDepth-1) * 3;
-        CELL f = loopSTK[x] = f;
+        CELL f = loopSTK[x];
         CELL t = loopSTK[x+1];
         loopSTK[x+2] += pop();
         CELL i = loopSTK[x+2];
+        // printStringF("-LOOP(%ld,%ld,%ld)-", f, t, i);
         if ((f < i) && (i < t)) { push(1); return; }
         if ((t < i) && (i < f)) { push(1); return; }
         loopDepth -= 1;
         push(0);
     }
     else {
-        printStringF("-LOOP:no DO-");
+        printStringF("-LOOP:depthErr-");
+        push(0);
     }
 }
 void fUNUSED7() {         // opcode #58
@@ -605,10 +609,10 @@ void fPARSEWORD() {    // opcode #59
     push(wa); fISNUMBER();
     if (pop()) {
         if (sys->STATE == 1) {
-            if (T < 0x0100) {
+            if ((0x0000 <= T) && (T < 0x0100)) {
                 CCOMMA(OP_CLIT);
                 fCCOMMA();
-            } else if (T < 0x010000) {
+            } else if ((0x0100 <= T) && (T < 0x010000)) {
                 CCOMMA(OP_WLIT);
                 fWCOMMA();
             } else {
@@ -704,8 +708,8 @@ void fPARSEWORD() {    // opcode #59
     }
 
     if (strcmp(w, "DO") == 0) {
-        push(sys->HERE);
         CCOMMA(OP_DO);
+        push(sys->HERE);
         return;
     }
 
@@ -881,21 +885,23 @@ void fGREATER() {
 // OP_I (#73)    : I ( -- n ) ... ;
 void fI() {        
     if (loopDepth > 0) {
-        int x = (loopDepth-1) * 3;
+        CELL x = (loopDepth-1) * 3;
         push(loopSTK[x+2]);
     }
     else {
-        printStringF("-I:no DO-");
+        printStringF("-I:depthErr-");
+        push(0);
     }
 }
 // OP_J (#74)    : J ( -- n ) ... ;
 void fJ() {        
     if (loopDepth > 1) {
-        int x = (loopDepth-2) * 3;
+        CELL x = (loopDepth-2) * 3;
         push(loopSTK[x+2]);
     }
     else {
-        printStringF("-J:no DO-");
+        printStringF("-J:depthErr-");
+        push(0);
     }
 }
 // OP_BYE (#75)    : BYE ( TODO -- TODO ) ... ;
