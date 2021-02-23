@@ -966,7 +966,7 @@ void fJ() {
         push(0);
     }
 }
-// OP_INPUTPIN (#75)    : input-pin ( TODO -- TODO ) ... ;
+// OP_INPUTPIN (#75)    : input-pin ( n -- ) ... ;
 void fINPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
@@ -975,7 +975,7 @@ void fINPUTPIN() {
         printStringF("-pinMode(%d, INPUT)-", pin);
     #endif
 }
-// OP_OUTPUTPIN (#76)    : output-pin ( TODO -- TODO ) ... ;
+// OP_OUTPUTPIN (#76)    : output-pin ( n -- ) ... ;
 void fOUTPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
@@ -984,7 +984,7 @@ void fOUTPUTPIN() {
         printStringF("-pinMode(%d, OUTPUT)-", pin);
     #endif
 }
-// OP_BYE (#77)    : BYE ( TODO -- TODO ) ... ;
+// OP_BYE (#77)    : BYE ( -- ) ... ;
 void fBYE() {      
     // TODO N = N*T; push(T); pop();
 }
