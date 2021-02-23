@@ -710,7 +710,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "AGAIN") == 0) {
+    if (strcmp(w, "REPEAT") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMP);
         fACOMMA();

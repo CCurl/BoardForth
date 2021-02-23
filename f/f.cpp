@@ -107,7 +107,7 @@ CELL stringToDict(char *s, CELL to) {
     return to;
 }
 
-void parseLine_P(char *line) {
+void parseLine(char *line) {
     stringToDict(line, sys->TIB);
     push(sys->TIB);
     fPARSELINE();
