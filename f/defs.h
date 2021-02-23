@@ -5,12 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define __DEV_BOARD__
+// #define __DEV_BOARD__
 
 #ifdef __DEV_BOARD__
   #include <Arduino.h>
   #define SERIAL Serial
-  extern void printSerial(const char *);
+  void printSerial(const char *);
+  void parseLine_P(__FlashStringHelper *);
   #define DICT_SZ (4*1024)
   #define STK_SZ 32
   #define TIB_SZ 0x100
@@ -21,6 +22,8 @@
   #define TIB_SZ 0x0400
   #define ALLOC_SZ 64
   #define F(str) (char *)str
+  #define parseLine_P(str) parseLine(str)
+  #define strcmp_PF(str1, str2) strcmp(str1, str2)
 #endif
 
 typedef void (*FP)();

@@ -107,34 +107,34 @@ CELL stringToDict(char *s, CELL to) {
     return to;
 }
 
-void parseLine(char *line) {
+void parseLine_P(char *line) {
     stringToDict(line, sys->TIB);
     push(sys->TIB);
     fPARSELINE();
 }
 
 void runTests() {
-    parseLine(F(": ok SPACE 'o' emit 'k' emit SPACE .s CR ;"));
-    parseLine(F("0 ?DUP .s drop 755 ?DUP .s 2DROP ok"));
-    parseLine(F("1 2 tuck . . . ok"));
-    parseLine(F("1 2 1 nip . . ok"));
-    parseLine(F("45 10 /mod . . ok"));
-    parseLine(F("45 10 / . ok"));
-    parseLine(F("45 10 mod . ok"));
-    parseLine(F("1 2 3 .s ROT .s -ROT .s 2DROP drop ok"));
-    parseLine(F("222 constant con con . ok"));
-    parseLine(F("variable x con 2* x ! x @ . x @ 2/ . ok"));
-    parseLine(F("123 x ! 17 x +! x @ . ok"));
-    parseLine(F(": k 1000 * ; : mil k k ;"));
-    parseLine(F(": bm 's' emit begin 1- while- drop 'e' emit ; 100 mil bm ok"));
+    parseLine_P(F(": ok SPACE 'o' emit 'k' emit SPACE .s CR ;"));
+    parseLine_P(F("0 ?DUP .s drop 755 ?DUP .s 2DROP ok"));
+    parseLine_P(F("1 2 tuck . . . ok"));
+    parseLine_P(F("1 2 1 nip . . ok"));
+    parseLine_P(F("45 10 /mod . . ok"));
+    parseLine_P(F("45 10 / . ok"));
+    parseLine_P(F("45 10 mod . ok"));
+    parseLine_P(F("1 2 3 .s ROT .s -ROT .s 2DROP drop ok"));
+    parseLine_P(F("222 constant con con . ok"));
+    parseLine_P(F("variable x con 2* x ! x @ . x @ 2/ . ok"));
+    parseLine_P(F("123 x ! 17 x +! x @ . ok"));
+    parseLine_P(F(": k 1000 * ; : mil k k ;"));
+    parseLine_P(F(": bm 's' emit begin 1- while- drop 'e' emit ; 100 mil bm ok"));
 }
 
 void loadUserWords() {
-    parseLine(F(": dPin# $01000000 + ;"));
-    parseLine(F(": aPin# $02000000 + ;"));
-    parseLine(F(": >lh 2DUP > IF SWAP THEN ;"));
-    parseLine(F(": dump >lh DO I C@ . LOOP ;"));
-    // parseLine(F(": xxxxx :"));
+    parseLine_P(F(": dPin# $01000000 + ;"));
+    parseLine_P(F(": aPin# $02000000 + ;"));
+    parseLine_P(F(": >lh 2DUP > IF SWAP THEN ;"));
+    parseLine_P(F(": dump >lh DO I C@ . LOOP ;"));
+    // parseLine_P(F(": xxxxx :"));
 }
 
 #ifndef __DEV_BOARD__

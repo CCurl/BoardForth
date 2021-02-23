@@ -14,3 +14,7 @@ void loop() {
 void printSerial(const char *str) {
   SERIAL.print(str);
 }
+
+void parseLine_P(__FlashStringHelper *str) {
+    // TODO!
+}
