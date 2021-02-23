@@ -132,8 +132,11 @@ void runTests() {
 void loadUserWords() {
     parseLine_P(F(": dPin# $01000000 + ;"));
     parseLine_P(F(": aPin# $02000000 + ;"));
-    parseLine_P(F(": >lh 2DUP > IF SWAP THEN ;"));
-    parseLine_P(F(": dump >lh DO I C@ . LOOP ;"));
+    parseLine_P(F(": low->high 2DUP > IF SWAP THEN ;"));
+    parseLine_P(F(": dump low->high DO I C@ . LOOP ;"));
+    parseLine_P(F(": A1 1 aPin# ; : A2 2 aPin# ;"));
+    parseLine_P(F(": D1 1 dPin# ; : D2 2 dPin# ;"));
+    
     // parseLine_P(F(": xxxxx :"));
 }
 
