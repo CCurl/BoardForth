@@ -1,3 +1,3 @@
 cd ..\pc
 boardforth.exe
-cd ..\tmp
+cd ..\f

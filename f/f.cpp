@@ -129,6 +129,15 @@ void runTests() {
     parseLine(F(": bm 's' emit begin 1- while- drop 'e' emit ; 100 mil bm ok"));
 }
 
+void loadUserWords() {
+    parseLine(F(": dPin# $01000000 + ;"));
+    parseLine(F(": aPin# $02000000 + ;"));
+    parseLine(F(": >lh 2DUP > IF SWAP THEN ;"));
+    parseLine(F(": dump >lh DO I C@ . LOOP ;"));
+    // parseLine(F(": xxxxx :"));
+}
+
+#ifndef __DEV_BOARD__
 void doHistory(char *l) {
     FILE *fp = fopen("history.txt", "at");
     if (fp) {
@@ -150,15 +159,6 @@ void repl() {
     }
 }
 
-void loadUserWords() {
-    parseLine(": dPin# $01000000 + ;");
-    parseLine(": aPin# $02000000 + ;");
-    parseLine(": >lh 2DUP > IF SWAP THEN ;");
-    parseLine(": dump >lh DO I C@ . LOOP ;");
-    // parseLine(": xxxxx :");
-}
-
-#ifndef __DEV_DOARD__
 int main() {
     printString("BoardForth v0.0.1 - Chris Curl\n");
     printString("Source: https://github.com/CCurl/BoardForth \n");

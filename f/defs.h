@@ -5,17 +5,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define __DEV_BOARD__
+
 #ifdef __DEV_BOARD__
-#define DICT_SZ (8*1024)
-#define STK_SZ 32
-#define TIB_SZ 0x100
-#define ALLOC_SZ 32
+  #include <Arduino.h>
+  #define SERIAL Serial
+  extern void printSerial(const char *);
+  #define DICT_SZ (4*1024)
+  #define STK_SZ 32
+  #define TIB_SZ 0x100
+  #define ALLOC_SZ 32
 #else
-#define DICT_SZ (64*1024)
-#define STK_SZ 64
-#define TIB_SZ 0x0400
-#define ALLOC_SZ 64
-#define F(str)  str
+  #define DICT_SZ (64*1024)
+  #define STK_SZ 64
+  #define TIB_SZ 0x0400
+  #define ALLOC_SZ 64
+  #define F(str) (char *)str
 #endif
 
 typedef void (*FP)();
@@ -37,7 +42,6 @@ typedef unsigned char  BYTE;
 #define T dstk[sys->DSP]
 #define N dstk[sys->DSP-1]
 #define R rstk[sys->RSP]
-#define F(str) str
 
 typedef struct {
     ADDR prev;

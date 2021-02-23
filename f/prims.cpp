@@ -61,18 +61,16 @@ void vmInit() {
 }
 
 // ---------------------------------------------------------------------
-void printString(const char *str)
-{
+void printString(const char *str) {
 #ifdef __DEV_BOARD__
-    Serial.print(str);
+    printSerial(str);
 #else
     printf("%s", str);
 #endif
 }
 
 // ---------------------------------------------------------------------
-void printStringF(const char *fmt, ...)
-{
+void printStringF(const char *fmt, ...) {
     char buf[64];
     va_list args;
     va_start(args, fmt);
@@ -630,7 +628,7 @@ void fUNUSED7() {         // opcode #58
 // ( a -- )
 void fPARSEWORD() {    // opcode #59
     CELL wa = pop();
-    char *w = &dict[wa];
+    char *w = (char *)&dict[wa];
     // printStringF("-pw[%s]-", w);
     push(wa); fFIND();
     if (pop()) {
@@ -872,7 +870,7 @@ void fCREATE() {       // opcode #64
     dp->prev = (ADDR)sys->LAST;
     dp->flags = 0;
     dp->len = strlen(name);
-    strcpy(dp->name, name);
+    strcpy((char *)dp->name, name);
     sys->LAST = sys->HERE;
     sys->HERE += ADDR_SZ + dp->len + 3;
     // printStringF(",XT:%d (%lx)-", sys->HERE, sys->HERE);
@@ -884,7 +882,7 @@ void fFIND() {         // opcode #65
     CELL cl = sys->LAST;
     while (cl) {
         DICT_T *dp = (DICT_T *)&dict[cl];
-        if (strcmp(name, dp->name) == 0) {
+        if (strcmp(name, (char *)dp->name) == 0) {
             // printStringF("-FOUND! (%lx)-", cl);
             push(cl);
             push(1);
@@ -909,7 +907,7 @@ void fNEXTWORD() {     // opcode #66
 }
 void fISNUMBER() {     // opcode #67
     CELL wa = pop();
-    char *w = &dict[wa];
+    char *w = (char *)&dict[wa];
 
     if ((*w == '\'') && (*(w+2) == '\'') && (*(w+3) == 0)) {
         push(*(w+1));
