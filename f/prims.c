@@ -319,14 +319,27 @@ void fFETCH() {        // opcode #7
         return;
     }
 
-    switch (addr)
-    {
-        case DIGITAL_PIN_BASE: printString("-@DP_base-"); break;
-        case ANALOG_PIN_BASE:  printString("-@AP_base-"); break;
-
-    default:
-        printStringF("Invalid address: %ld ($%04lX)", addr, addr);
+    if ((ANALOG_PIN_BASE <= addr) && (addr <= ANALOG_PIN_MAX)) {
+        addr -= ANALOG_PIN_BASE;
+        #ifdef __DEV_BOARD__
+            pinMode(addr, INPUT);
+            T = analogRead(addr);
+        #else
+            printStringF("-analogRead(%ld)-", addr);
+        #endif
+        return;
     }
+    if ((DIGITAL_PIN_BASE <= addr) && (addr <= DIGITAL_PIN_MAX)) {
+        addr -= DIGITAL_PIN_BASE;
+        #ifdef __DEV_BOARD__
+            pinMode(addr, INPUT);
+            T = digitalRead(addr);
+        #else
+            printStringF("-digitalRead(%ld)-", addr);
+        #endif
+        return;
+    }
+    printStringF("Invalid address: %ld ($%04lX)", addr, addr);
 }
 void fCSTORE() {       // opcode #8
     CELL addr = pop();
@@ -351,14 +364,27 @@ void fSTORE() {        // opcode #11
         return;
     }
 
-    switch (addr)
-    {
-        case DIGITAL_PIN_BASE: printString("-!DP_base-"); break;
-        case ANALOG_PIN_BASE:  printString("-!AP_base-"); break;
-    
-    default:
-        printStringF("Invalid address: %ld ($%04lX)", addr, addr);
+    if ((ANALOG_PIN_BASE <= addr) && (addr <= ANALOG_PIN_MAX)) {
+        addr -= ANALOG_PIN_BASE;
+        #ifdef __DEV_BOARD__
+            pinMode(addr, OUTPUT);
+            analogWrite(addr, val);
+        #else
+            printStringF("-analogWrite(%ld, %ld)-", addr, val);
+        #endif
+        return;
     }
+    if ((DIGITAL_PIN_BASE <= addr) && (addr <= DIGITAL_PIN_MAX)) {
+        addr -= DIGITAL_PIN_BASE;
+        #ifdef __DEV_BOARD__
+            pinMode(addr, OUTPUT);
+            digitalWrite(addr, (val) ? HIGH : LOW);
+        #else
+            printStringF("-digitalWrite(%ld, %ld)-", addr, (val) ? 255 : 0);
+        #endif
+        return;
+    }
+    printStringF("Invalid address: %ld ($%04lX)", addr);
 }
 void fCCOMMA() {       // opcode #12
     dict[sys->HERE++] = (BYTE)pop();

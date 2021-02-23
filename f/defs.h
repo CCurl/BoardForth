@@ -11,10 +11,10 @@
 #define TIB_SZ 0x100
 #define ALLOC_SZ 32
 #else
-#define DICT_SZ (28*1024)
-#define STK_SZ 32
-#define TIB_SZ 0x100
-#define ALLOC_SZ 32
+#define DICT_SZ (64*1024)
+#define STK_SZ 64
+#define TIB_SZ 0x0400
+#define ALLOC_SZ 64
 #define F(str)  str
 #endif
 
@@ -29,8 +29,10 @@ typedef unsigned char  BYTE;
 #define WORD_SZ (2)
 #define ADDR_SZ (2)
 
-#define DIGITAL_PIN_BASE 0x10000000
-#define ANALOG_PIN_BASE  0x20000000
+#define DIGITAL_PIN_BASE 0x01000000
+#define DIGITAL_PIN_MAX  0x010000FF
+#define ANALOG_PIN_BASE  0x02000000
+#define ANALOG_PIN_MAX   0x020000FF
 
 #define T dstk[sys->DSP]
 #define N dstk[sys->DSP-1]

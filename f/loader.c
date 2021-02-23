@@ -16,18 +16,18 @@ $once
 void loadBaseSystem() {
     parseLine(F("// : ! ;"));
     parseLine(F("// : * ;"));
-    parseLine(F(": CELL 4 ;         : ADDR 2 ;"));
-    parseLine(F(": (L) #20 ;        : LAST (L) @ ;"));
+    parseLine(F(": CELL 4 ;           : ADDR 2 ;"));
+    parseLine(F(": (L) #20 ;          : LAST (L) @ ;"));
     parseLine(F(": IMMEDIATE 1 LAST ADDR + C! ;"));
     parseLine(F(": INLINE    2 LAST ADDR + C! ;"));
-    parseLine(F(": TIB  #8 @ ;      : >IN  #12 ;"));
-    parseLine(F(": (H) #16 ;        : HERE (H) @ ;"));
-    parseLine(F(": BASE #24 ;       : STATE #28 ;"));
-    parseLine(F(": SP0  #32 @ ;     : RP0   #36 @ ;"));
-    parseLine(F(": (DSP) #40 ;      : DSP (DSP) @ ;"));
-    parseLine(F(": (RSP) #44 ;      : RSP (RSP) @ ;"));
-    parseLine(F(": !SP 0 (DSP) ! ;  : !RSP 0 (RSP) ! ;"));
-    parseLine(F(": CELLS 4 * ;      : CELL+ 4 + ;"));
+    parseLine(F(": TIB    #8 @ ;      : >IN  #12 ;"));
+    parseLine(F(": (H)   #16 ;        : HERE (H) @ ;"));
+    parseLine(F(": BASE  #24 ;        : STATE #28 ;"));
+    parseLine(F(": SP0   #32 @ ;      : RP0   #36 @ ;"));
+    parseLine(F(": (DSP) #40 ;        : DSP (DSP) @ ;"));
+    parseLine(F(": (RSP) #44 ;        : RSP (RSP) @ ;"));
+    parseLine(F(": !SP 0 (DSP) ! ;    : !RSP 0 (RSP) ! ;"));
+    parseLine(F(": CELLS 4 * ;        : CELL+ 4 + ;"));
     parseLine(F(": NIP SWAP DROP ;"));
     parseLine(F(": TUCK SWAP OVER ;"));
     parseLine(F(": 2DROP DROP DROP ;"));
