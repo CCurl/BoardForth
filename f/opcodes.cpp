@@ -89,7 +89,9 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, F(">")) == 0) return OP_GREATER;       //  opcode #72
     if (strcmp_PF(w, F("I")) == 0) return OP_I;       //  opcode #73
     if (strcmp_PF(w, F("J")) == 0) return OP_J;       //  opcode #74
-    if (strcmp_PF(w, F("BYE")) == 0) return OP_BYE;       //  opcode #75
+    if (strcmp_PF(w, F("input-pin")) == 0) return OP_INPUTPIN;       //  opcode #75
+    if (strcmp_PF(w, F("output-pin")) == 0) return OP_OUTPUTPIN;       //  opcode #76
+    if (strcmp_PF(w, F("BYE")) == 0) return OP_BYE;       //  opcode #77
     return 0xFF;
 }
 // ^^^^^ - NimbleText generated - ^^^^^

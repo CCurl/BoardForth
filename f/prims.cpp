@@ -273,7 +273,9 @@ FP prims[] = {
     fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
     fI,                // OP_I (#73) ***I I ( -- n )***
     fJ,                // OP_J (#74) ***J J ( -- n )***
-    fBYE,              // OP_BYE (#75) ***BYE BYE ( -- )***
+    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input-pin (n1 -- )***
+    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output-pin (n1 -- )***
+    fBYE,              // OP_BYE (#77) ***BYE BYE ( -- )***
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -320,7 +322,6 @@ void fFETCH() {        // opcode #7
     if ((ANALOG_PIN_BASE <= addr) && (addr <= ANALOG_PIN_MAX)) {
         addr -= ANALOG_PIN_BASE;
         #ifdef __DEV_BOARD__
-            pinMode(addr, INPUT);
             T = analogRead(addr);
         #else
             printStringF("-analogRead(%ld)-", addr);
@@ -330,7 +331,6 @@ void fFETCH() {        // opcode #7
     if ((DIGITAL_PIN_BASE <= addr) && (addr <= DIGITAL_PIN_MAX)) {
         addr -= DIGITAL_PIN_BASE;
         #ifdef __DEV_BOARD__
-            pinMode(addr, INPUT);
             T = digitalRead(addr);
         #else
             printStringF("-digitalRead(%ld)-", addr);
@@ -966,7 +966,25 @@ void fJ() {
         push(0);
     }
 }
-// OP_BYE (#75)    : BYE ( TODO -- TODO ) ... ;
+// OP_INPUTPIN (#75)    : input-pin ( TODO -- TODO ) ... ;
+void fINPUTPIN() { 
+    CELL pin = pop();
+    #ifdef __DEV_BOARD__
+        pinMode(pin, INPUT);
+    #else
+        printStringF("-pinMode(%d, INPUT)-", pin);
+    #endif
+}
+// OP_OUTPUTPIN (#76)    : output-pin ( TODO -- TODO ) ... ;
+void fOUTPUTPIN() { 
+    CELL pin = pop();
+    #ifdef __DEV_BOARD__
+        pinMode(pin, OUTPUT);
+    #else
+        printStringF("-pinMode(%d, OUTPUT)-", pin);
+    #endif
+}
+// OP_BYE (#77)    : BYE ( TODO -- TODO ) ... ;
 void fBYE() {      
     // TODO N = N*T; push(T); pop();
 }

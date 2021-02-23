@@ -220,7 +220,9 @@ $once
 #define OP_GREATER       72     // >
 #define OP_I             73     // I
 #define OP_J             74     // J
-#define OP_BYE           75     // BYE
+#define OP_INPUTPIN      75     // input-pin
+#define OP_OUTPUTPIN     76     // output-pin
+#define OP_BYE           77     // BYE
 // ------- NimbleText generated continues
 void fNOOP();            // OP_NOOP
 void fCLIT();            // OP_CLIT
@@ -297,6 +299,8 @@ void fEQUALS();          // OP_EQUALS
 void fGREATER();         // OP_GREATER
 void fI();               // OP_I
 void fJ();               // OP_J
+void fINPUTPIN();        // OP_INPUTPIN
+void fOUTPUTPIN();       // OP_OUTPUTPIN
 void fBYE();             // OP_BYE
 // ^^^^^ - NimbleText generated - ^^^^^
 

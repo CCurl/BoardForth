@@ -135,7 +135,13 @@ void loadUserWords() {
     parseLine_P(F(": low->high 2DUP > IF SWAP THEN ;"));
     parseLine_P(F(": dump low->high DO I C@ . LOOP ;"));
     parseLine_P(F(": A1 1 aPin# ; : A2 2 aPin# ;"));
+    parseLine_P(F(": A3 3 aPin# ; : A4 4 aPin# ;"));
+    parseLine_P(F(": A5 5 aPin# ; : A6 6 aPin# ;"));
+    parseLine_P(F(": A7 6 aPin# ; : A8 8 aPin# ;"));
     parseLine_P(F(": D1 1 dPin# ; : D2 2 dPin# ;"));
+    parseLine_P(F(": D3 3 dPin# ; : D4 4 dPin# ;"));
+    parseLine_P(F(": D5 5 dPin# ; : D6 6 dPin# ;"));
+    parseLine_P(F(": D7 7 dPin# ; : D8 8 dPin# ;"));
     
     // parseLine_P(F(": xxxxx :"));
 }
