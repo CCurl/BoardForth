@@ -1,0 +1,286 @@
+// vvvvv - NimbleText generated - vvvvv
+// OP_NOOP (#0) ( TODO -- TODO )
+void fNOOP() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_CLIT (#1) ( TODO -- TODO )
+void fCLIT() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_WLIT (#2) ( TODO -- TODO )
+void fWLIT() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_LIT (#3) ( TODO -- TODO )
+void fLIT() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_CFETCH (#4) ( TODO -- TODO )
+void fCFETCH() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_WFETCH (#5) ( TODO -- TODO )
+void fWFETCH() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_AFETCH (#6) ( TODO -- TODO )
+void fAFETCH() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_FETCH (#7) ( TODO -- TODO )
+void fFETCH() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_CSTORE (#8) ( TODO -- TODO )
+void fCSTORE() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_WSTORE (#9) ( TODO -- TODO )
+void fWSTORE() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_ASTORE (#10) ( TODO -- TODO )
+void fASTORE() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_STORE (#11) ( TODO -- TODO )
+void fSTORE() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_CCOMMA (#12) ( TODO -- TODO )
+void fCCOMMA() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_WCOMMA (#13) ( TODO -- TODO )
+void fWCOMMA() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_COMMA (#14) ( TODO -- TODO )
+void fCOMMA() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_ACOMMA (#15) ( TODO -- TODO )
+void fACOMMA() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_CALL (#16) ( TODO -- TODO )
+void fCALL() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_RET (#17) ( TODO -- TODO )
+void fRET() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_JMP (#18) ( TODO -- TODO )
+void fJMP() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_JMPZ (#19) ( TODO -- TODO )
+void fJMPZ() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_JMPNZ (#20) ( TODO -- TODO )
+void fJMPNZ() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_ONEMINUS (#21) ( TODO -- TODO )
+void fONEMINUS() { 
+    // TODO N = N*T; push(T); pop();
+}
+// OP_ONEPLUS (#22) ( TODO -- TODO )
+void fONEPLUS() {  
+    // TODO N = N*T; push(T); pop();
+}
+// OP_DUP (#23) ( TODO -- TODO )
+void fDUP() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_SWAP (#24) ( TODO -- TODO )
+void fSWAP() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_DROP (#25) ( TODO -- TODO )
+void fDROP() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_OVER (#26) ( TODO -- TODO )
+void fOVER() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_ADD (#27) ( TODO -- TODO )
+void fADD() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_SUB (#28) ( TODO -- TODO )
+void fSUB() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_MULT (#29) ( TODO -- TODO )
+void fMULT() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_SLMOD (#30) ( TODO -- TODO )
+void fSLMOD() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_LSHIFT (#31) ( TODO -- TODO )
+void fLSHIFT() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_RSHIFT (#32) ( TODO -- TODO )
+void fRSHIFT() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_AND (#33) ( TODO -- TODO )
+void fAND() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_OR (#34) ( TODO -- TODO )
+void fOR() {       
+    // TODO N = N*T; push(T); pop();
+}
+// OP_XOR (#35) ( TODO -- TODO )
+void fXOR() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_NOT (#36) ( TODO -- TODO )
+void fNOT() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_DTOR (#37) ( TODO -- TODO )
+void fDTOR() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_RFETCH (#38) ( TODO -- TODO )
+void fRFETCH() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_RTOD (#39) ( TODO -- TODO )
+void fRTOD() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_EMIT (#40) ( TODO -- TODO )
+void fEMIT() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_DOT (#41) ( TODO -- TODO )
+void fDOT() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_DOTS (#42) ( TODO -- TODO )
+void fDOTS() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_DOTQUOTE (#43) ( TODO -- TODO )
+void fDOTQUOTE() { 
+    // TODO N = N*T; push(T); pop();
+}
+// OP_PAREN (#44) ( TODO -- TODO )
+void fPAREN() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_WDTFEED (#45) ( TODO -- TODO )
+void fWDTFEED() {  
+    // TODO N = N*T; push(T); pop();
+}
+// OP_BREAK (#46) ( TODO -- TODO )
+void fBREAK() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_TIB (#47) ( TODO -- TODO )
+void fTIB() {      
+    // TODO N = N*T; push(T); pop();
+}
+// OP_NTIB (#48) ( TODO -- TODO )
+void fNTIB() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_TOIN (#49) ( TODO -- TODO )
+void fTOIN() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_OPENBLOCK (#50) ( TODO -- TODO )
+void fOPENBLOCK() {
+    // TODO N = N*T; push(T); pop();
+}
+// OP_FILECLOSE (#51) ( TODO -- TODO )
+void fFILECLOSE() {
+    // TODO N = N*T; push(T); pop();
+}
+// OP_FILEREAD (#52) ( TODO -- TODO )
+void fFILEREAD() { 
+    // TODO N = N*T; push(T); pop();
+}
+// OP_LOAD (#53) ( TODO -- TODO )
+void fLOAD() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_THRU (#54) ( TODO -- TODO )
+void fTHRU() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_BASE (#55) ( TODO -- TODO )
+void fBASE() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_STATE (#56) ( TODO -- TODO )
+void fSTATE() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_HERE (#57) ( TODO -- TODO )
+void fHERE() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_LAST (#58) ( TODO -- TODO )
+void fLAST() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_PARSEWORD (#59) ( TODO -- TODO )
+void fPARSEWORD() {
+    // TODO N = N*T; push(T); pop();
+}
+// OP_PARSELINE (#60) ( TODO -- TODO )
+void fPARSELINE() {
+    // TODO N = N*T; push(T); pop();
+}
+// OP_GETXT (#61) ( TODO -- TODO )
+void fGETXT() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_ALIGN2 (#62) ( TODO -- TODO )
+void fALIGN2() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_ALIGN4 (#63) ( TODO -- TODO )
+void fALIGN4() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_CREATE (#64) ( TODO -- TODO )
+void fCREATE() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_FIND (#65) ( TODO -- TODO )
+void fFIND() {     
+    // TODO N = N*T; push(T); pop();
+}
+// OP_NEXTWORD (#66) ( TODO -- TODO )
+void fNEXTWORD() { 
+    // TODO N = N*T; push(T); pop();
+}
+// OP_ISNUMBER (#67) ( TODO -- TODO )
+void fISNUMBER() { 
+    // TODO N = N*T; push(T); pop();
+}
+// OP_NJMPZ (#68) ( TODO -- TODO )
+void fNJMPZ() {    
+    // TODO N = N*T; push(T); pop();
+}
+// OP_NJMPNZ (#69) ( TODO -- TODO )
+void fNJMPNZ() {   
+    // TODO N = N*T; push(T); pop();
+}
+// OP_BYE (#70) ( TODO -- TODO )
+void fBYE() {      
+    // TODO N = N*T; push(T); pop();
+}
+// ^^^^^ - NimbleText generated - ^^^^^
