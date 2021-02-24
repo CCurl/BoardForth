@@ -23,8 +23,8 @@ void loop() {
     char c = SERIAL.read();
     if (c == 13) {
       buf[len] = (char)0;
-      printSerial(buf);
-      printSerial("\n");
+      printString(buf);
+      printString("\n");
       parseLine(buf);
       len = 0;
       ok();

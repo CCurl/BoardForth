@@ -17,8 +17,8 @@
   #define TIB_SZ 0x0080
   #define ALLOC_SZ 32
 #else
-  #define DICT_SZ (64*1024)
-  #define STK_SZ 64
+  #define DICT_SZ (24*1024)
+  #define STK_SZ 32
   #define TIB_SZ 0x0080
   #define ALLOC_SZ 32
   #define F(str) (char *)str
