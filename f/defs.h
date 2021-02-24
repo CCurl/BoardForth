@@ -5,25 +5,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-// #define __DEV_BOARD__
+#define __DEV_BOARD__
 
 #ifdef __DEV_BOARD__
   #include <Arduino.h>
   #define SERIAL Serial
   void printSerial(const char *);
-  void parseLine_P(__FlashStringHelper *);
-  #define DICT_SZ (4*1024)
+  void loadSource(const PROGMEM char *source);
+  #define DICT_SZ (24*1024)
   #define STK_SZ 32
-  #define TIB_SZ 0x100
+  #define TIB_SZ 0x0080
   #define ALLOC_SZ 32
 #else
   #define DICT_SZ (64*1024)
   #define STK_SZ 64
-  #define TIB_SZ 0x0400
+  #define TIB_SZ 0x0080
   #define ALLOC_SZ 64
   #define F(str) (char *)str
-  #define parseLine_P(str) parseLine(str)
+  #define PSTR(str) (char *)str
   #define strcmp_PF(str1, str2) strcmp(str1, str2)
+  void loadSource(const char *source);
 #endif
 
 typedef void (*FP)();
@@ -102,6 +103,8 @@ extern CELL toIn;
 extern CELL allocAddrBase;
 extern CELL allocCurFree;
 extern CELL loopDepth;
+extern void dumpDict();
+
 
 void vmInit();
 void push(CELL);
@@ -129,6 +132,7 @@ BYTE getOpcode(char *w);
 void allocFreeAll();
 void printString(const char *str);
 void printStringF(const char *fmt, ...);
+void loadUserWords();
 
 // ---------------------------------------------------------------------
 /* NimbleText script for below (https://nimbletext.com/Live)

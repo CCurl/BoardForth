@@ -365,8 +365,8 @@ void fSTORE() {        // opcode #11
     if ((ANALOG_PIN_BASE <= addr) && (addr <= ANALOG_PIN_MAX)) {
         addr -= ANALOG_PIN_BASE;
         #ifdef __DEV_BOARD__
-            pinMode(addr, OUTPUT);
             analogWrite(addr, val);
+            // printStringF("-analogWrite(%ld, %ld)-", addr, val);
         #else
             printStringF("-analogWrite(%ld, %ld)-", addr, val);
         #endif
@@ -374,11 +374,12 @@ void fSTORE() {        // opcode #11
     }
     if ((DIGITAL_PIN_BASE <= addr) && (addr <= DIGITAL_PIN_MAX)) {
         addr -= DIGITAL_PIN_BASE;
+        val = (val) ? HIGH : LOW;
         #ifdef __DEV_BOARD__
-            pinMode(addr, OUTPUT);
-            digitalWrite(addr, (val) ? HIGH : LOW);
+            // printStringF("-digitalWrite(%ld, %ld)-", addr, val);
+            digitalWrite(addr, val);
         #else
-            printStringF("-digitalWrite(%ld, %ld)-", addr, (val) ? 255 : 0);
+            printStringF("-digitalWrite(%ld, %ld)-", addr, val);
         #endif
         return;
     }
@@ -505,9 +506,7 @@ void fDOTS() {
         push(' '); fEMIT();
         push(')'); fEMIT();
     } else {
-        push('('); fEMIT();
-        push(237); fEMIT();
-        push(')'); fEMIT();
+        printString("(empty)");
     }
 }
 void fDOTQUOTE() {     // opcode #43
@@ -970,6 +969,7 @@ void fJ() {
 void fINPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
+        printStringF("-pinMode(%d, INPUT)-", pin);
         pinMode(pin, INPUT);
     #else
         printStringF("-pinMode(%d, INPUT)-", pin);
@@ -979,6 +979,7 @@ void fINPUTPIN() {
 void fOUTPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
+        printStringF("-pinMode(%d, OUTPUT)-", pin);
         pinMode(pin, OUTPUT);
     #else
         printStringF("-pinMode(%d, OUTPUT)-", pin);

@@ -114,39 +114,52 @@ void parseLine(char *line) {
 }
 
 void runTests() {
-    parseLine_P(F(": ok SPACE 'o' emit 'k' emit SPACE .s CR ;"));
-    parseLine_P(F("0 ?DUP .s drop 755 ?DUP .s 2DROP ok"));
-    parseLine_P(F("1 2 tuck . . . ok"));
-    parseLine_P(F("1 2 1 nip . . ok"));
-    parseLine_P(F("45 10 /mod . . ok"));
-    parseLine_P(F("45 10 / . ok"));
-    parseLine_P(F("45 10 mod . ok"));
-    parseLine_P(F("1 2 3 .s ROT .s -ROT .s 2DROP drop ok"));
-    parseLine_P(F("222 constant con con . ok"));
-    parseLine_P(F("variable x con 2* x ! x @ . x @ 2/ . ok"));
-    parseLine_P(F("123 x ! 17 x +! x @ . ok"));
-    parseLine_P(F(": k 1000 * ; : mil k k ;"));
-    parseLine_P(F(": bm 's' emit begin 1- while- drop 'e' emit ; 100 mil bm ok"));
+    parseLine(PSTR(": ok SPACE 'o' emit 'k' emit SPACE .s CR ;"));
+    parseLine(PSTR("0 ?DUP .s drop 755 ?DUP .s 2DROP ok"));
+    parseLine(PSTR("1 2 tuck . . . ok"));
+    parseLine(PSTR("1 2 1 nip . . ok"));
+    parseLine(PSTR("45 10 /mod . . ok"));
+    parseLine(PSTR("45 10 / . ok"));
+    parseLine(PSTR("45 10 mod . ok"));
+    parseLine(PSTR("1 2 3 .s ROT .s -ROT .s 2DROP drop ok"));
+    parseLine(PSTR("222 constant con con . ok"));
+    parseLine(PSTR("variable x con 2* x ! x @ . x @ 2/ . ok"));
+    parseLine(PSTR("123 x ! 17 x +! x @ . ok"));
+    parseLine(PSTR(": k 1000 * ; : mil k k ;"));
+    parseLine(PSTR(": bm 's' emit begin 1- while- drop 'e' emit ; 100 mil bm ok"));
 }
 
 void loadUserWords() {
-    parseLine_P(F(": dPin# $01000000 + ;"));
-    parseLine_P(F(": aPin# $02000000 + ;"));
-    parseLine_P(F(": low->high 2DUP > IF SWAP THEN ;"));
-    parseLine_P(F(": dump low->high DO I C@ . LOOP ;"));
-    parseLine_P(F(": A1 1 aPin# ; : A2 2 aPin# ;"));
-    parseLine_P(F(": A3 3 aPin# ; : A4 4 aPin# ;"));
-    parseLine_P(F(": A5 5 aPin# ; : A6 6 aPin# ;"));
-    parseLine_P(F(": A7 6 aPin# ; : A8 8 aPin# ;"));
-    parseLine_P(F(": D1 1 dPin# ; : D2 2 dPin# ;"));
-    parseLine_P(F(": D3 3 dPin# ; : D4 4 dPin# ;"));
-    parseLine_P(F(": D5 5 dPin# ; : D6 6 dPin# ;"));
-    parseLine_P(F(": D7 7 dPin# ; : D8 8 dPin# ;"));
-    
-    // parseLine_P(F(": xxxxx :"));
+    loadSource(PSTR(": dPin# $01000000 + ;"));
+    loadSource(PSTR(": aPin# $02000000 + ;"));
+    loadSource(PSTR(": low->high 2DUP > IF SWAP THEN ;"));
+    loadSource(PSTR(": dump low->high DO I C@ . LOOP ;"));
+    loadSource(PSTR(": A1 1 aPin# ; : A2 2 aPin# ;"));
+    loadSource(PSTR(": A3 3 aPin# ; : A4 4 aPin# ;"));
+    loadSource(PSTR(": A5 5 aPin# ; : A6 6 aPin# ;"));
+    loadSource(PSTR(": A7 6 aPin# ; : A8 8 aPin# ;"));
+    loadSource(PSTR(": D1 1 dPin# ; : D2 2 dPin# ;"));
+    loadSource(PSTR(": D3 3 dPin# ; : D4 4 dPin# ;"));
+    loadSource(PSTR(": D5 5 dPin# ; : D6 6 dPin# ;"));
+    loadSource(PSTR(": D7 7 dPin# ; : D8 8 dPin# ;"));
+    loadSource(PSTR(": led 13 dPin# ; : led-on 0 led ! ; : led-off 1 led ! ;"));
+    loadSource(PSTR("13 output-pin"));
+    loadSource(PSTR(": blink led-on BEGIN 1- WHILE- DROP led-off ;"));
+}
+
+void dumpDict() {
+    printStringF("%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
+    for (int i = 0; i < sys->HERE; i++) {
+        if (i % 16 == 0) printStringF("\n %04x:", i);
+        printStringF(" %02x", dict[i]);
+    }
 }
 
 #ifndef __DEV_BOARD__
+void loadSource(const char *src) {
+    parseLine((char *)src);
+}
+
 void doHistory(char *l) {
     FILE *fp = fopen("history.txt", "at");
     if (fp) {
