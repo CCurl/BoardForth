@@ -12,7 +12,7 @@ BYTE dict[DICT_SZ];
 SYSVARS_T *sys;
 CELL loopSTK[12];
 CELL loopDepth;
-ALLOC_T alloced[ALLOC_SZ];
+ALLOC_T allocTbl[ALLOC_SZ];
 int num_alloced = 0;
 CELL allocAddrBase = 0, allocCurFree = 0;
 
@@ -83,11 +83,11 @@ void vmInit() {
 
 // ---------------------------------------------------------------------
 void printString(const char *str) {
-#ifdef __DEV_BOARD__
-    printSerial(str);
-#else
-    printf("%s", str);
-#endif
+    #ifdef __DEV_BOARD__
+        printSerial(str);
+    #else
+        printf("%s", str);
+    #endif
 }
 
 // ---------------------------------------------------------------------
@@ -133,13 +133,13 @@ void allocDump() {
     printStringF("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
     printString("\n-------------------------------");
     for (int i = 0; i < num_alloced; i++) {
-        printStringF("\n%2d %04lx %4d %s", i, alloced[i].addr, (int)alloced[i].sz, (int)alloced[i].available ? "available" : "in-use");
+        printStringF("\n%2d %04lx %4d %s", i, allocTbl[i].addr, (int)allocTbl[i].sz, (int)allocTbl[i].available ? "available" : "in-use");
     }
 }
 
 int allocFind(CELL addr) {
     for (int i = 0; i < num_alloced; i++) {
-        if (alloced[i].addr == addr) return i;
+        if (allocTbl[i].addr == addr) return i;
     }
     return -1;
 }
@@ -147,20 +147,20 @@ int allocFind(CELL addr) {
 void allocFree(CELL addr) {
     int x = allocFind(addr);
     if (x >= 0) {
-        alloced[x].available = 1;
+        allocTbl[x].available = 1;
         if ((x+1) == num_alloced) { -- num_alloced; }
     }
 }
 
 void allocFreeAll() {
     allocCurFree = allocAddrBase;
-    for (int i = 0; i < ALLOC_SZ; i++) alloced[i].available = 1;
+    for (int i = 0; i < ALLOC_SZ; i++) allocTbl[i].available = 1;
     num_alloced = 0;
 }
 
 int allocFindAvailable(WORD sz) {
     for (int i = 0; i < num_alloced; i++) {
-        if ((alloced[i].available) && (alloced[i].sz >= sz)) return i;
+        if ((allocTbl[i].available) && (allocTbl[i].sz >= sz)) return i;
     }
     return -1;
 }
@@ -168,16 +168,21 @@ int allocFindAvailable(WORD sz) {
 CELL allocSpace(WORD sz) {
     int x = allocFindAvailable(sz);
     if (x >= 0) {
-        alloced[x].available = 0;
-        return alloced[x].addr;
+        allocTbl[x].available = 0;
+        return allocTbl[x].addr;
     }
     allocCurFree -= (sz);
+    if (allocCurFree <= sys->HERE) {
+        printString("-out of space!-");
+        allocCurFree += sz;
+        return 0;
+    }
     if (num_alloced < ALLOC_SZ) {
-        alloced[num_alloced].addr = allocCurFree;
-        alloced[num_alloced].sz = sz;
-        alloced[num_alloced++].available = 0;
+        allocTbl[num_alloced].addr = allocCurFree;
+        allocTbl[num_alloced].sz = sz;
+        allocTbl[num_alloced++].available = 0;
     } else {
-        printString("-alloc tbl too small-");
+        printString("-allocTbl too small-");
     }
     return allocCurFree;
 }
