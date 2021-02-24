@@ -6,21 +6,17 @@
 #include <string.h>
 
 // #define __DEV_BOARD__
+#define DICT_SZ (24*1024)
+#define STK_SZ 32
+#define TIB_SZ 0x0080
+#define ALLOC_SZ 32
 
 #ifdef __DEV_BOARD__
   #include <Arduino.h>
   #define SERIAL Serial
   void printSerial(const char *);
   void loadSource(const PROGMEM char *source);
-  #define DICT_SZ (24*1024)
-  #define STK_SZ 32
-  #define TIB_SZ 0x0080
-  #define ALLOC_SZ 32
 #else
-  #define DICT_SZ (24*1024)
-  #define STK_SZ 32
-  #define TIB_SZ 0x0080
-  #define ALLOC_SZ 32
   #define F(str) (char *)str
   #define PSTR(str) (char *)str
   #define strcmp_PF(str1, str2) strcmp(str1, str2)
