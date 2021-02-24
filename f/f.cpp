@@ -113,22 +113,6 @@ void parseLine(char *line) {
     fPARSELINE();
 }
 
-void runTests() {
-    parseLine(PSTR(": ok SPACE 'o' emit 'k' emit SPACE .s CR ;"));
-    parseLine(PSTR("0 ?DUP .s drop 755 ?DUP .s 2DROP ok"));
-    parseLine(PSTR("1 2 tuck . . . ok"));
-    parseLine(PSTR("1 2 1 nip . . ok"));
-    parseLine(PSTR("45 10 /mod . . ok"));
-    parseLine(PSTR("45 10 / . ok"));
-    parseLine(PSTR("45 10 mod . ok"));
-    parseLine(PSTR("1 2 3 .s ROT .s -ROT .s 2DROP drop ok"));
-    parseLine(PSTR("222 constant con con . ok"));
-    parseLine(PSTR("variable x con 2* x ! x @ . x @ 2/ . ok"));
-    parseLine(PSTR("123 x ! 17 x +! x @ . ok"));
-    parseLine(PSTR(": k 1000 * ; : mil k k ;"));
-    parseLine(PSTR(": bm 's' emit begin 1- while- drop 'e' emit ; 100 mil bm ok"));
-}
-
 void loadUserWords() {
     loadSource(PSTR(": dPin# $01000000 + ;"));
     loadSource(PSTR(": aPin# $02000000 + ;"));
@@ -183,6 +167,7 @@ void repl() {
         ok();
         gets(tib);
         if (strcmp(tib, "bye") == 0) return;
+        if (strcmp(tib, "BYE") == 0) return;
         doHistory(tib);
         push(sys->TIB);
         fPARSELINE();
@@ -192,10 +177,10 @@ void repl() {
 int main() {
     printString("BoardForth v0.0.1 - Chris Curl\n");
     printString("Source: https://github.com/CCurl/BoardForth \n");
+    printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
     vmInit();
     loadBaseSystem();
     loadUserWords();
-    // runTests();
     repl();
     FILE *fp = fopen("f.bin","wt");
     if (fp) {

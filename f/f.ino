@@ -9,6 +9,7 @@ void setup() {
     while (SERIAL.available()) {}
     printString("BoardForth v0.0.1 - Chris Curl\n");
     printString("Source: https://github.com/CCurl/BoardForth \n");
+    printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
     printStringF("Hello.");
     vmInit();
     loadBaseSystem();
