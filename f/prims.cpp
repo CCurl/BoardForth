@@ -1,5 +1,7 @@
-#include "defs.h"
+#include <windows.h>
 #include <stdarg.h>
+#include "defs.h"
+
 
 CELL *dstk;
 CELL *rstk;
@@ -273,9 +275,11 @@ FP prims[] = {
     fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
     fI,                // OP_I (#73) ***I I ( -- n )***
     fJ,                // OP_J (#74) ***J J ( -- n )***
-    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input-pin (n1 -- )***
-    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output-pin (n1 -- )***
-    fBYE,              // OP_BYE (#77) ***BYE BYE ( -- )***
+    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input-pin ( n -- )***
+    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output-pin ( n -- )***
+    fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
+    fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
+    fBYE,              // OP_BYE (#79) ***BYE BYE ( -- )***
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -374,7 +378,7 @@ void fSTORE() {        // opcode #11
     }
     if ((DIGITAL_PIN_BASE <= addr) && (addr <= DIGITAL_PIN_MAX)) {
         addr -= DIGITAL_PIN_BASE;
-        val = (val) ? HIGH : LOW;
+        val = (val) ? 255 : 0;
         #ifdef __DEV_BOARD__
             // printStringF("-digitalWrite(%ld, %ld)-", addr, val);
             digitalWrite(addr, val);
@@ -506,7 +510,11 @@ void fDOTS() {
         push(' '); fEMIT();
         push(')'); fEMIT();
     } else {
-        printString("(empty)");
+        #ifndef __DEV_BOARD__
+            printStringF("(%c)", 237);
+        #else
+            printString("(-n-)");
+        #endif
     }
 }
 void fDOTQUOTE() {     // opcode #43
@@ -969,7 +977,7 @@ void fJ() {
 void fINPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
-        printStringF("-pinMode(%d, INPUT)-", pin);
+        // printStringF("-pinMode(%d, INPUT)-", pin);
         pinMode(pin, INPUT);
     #else
         printStringF("-pinMode(%d, INPUT)-", pin);
@@ -979,13 +987,30 @@ void fINPUTPIN() {
 void fOUTPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
-        printStringF("-pinMode(%d, OUTPUT)-", pin);
+        // printStringF("-pinMode(%d, OUTPUT)-", pin);
         pinMode(pin, OUTPUT);
     #else
         printStringF("-pinMode(%d, OUTPUT)-", pin);
     #endif
 }
-// OP_BYE (#77)    : BYE ( -- ) ... ;
+// OP_DELAY (#77)    : MS ( n -- ) ... ;
+void fDELAY() { 
+    CELL ms = pop();
+    #ifdef __DEV_BOARD__
+        delay(ms);
+    #else
+        Sleep(ms);
+    #endif
+}
+// OP_TICK (#78)    : TICK ( -- n ) ... ;
+void fTICK() { 
+    #ifdef __DEV_BOARD__
+        push(milis());
+    #else
+        push(GetTickCount());
+    #endif
+}
+// OP_BYE (#79)    : BYE ( -- ) ... ;
 void fBYE() {      
     // TODO N = N*T; push(T); pop();
 }

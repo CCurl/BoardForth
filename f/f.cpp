@@ -143,8 +143,7 @@ void loadUserWords() {
     loadSource(PSTR(": D5 5 dPin# ; : D6 6 dPin# ;"));
     loadSource(PSTR(": D7 7 dPin# ; : D8 8 dPin# ;"));
     loadSource(PSTR(": led 13 dPin# ; : led-on 0 led ! ; : led-off 1 led ! ;"));
-    loadSource(PSTR("13 output-pin"));
-    loadSource(PSTR(": blink led-on BEGIN 1- WHILE- DROP led-off ;"));
+    loadSource(PSTR(": blink led-on DUP MS led-off DUP MS ;"));
 }
 
 void dumpDict() {
@@ -153,6 +152,12 @@ void dumpDict() {
         if (i % 16 == 0) printStringF("\n %04x:", i);
         printStringF(" %02x", dict[i]);
     }
+}
+
+void ok() {
+    printString(" ok. ");
+    fDOTS();
+    printString("\n");
 }
 
 #ifndef __DEV_BOARD__
@@ -172,7 +177,7 @@ void repl() {
     char *tib = (char *)&dict[sys->TIB];
     printStringF("Hello.");
     while (1) {
-        printString(" ok. "); fDOTS(); printString("\n"); 
+        ok();
         gets(tib);
         if (strcmp(tib, "bye") == 0) return;
         doHistory(tib);

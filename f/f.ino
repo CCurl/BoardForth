@@ -3,21 +3,16 @@
 char buf[80];
 int len;
 
-void ok() {
-    printSerial(" ok. ");
-    fDOTS();
-    printSerial("\n");
-}
-
 void setup() {
     SERIAL.begin(19200);
     while (!SERIAL) {}
     while (SERIAL.available()) {}
-    printString("\nHello world!\n");
+    printString("BoardForth v0.0.1 - Chris Curl\n");
+    printString("Source: https://github.com/CCurl/BoardForth \n");
+    printStringF("Hello.");
     vmInit();
     loadBaseSystem();
     loadUserWords();
-    // dumpDict();
     ok();
     len = 0;
 }
