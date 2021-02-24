@@ -134,6 +134,10 @@ void printString(const char *str);
 void printStringF(const char *fmt, ...);
 void loadUserWords();
 void ok();
+void autoRun();
+CELL cellAt(CELL);
+CELL wordAt(CELL);
+CELL addrAt(CELL);
 
 // ---------------------------------------------------------------------
 /* NimbleText script for below (https://nimbletext.com/Live)

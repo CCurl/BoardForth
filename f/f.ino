@@ -31,6 +31,7 @@ void loop() {
       buf[len++] = c;
     }
   }
+  autoRun();
 }
 
 void printSerial(const char *str) {

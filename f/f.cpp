@@ -132,8 +132,6 @@ void runTests() {
 void loadUserWords() {
     loadSource(PSTR(": dPin# $01000000 + ;"));
     loadSource(PSTR(": aPin# $02000000 + ;"));
-    loadSource(PSTR(": low->high 2DUP > IF SWAP THEN ;"));
-    loadSource(PSTR(": dump low->high DO I C@ . LOOP ;"));
     loadSource(PSTR(": A1 1 aPin# ; : A2 2 aPin# ;"));
     loadSource(PSTR(": A3 3 aPin# ; : A4 4 aPin# ;"));
     loadSource(PSTR(": A5 5 aPin# ; : A6 6 aPin# ;"));
@@ -142,6 +140,11 @@ void loadUserWords() {
     loadSource(PSTR(": D3 3 dPin# ; : D4 4 dPin# ;"));
     loadSource(PSTR(": D5 5 dPin# ; : D6 6 dPin# ;"));
     loadSource(PSTR(": D7 7 dPin# ; : D8 8 dPin# ;"));
+
+    loadSource(PSTR(": bm TICK SWAP bm TICK SWAP - 1000 /MOD . . ;"));
+    loadSource(PSTR(": low->high 2DUP > IF SWAP THEN ;"));
+    loadSource(PSTR(": high->low 2DUP < IF SWAP THEN ;"));
+    loadSource(PSTR(": dump low->high DO I C@ . LOOP ;"));
     loadSource(PSTR(": led 13 dPin# ; : led-on 0 led ! ; : led-off 1 led ! ;"));
     loadSource(PSTR(": blink led-on DUP MS led-off DUP MS ;"));
 }

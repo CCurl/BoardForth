@@ -36,11 +36,30 @@ void run(CELL start, CELL max_cycles) {
     }
 }
 
-void push(CELL v) { sys->DSP = (sys->DSP < STK_SZ) ? sys->DSP+1 : STK_SZ; T = v; }
-CELL pop() { sys->DSP = (sys->DSP > 0) ? sys->DSP-1 : 0; return dstk[sys->DSP+1]; }
+void autoRun() {
+    CELL addr = addrAt(0);
+    if (addr) {
+        run(addr, 0);
+    }
+}
 
-void rpush(CELL v) { sys->RSP = (sys->RSP < STK_SZ) ? sys->RSP+1 : STK_SZ; R = v; }
-CELL rpop() { sys->RSP = (sys->RSP > 0) ? sys->RSP-1 : 0; return rstk[sys->RSP+1]; }
+void push(CELL v) {
+    sys->DSP = (sys->DSP < STK_SZ) ? sys->DSP+1 : STK_SZ;
+    T = v;
+}
+CELL pop() {
+    sys->DSP = (sys->DSP > 0) ? sys->DSP-1 : 0;
+    return dstk[sys->DSP+1];
+}
+
+void rpush(CELL v) {
+    sys->RSP = (sys->RSP < STK_SZ) ? sys->RSP+1 : STK_SZ;
+    R = v; 
+}
+CELL rpop() {
+    sys->RSP = (sys->RSP > 0) ? sys->RSP-1 : 0;
+    return rstk[sys->RSP+1];
+}
 
 void vmInit() {
     sys = (SYSVARS_T *)dict;
@@ -82,17 +101,11 @@ void printStringF(const char *fmt, ...) {
 }
 
 CELL cellAt(CELL loc) {
-    CELL x = dict[loc++];
-    x += (dict[loc++] <<  8);
-    x += (dict[loc++] << 16);
-    x += (dict[loc++] << 24);
-    return x;
+    return (dict[loc+3] << 24) + (dict[loc+2] << 16) + (dict[loc+1] <<  8) + dict[loc];
 }
 
 CELL wordAt(CELL loc) {
-    CELL x = dict[loc++];
-    x += (dict[loc] <<  8);
-    return x;
+    return (dict[loc+1] << 8) + dict[loc];
 }
 
 CELL addrAt(CELL loc) {         // opcode #16
@@ -100,20 +113,17 @@ CELL addrAt(CELL loc) {         // opcode #16
 }
 
 void wordStore(CELL addr, CELL val) {
-    // printStringF("-w! %ld to [%ld]-", val, addr);
-    if ((0 <= addr) && ((addr+2) < DICT_SZ)) {
-        dict[addr++] = (val & 0xFF);
-        dict[addr++] = (val >>  8) & 0xFF;
-    }
+    dict[addr]   = (val & 0xFF);
+    dict[addr+1] = (val >>  8) & 0xFF;
 }
+
 void cellStore(CELL addr, CELL val) {
-    if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
-        dict[addr++] = (val & 0xFF);
-        dict[addr++] = (val >>  8) & 0xFF;
-        dict[addr++] = (val >> 16) & 0xFF;
-        dict[addr++] = (val >> 24) & 0xFF;
-    }
+    dict[addr++] = ((val)       & 0xFF);
+    dict[addr++] = ((val >>  8) & 0xFF);
+    dict[addr++] = ((val >> 16) & 0xFF);
+    dict[addr++] = ((val >> 24) & 0xFF);
 }
+
 void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
