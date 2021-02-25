@@ -124,13 +124,20 @@ void loadUserWords() {
     loadSource(PSTR(": D3 3 dPin# ; : D4 4 dPin# ;"));
     loadSource(PSTR(": D5 5 dPin# ; : D6 6 dPin# ;"));
     loadSource(PSTR(": D7 7 dPin# ; : D8 8 dPin# ;"));
+    loadSource(PSTR(": auto-run-last LAST >BODY 0 A! ;"));
+    loadSource(PSTR(": auto-run-off 0 0 A! ;"));
 
-    loadSource(PSTR(": bm TICK SWAP bm TICK SWAP - 1000 /MOD . . ;"));
+    loadSource(PSTR(": elapsed TICK SWAP - 1000 /MOD . . ;"));
+    loadSource(PSTR(": bm TICK SWAP BEGIN 1- WHILE- DROP elapsed ;"));
     loadSource(PSTR(": low->high 2DUP > IF SWAP THEN ;"));
     loadSource(PSTR(": high->low 2DUP < IF SWAP THEN ;"));
     loadSource(PSTR(": dump low->high DO I C@ . LOOP ;"));
     loadSource(PSTR(": led 13 dPin# ; : led-on 0 led ! ; : led-off 1 led ! ;"));
     loadSource(PSTR(": blink led-on DUP MS led-off DUP MS ;"));
+    loadSource(PSTR(": k 1000 * ; : mil k k ;"));
+    loadSource(PSTR(": blinks 0 SWAP DO blink LOOP ;"));
+    loadSource(PSTR(": blinker blink ;"));
+    // loadSource(PSTR(""));
 }
 
 void dumpDict() {

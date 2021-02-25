@@ -1,7 +1,9 @@
-#include <windows.h>
+#ifndef __DEV_BOARD__
+    #include <windows.h>
+#endif
+
 #include <stdarg.h>
 #include "defs.h"
-
 
 CELL *dstk;
 CELL *rstk;
@@ -1020,7 +1022,7 @@ void fDELAY() {
 // OP_TICK (#78)    : TICK ( -- n ) ... ;
 void fTICK() { 
     #ifdef __DEV_BOARD__
-        push(milis());
+        push(millis());
     #else
         push(GetTickCount());
     #endif

@@ -45,8 +45,8 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, PSTR("-")) == 0) return OP_SUB;       //  opcode #28
     if (strcmp_PF(w, PSTR("*")) == 0) return OP_MULT;       //  opcode #29
     if (strcmp_PF(w, PSTR("/MOD")) == 0) return OP_SLMOD;       //  opcode #30
-    if (strcmp_PF(w, PSTR("<<")) == 0) return OP_LSHIFT;       //  opcode #31
-    if (strcmp_PF(w, PSTR(">>")) == 0) return OP_RSHIFT;       //  opcode #32
+    if (strcmp_PF(w, PSTR("2*")) == 0) return OP_LSHIFT;       //  opcode #31
+    if (strcmp_PF(w, PSTR("2/")) == 0) return OP_RSHIFT;       //  opcode #32
     if (strcmp_PF(w, PSTR("AND")) == 0) return OP_AND;       //  opcode #33
     if (strcmp_PF(w, PSTR("OR")) == 0) return OP_OR;       //  opcode #34
     if (strcmp_PF(w, PSTR("XOR")) == 0) return OP_XOR;       //  opcode #35
