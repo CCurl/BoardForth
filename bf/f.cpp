@@ -114,16 +114,10 @@ void parseLine(char *line) {
 }
 
 void loadUserWords() {
-    loadSource(PSTR(": dpin# $01000000 + ;"));
-    loadSource(PSTR(": apin# $02000000 + ;"));
-    loadSource(PSTR(": a1 1 apin# ; : a2 2 apin# ;"));
-    loadSource(PSTR(": a3 3 apin# ; : a4 4 apin# ;"));
-    loadSource(PSTR(": a5 5 apin# ; : a6 6 apin# ;"));
-    loadSource(PSTR(": a7 6 apin# ; : a8 8 apin# ;"));
-    loadSource(PSTR(": d1 1 dpin# ; : d2 2 dpin# ;"));
-    loadSource(PSTR(": d3 3 dpin# ; : d4 4 dpin# ;"));
-    loadSource(PSTR(": d5 5 dpin# ; : d6 6 dpin# ;"));
-    loadSource(PSTR(": d7 7 dpin# ; : d8 8 dpin# ;"));
+    char *buf = (char *)&dict[sys->HERE + 16];
+    sprintf(buf, ": ds $%lx ;", &dict[0]);
+    parseLine(buf);
+    loadSource(PSTR(": mw@ dup 1+ mc@ 256 * swap mc@ + ;"));
     loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
     loadSource(PSTR(": auto-run-off 0 0 a! ;"));
 
@@ -132,7 +126,7 @@ void loadUserWords() {
     loadSource(PSTR(": low->high 2dup > if swap then ;"));
     loadSource(PSTR(": high->low 2dup < if swap then ;"));
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": led 13 dpin# ; : led-on 0 led ! ; : led-off 1 led ! ;"));
+    loadSource(PSTR(": led 13 ; : led-on 0 led dpin! ; : led-off 1 led dpin! ;"));
     loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
     loadSource(PSTR(": k 1000 * ; : mil k k ;"));
     loadSource(PSTR(": blinks 0 swap do blink loop ;"));
@@ -185,6 +179,7 @@ int main() {
     printString("BoardForth v0.0.1 - Chris Curl\n");
     printString("Source: https://github.com/CCurl/BoardForth \n");
     printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
+    printStringF("... starts here %ld ($%04x)\n", &dict[0], &dict[0]);
     vmInit();
     loadBaseSystem();
     loadUserWords();
