@@ -114,28 +114,28 @@ void parseLine(char *line) {
 }
 
 void loadUserWords() {
-    loadSource(PSTR(": dPin# $01000000 + ;"));
-    loadSource(PSTR(": aPin# $02000000 + ;"));
-    loadSource(PSTR(": A1 1 aPin# ; : A2 2 aPin# ;"));
-    loadSource(PSTR(": A3 3 aPin# ; : A4 4 aPin# ;"));
-    loadSource(PSTR(": A5 5 aPin# ; : A6 6 aPin# ;"));
-    loadSource(PSTR(": A7 6 aPin# ; : A8 8 aPin# ;"));
-    loadSource(PSTR(": D1 1 dPin# ; : D2 2 dPin# ;"));
-    loadSource(PSTR(": D3 3 dPin# ; : D4 4 dPin# ;"));
-    loadSource(PSTR(": D5 5 dPin# ; : D6 6 dPin# ;"));
-    loadSource(PSTR(": D7 7 dPin# ; : D8 8 dPin# ;"));
-    loadSource(PSTR(": auto-run-last LAST >BODY 0 A! ;"));
-    loadSource(PSTR(": auto-run-off 0 0 A! ;"));
+    loadSource(PSTR(": dpin# $01000000 + ;"));
+    loadSource(PSTR(": apin# $02000000 + ;"));
+    loadSource(PSTR(": a1 1 apin# ; : a2 2 apin# ;"));
+    loadSource(PSTR(": a3 3 apin# ; : a4 4 apin# ;"));
+    loadSource(PSTR(": a5 5 apin# ; : a6 6 apin# ;"));
+    loadSource(PSTR(": a7 6 apin# ; : a8 8 apin# ;"));
+    loadSource(PSTR(": d1 1 dpin# ; : d2 2 dpin# ;"));
+    loadSource(PSTR(": d3 3 dpin# ; : d4 4 dpin# ;"));
+    loadSource(PSTR(": d5 5 dpin# ; : d6 6 dpin# ;"));
+    loadSource(PSTR(": d7 7 dpin# ; : d8 8 dpin# ;"));
+    loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
+    loadSource(PSTR(": auto-run-off 0 0 a! ;"));
 
-    loadSource(PSTR(": elapsed TICK SWAP - 1000 /MOD . . ;"));
-    loadSource(PSTR(": bm TICK SWAP BEGIN 1- WHILE- DROP elapsed ;"));
-    loadSource(PSTR(": low->high 2DUP > IF SWAP THEN ;"));
-    loadSource(PSTR(": high->low 2DUP < IF SWAP THEN ;"));
-    loadSource(PSTR(": dump low->high DO I C@ . LOOP ;"));
-    loadSource(PSTR(": led 13 dPin# ; : led-on 0 led ! ; : led-off 1 led ! ;"));
-    loadSource(PSTR(": blink led-on DUP MS led-off DUP MS ;"));
+    loadSource(PSTR(": elapsed tick swap - 1000 /mod . . ;"));
+    loadSource(PSTR(": bm tick swap begin 1- while- drop elapsed ;"));
+    loadSource(PSTR(": low->high 2dup > if swap then ;"));
+    loadSource(PSTR(": high->low 2dup < if swap then ;"));
+    loadSource(PSTR(": dump low->high do i c@ . loop ;"));
+    loadSource(PSTR(": led 13 dpin# ; : led-on 0 led ! ; : led-off 1 led ! ;"));
+    loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
     loadSource(PSTR(": k 1000 * ; : mil k k ;"));
-    loadSource(PSTR(": blinks 0 SWAP DO blink LOOP ;"));
+    loadSource(PSTR(": blinks 0 swap do blink loop ;"));
     loadSource(PSTR(": blinker blink ;"));
     // loadSource(PSTR(""));
 }

@@ -35,11 +35,6 @@ typedef unsigned char  BYTE;
 #define WORD_SZ (2)
 #define ADDR_SZ (2)
 
-#define DIGITAL_PIN_BASE 0x01000000
-#define DIGITAL_PIN_MAX  0x010000FF
-#define ANALOG_PIN_BASE  0x02000000
-#define ANALOG_PIN_MAX   0x020000FF
-
 #define T dstk[sys->DSP]
 #define N dstk[sys->DSP-1]
 #define R rstk[sys->RSP]
@@ -230,7 +225,12 @@ $once
 #define OP_OUTPUTPIN     76     // output-pin
 #define OP_DELAY         77     // MS
 #define OP_TICK          78     // TICK
-#define OP_BYE           79     // BYE
+#define OP_APINSTORE     79     // apin!
+#define OP_DPINSTORE     80     // dpin!
+#define OP_APINFETCH     81     // apin@
+#define OP_DPINFETCH     82     // dpin@
+#define OP_BYE           83     // BYE
+
 // ------- NimbleText generated continues
 void fNOOP();            // OP_NOOP
 void fCLIT();            // OP_CLIT
@@ -311,6 +311,10 @@ void fINPUTPIN();        // OP_INPUTPIN
 void fOUTPUTPIN();       // OP_OUTPUTPIN
 void fDELAY();           // OP_DELAY
 void fTICK();            // OP_TICK
+void fAPINSTORE();       // apin!
+void fDPINSTORE();       // dpin!
+void fAPINFETCH();       // apin@
+void fDPINFETCH();       // dpin@
 void fBYE();             // OP_BYE
 // ^^^^^ - NimbleText generated - ^^^^^
 

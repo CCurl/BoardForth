@@ -30,7 +30,7 @@ To deploy the VM to the development board:
 Notes:
 
     - This is a work in progress. I welcome collaboration.
-    - This is not an ANSI standard Forth. It is a subset of Forth83.
+    - This is not an ANSI standard Forth.
     - However, one could build an ANSI standard Forth using it if so desired.
     - The data and return stack sizes are defaulted to 32 CELLS (32-bit). That can be easily changed in defs.h
     - Addresses are 16-bit values, allowing for up to 64k of dictionary space. That is an awful lot of code.
@@ -47,25 +47,24 @@ Notes:
         - When I know what I want to keep, I update the LoadUserWords() with amy new code.
         - If there is anything from the interactive session I want to use, I copy it from the SerialMonitor.
         - Rebuild and upload the project to the board, and the new functionality is now "built-in".
-    - I/O ports are simply addresses outside of the range of address for the dictionary.
 
 To control the internal LED (pin #13), do this:
 
-    - 13 output-pin
-    - : led 13 dPin# ;     \ defines a LED at pin #13
-    - : led-on 0 led ! ;
-    - : led-off 1 led ! ;
+    - : led 13 ;           \ name the LED at pin #13
+    - led output-pin
+    - : led-on 0 led dpin! ;
+    - : led-off 1 led dpin! ;
     - led-on               \ the LED turns on
     - led-off              \ the LED turns off
 
 To read pin #36, do this:
 
-    - 36 input-pin
-    - : myPin 36 dPin# ;     \ defines a pin at #36
-    - myPin @ .
+    - : myPin 36 ;         \ name the pin at #36
+    - myPin input-pin
+    - myPin dpin@ .
 
 To turn on the LED depending on the value of whether another pin:
 
-    - : main myPin @ led ! ;      \ this turns the LED on or off depending on pin 36
-    - auto-run-last               \ now you can switch pin 36 on and off and the LED changes
-    - auto-run-off                \ the LED is no longer changed when pin 36 changes
+    - : main myPin dpin@ led dpin! ;   \ this turns the LED on or off depending on pin 36
+    - auto-run-last                    \ now when you switch pin 36 on and off, the LED changes
+    - auto-run-off                     \ the LED is no longer changed when pin 36 changes

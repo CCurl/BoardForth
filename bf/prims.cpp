@@ -296,7 +296,11 @@ FP prims[] = {
     fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output-pin ( n -- )***
     fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
     fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
-    fBYE,              // OP_BYE (#79) ***BYE BYE ( -- )***
+    fAPINSTORE,        // OP_APINSTORE (#79) ***apin! ( n1 n2 -- )***
+    fDPINSTORE,        // OP_DPINSTORE (#80) ***dpin! ( n1 n2 -- )***
+    fAPINFETCH,        // OP_APINFETCH (#81) ***apin@ ( n -- n )***
+    fDPINFETCH,        // OP_DPINFETCH (#82) ***dpin@ ( n -- n )***
+    fBYE,              // OP_BYE (#83) ***BYE BYE ( -- )***
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -339,25 +343,6 @@ void fFETCH() {        // opcode #7
         T = cellAt(addr);
         return;
     }
-
-    if ((ANALOG_PIN_BASE <= addr) && (addr <= ANALOG_PIN_MAX)) {
-        addr -= ANALOG_PIN_BASE;
-        #ifdef __DEV_BOARD__
-            T = analogRead(addr);
-        #else
-            printStringF("-analogRead(%ld)-", addr);
-        #endif
-        return;
-    }
-    if ((DIGITAL_PIN_BASE <= addr) && (addr <= DIGITAL_PIN_MAX)) {
-        addr -= DIGITAL_PIN_BASE;
-        #ifdef __DEV_BOARD__
-            T = digitalRead(addr);
-        #else
-            printStringF("-digitalRead(%ld)-", addr);
-        #endif
-        return;
-    }
     printStringF("Invalid address: %ld ($%04lX)", addr, addr);
 }
 void fCSTORE() {       // opcode #8
@@ -380,28 +365,6 @@ void fSTORE() {        // opcode #11
     CELL val = pop();
     if ((0 <= addr) && ((addr+4) < DICT_SZ)) {
         cellStore(addr, val);
-        return;
-    }
-
-    if ((ANALOG_PIN_BASE <= addr) && (addr <= ANALOG_PIN_MAX)) {
-        addr -= ANALOG_PIN_BASE;
-        #ifdef __DEV_BOARD__
-            analogWrite(addr, val);
-            // printStringF("-analogWrite(%ld, %ld)-", addr, val);
-        #else
-            printStringF("-analogWrite(%ld, %ld)-", addr, val);
-        #endif
-        return;
-    }
-    if ((DIGITAL_PIN_BASE <= addr) && (addr <= DIGITAL_PIN_MAX)) {
-        addr -= DIGITAL_PIN_BASE;
-        val = (val) ? 255 : 0;
-        #ifdef __DEV_BOARD__
-            // printStringF("-digitalWrite(%ld, %ld)-", addr, val);
-            digitalWrite(addr, val);
-        #else
-            printStringF("-digitalWrite(%ld, %ld)-", addr, val);
-        #endif
         return;
     }
     printStringF("Invalid address: %ld ($%04lX)", addr);
@@ -692,7 +655,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "IF") == 0) {
+    if (strcmp(w, "if") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPZ);
         push(sys->HERE);
@@ -700,7 +663,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "IF-") == 0) {
+    if (strcmp(w, "if-") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_NJMPZ);
         push(sys->HERE);
@@ -708,7 +671,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "ELSE") == 0) {
+    if (strcmp(w, "else") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMP);
         push(sys->HERE);
@@ -720,7 +683,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "THEN") == 0) {
+    if (strcmp(w, "then") == 0) {
         if (! compiling(w, 1)) { return; }
         push(sys->HERE);
         fSWAP();
@@ -728,61 +691,61 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "BEGIN") == 0) {
+    if (strcmp(w, "begin") == 0) {
         if (! compiling(w, 1)) { return; }
         push(sys->HERE);
         return;
     }
 
-    if (strcmp(w, "REPEAT") == 0) {
+    if (strcmp(w, "repeat") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMP);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "WHILE") == 0) {
+    if (strcmp(w, "while") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPNZ);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "UNTIL") == 0) {
+    if (strcmp(w, "until") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPZ);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "WHILE-") == 0) {
+    if (strcmp(w, "while-") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_NJMPNZ);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "UNTIL-") == 0) {
+    if (strcmp(w, "until-") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_NJMPZ);
         fACOMMA();
         return;
     }
 
-    if (strcmp(w, "DO") == 0) {
+    if (strcmp(w, "do") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_DO);
         push(sys->HERE);
         return;
     }
 
-    if (strcmp(w, "LEAVE") == 0) {
+    if (strcmp(w, "leave") == 0) {
         if (! compiling(w, 1)) { return; }
         printString("WARNING: LEAVE not supported!");
         return;
     }
 
-    if (strcmp(w, "LOOP") == 0) {
+    if (strcmp(w, "loop") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_LOOP);
         CCOMMA(OP_JMPNZ);
@@ -790,7 +753,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "LOOP+") == 0) {
+    if (strcmp(w, "loop+") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_LOOPP);
         CCOMMA(OP_JMPNZ);
@@ -810,7 +773,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "VARIABLE") == 0) {
+    if (strcmp(w, "variable") == 0) {
         if (! interpreting(w, 1)) { return; }
         push(wa);
         fNEXTWORD();
@@ -825,7 +788,7 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "CONSTANT") == 0) {
+    if (strcmp(w, "constant") == 0) {
         if (! interpreting(w, 1)) { return; }
         push(wa);
         fNEXTWORD();
@@ -1027,7 +990,47 @@ void fTICK() {
         push(GetTickCount());
     #endif
 }
-// OP_BYE (#79)    : BYE ( -- ) ... ;
+// OP_APINSTORE (#79)    : apin! ( n1 n2 -- ) ... ;
+void fAPINSTORE() {
+    CELL pin = pop();
+    CELL val = pop();
+    #ifdef __DEV_BOARD__
+        // printStringF("-analogWrite(%d, OUTPUT)-", pin);
+        analogWrite(addr, val);
+    #else
+        printStringF("-analogWrite(%ld, %ld)-", pin, val);
+    #endif
+}
+// OP_DPINSTORE (#80)    : dpin! ( n1 n2 -- ) ... ;
+void fDPINSTORE() {
+    CELL pin = pop();
+    CELL val = pop();
+    #ifdef __DEV_BOARD__
+        // printStringF("-digitalWrite(%d, OUTPUT)-", pin);
+        digitalWrite(addr, val);(addr, val);
+    #else
+        printStringF("-digitalWrite(%ld, %ld)-", pin, val);
+    #endif
+}
+// OP_APINFETCH (#81)    : apin@ ( n -- n ) ... ;
+void fAPINFETCH() {
+    #ifdef __DEV_BOARD__
+        // printStringF("-analogRead(%d)-", T);
+        T = analogRead(T);
+    #else
+        printStringF("-analogRead(%ld)-", T);
+    #endif
+}
+// OP_DPINFETCH (#82)    : dpin@ ( n -- n ) ... ;
+void fDPINFETCH() {
+    #ifdef __DEV_BOARD__
+        // printStringF("-digitalRead(%d)-", T);
+        T = digitalRead(T);
+    #else
+        printStringF("-digitalRead(%ld)-", T);
+    #endif
+}
+// OP_BYE (#83)    : BYE ( -- ) ... ;
 void fBYE() {      
     // TODO N = N*T; push(T); pop();
 }
