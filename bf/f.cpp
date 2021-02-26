@@ -163,12 +163,10 @@ void doHistory(char *l) {
 
 void repl() {
     char *tib = (char *)&dict[sys->TIB];
-    printStringF("Hello.");
     while (1) {
         ok();
         gets(tib);
         if (strcmp(tib, "bye") == 0) return;
-        if (strcmp(tib, "BYE") == 0) return;
         doHistory(tib);
         push(sys->TIB);
         fPARSELINE();
@@ -179,6 +177,7 @@ int main() {
     printString("BoardForth v0.0.1 - Chris Curl\n");
     printString("Source: https://github.com/CCurl/BoardForth \n");
     printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
+    printStringF("Hello.");
     vmInit();
     loadBaseSystem();
     loadUserWords();
