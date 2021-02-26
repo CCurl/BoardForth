@@ -114,6 +114,10 @@ void parseLine(char *line) {
 }
 
 void loadUserWords() {
+    char *buf = (char *)&dict[sys->HERE + 16];
+    sprintf(buf, ": ds $%lx ;", &dict[0]);
+    parseLine(buf);
+    loadSource(PSTR(": mw@ dup 1+ mc@ 256 * swap mc@ + ;"));
     loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
     loadSource(PSTR(": auto-run-off 0 0 a! ;"));
 

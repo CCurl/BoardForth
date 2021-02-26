@@ -296,11 +296,13 @@ FP prims[] = {
     fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output-pin ( n -- )***
     fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
     fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
-    fAPINSTORE,        // OP_APINSTORE (#79) ***apin! ( n1 n2 -- )***
-    fDPINSTORE,        // OP_DPINSTORE (#80) ***dpin! ( n1 n2 -- )***
-    fAPINFETCH,        // OP_APINFETCH (#81) ***apin@ ( n -- n )***
-    fDPINFETCH,        // OP_DPINFETCH (#82) ***dpin@ ( n -- n )***
-    fBYE,              // OP_BYE (#83) ***BYE BYE ( -- )***
+    fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  apin! ( n1 n2 -- )***
+    fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dpin! ( n1 n2 -- )***
+    fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH apin@ ( n1 -- n2 )***
+    fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dpin@ ( n1 -- n2 )***
+    fMCFETCH,          // OP_MCFETCH (#83) ***MCFETCH mc@ ( n1 -- n2 )***
+    fMCSTORE,          // OP_MCSTORE (#84) ***MCSTORE mc! ( n1 n2 -- )***
+    fBYE,              // OP_BYE (#85) ***BYE bye ( -- )***
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -1030,7 +1032,18 @@ void fDPINFETCH() {
         printStringF("-digitalRead(%ld)-", T);
     #endif
 }
-// OP_BYE (#83)    : BYE ( -- ) ... ;
+// OP_MCFETCH (#83)    : mc@ ( TODO -- TODO ) ... ;
+void fMCFETCH() {  
+    BYTE *a = (BYTE *)T;
+    T = (CELL)(*a);
+}
+// OP_MCSTORE (#84)    : mc! ( TODO -- TODO ) ... ;
+void fMCSTORE() {  
+    BYTE *a = (BYTE *)pop();
+    BYTE v = (BYTE)pop();
+    *a = v;
+}
+// OP_BYE (#85)    : bye ( TODO -- TODO ) ... ;
 void fBYE() {      
     // TODO N = N*T; push(T); pop();
 }
