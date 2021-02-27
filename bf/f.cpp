@@ -117,7 +117,10 @@ void loadUserWords() {
     char *buf = (char *)&dict[sys->HERE + 16];
     sprintf(buf, ": ds $%lx ;", &dict[0]);
     parseLine(buf);
-    loadSource(PSTR(": mw@ dup 1+ mc@ 256 * swap mc@ + ;"));
+    loadSource(PSTR(": mw@ dup 1+  mc@   $100 * swap mc@ or ;"));
+    loadSource(PSTR(": m@  dup 2 + mw@ $10000 * swap mw@ or ;"));
+    loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
+    loadSource(PSTR(": m!  over $10000 / over 2+ mw! mw! ;"));
     loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
     loadSource(PSTR(": auto-run-off 0 0 a! ;"));
 

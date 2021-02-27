@@ -449,13 +449,13 @@ void fRSHIFT() {       // opcode #32
     T = T >> 1;
 }
 void fAND() {          // opcode #33
-    N &= T;
+    N &= T; pop();
 }
 void fOR() {           // opcode #34
-    N |= T;
+    N |= T; pop();
 }
 void fXOR() {          // opcode #35
-    N ^= T;
+    N ^= T; pop();
 }
 void fNOT() {          // opcode #36
     T = ~T;
