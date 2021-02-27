@@ -1,7 +1,3 @@
-#ifndef __DEV_BOARD__
-    #include <windows.h>
-#endif
-
 #include <stdarg.h>
 #include "defs.h"
 
@@ -475,17 +471,18 @@ void fEMIT() {
 void fDOT() {
     CELL v = pop();
     if (sys->BASE == 10) {
-        printStringF(" %ld", v);
+        printStringF("%ld", v);
     } else if (sys->BASE == 16) {
-        printStringF(" %lx", v);
+        printStringF("%lx", v);
     } else {
-        printStringF(" %ld (in %ld)", v, sys->BASE);
+        printStringF("b%d:%ld", (int)sys->BASE, v);
     }
 }
 void fDOTS() {
     if (sys->DSP) {
         push('('); fEMIT();
         for (int i = 1; i <= sys->DSP; i++) {
+            push(' '); fEMIT();
             push(dstk[i]);
             fDOT();
         }
@@ -624,9 +621,19 @@ void fPARSEWORD() {    // opcode #59
         DICT_T *dp = (DICT_T *)&dict[T];
         fGETXT();
         CELL xt = pop();
-        if ((compiling(w, 0)) && (dp->flags == 0)) {
-            CCOMMA(OP_CALL);
-            ACOMMA((ADDR)xt);
+        if (compiling(w, 0)) {
+            if (dp->flags == 1) {
+                run(xt, 0);
+            } else if (dp->flags == 2) {
+                BYTE x = dict[xt];
+                while (x != OP_RET) {
+                    CCOMMA(x);
+                    x = dict[++xt];
+                }
+            } else {
+                CCOMMA(OP_CALL);
+                ACOMMA((ADDR)xt);
+            }
         } else {
             run(xt, 0);
         }
@@ -820,6 +827,7 @@ void fPARSEWORD() {    // opcode #59
     printStringF("[%s]??", w);
 }
 void fPARSELINE() {    // opcode #60
+    // printString("x");
     sys->TOIN = pop();
     CELL buf = allocSpace(32);
     char *w = (char *)&dict[buf];
@@ -998,7 +1006,7 @@ void fAPINSTORE() {
     CELL val = pop();
     #ifdef __DEV_BOARD__
         // printStringF("-analogWrite(%d, OUTPUT)-", pin);
-        analogWrite(addr, val);
+        analogWrite(pin, val);
     #else
         printStringF("-analogWrite(%ld, %ld)-", pin, val);
     #endif
@@ -1009,7 +1017,7 @@ void fDPINSTORE() {
     CELL val = pop();
     #ifdef __DEV_BOARD__
         // printStringF("-digitalWrite(%d, OUTPUT)-", pin);
-        digitalWrite(addr, val);(addr, val);
+        digitalWrite(pin, val);
     #else
         printStringF("-digitalWrite(%ld, %ld)-", pin, val);
     #endif
