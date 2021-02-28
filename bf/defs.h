@@ -1,28 +1,11 @@
 #ifndef __DEFS_H__
 #define __DEFS_H__
 
+#include "board.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// #define __DEV_BOARD__
-
-#define DICT_SZ (24*1024)
-#define STK_SZ 32
-#define TIB_SZ 0x0080
-#define ALLOC_SZ 32
-
-#ifdef __DEV_BOARD__
-  #include <Arduino.h>
-  #define SERIAL Serial
-  void printSerial(const char *);
-  void loadSource(const PROGMEM char *source);
-#else
-  #define F(str) (char *)str
-  #define PSTR(str) (char *)str
-  #define strcmp_PF(str1, str2) strcmp(str1, str2)
-  void loadSource(const char *source);
-#endif
+#include <stdarg.h>
 
 typedef void (*FP)();
 typedef long  CELL;
@@ -130,6 +113,7 @@ void autoRun();
 CELL cellAt(CELL);
 CELL wordAt(CELL);
 CELL addrAt(CELL);
+void fDUMPDICT();
 
 // ---------------------------------------------------------------------
 /* NimbleText script for below (https://nimbletext.com/Live)

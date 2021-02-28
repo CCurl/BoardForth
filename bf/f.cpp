@@ -98,7 +98,9 @@ void is_binary(char *word) {
 }
 
 CELL stringToDict(char *s, CELL to) {
+    // printStringF("-sd.%d", (int)to);
     if (to == 0) to = allocSpace(strlen(s)+2);
+    // printStringF(":%d-\n", (int)to);
     CELL x = to;
     while (*s) {
         dict[x++] = *(s++);
@@ -129,11 +131,12 @@ void loadUserWords() {
     loadSource(PSTR(": low->high 2dup > if swap then ;"));
     loadSource(PSTR(": high->low 2dup < if swap then ;"));
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": led 13 ; : led-on 0 led dpin! ; : led-off 1 led dpin! ;"));
+    loadSource(PSTR(": led 13 ; : led-on 1 led dpin! ; : led-off 0 led dpin! ;"));
     loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
     loadSource(PSTR(": k 1000 * ; : mil k k ;"));
     loadSource(PSTR(": blinks 0 swap do blink loop ;"));
     loadSource(PSTR(": blinker blink ;"));
+    loadSource(PSTR("led output-pin"));
     // loadSource(PSTR(""));
 }
 
@@ -187,11 +190,8 @@ int main() {
     repl();
     FILE *fp = fopen("f.bin","wt");
     if (fp) {
-        fprintf(fp, "%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
-        for (int i = 0; i < sys->HERE; i++) {
-            if (i % 16 == 0) fprintf(fp, "\n %04x:", i);
-            fprintf(fp, " %02x", dict[i]);
-        }
+        push((CELL)fp);
+        fDUMPDICT();
         fclose(fp);
     }
     // allocDump();

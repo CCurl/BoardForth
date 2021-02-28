@@ -1,8 +1,8 @@
+#include "board.h"
 #ifndef __DEV_BOARD__
     #include <windows.h>
 #endif
 
-#include <stdarg.h>
 #include "defs.h"
 
 CELL *dstk;
@@ -147,10 +147,13 @@ int allocFind(CELL addr) {
 }
 
 void allocFree(CELL addr) {
+    // printStringF("-allocFree:%d-", (int)addr);
     int x = allocFind(addr);
     if (x >= 0) {
+        // printStringF("-found:%d-", (int)x);
         allocTbl[x].available = 1;
         if ((x+1) == num_alloced) { -- num_alloced; }
+        if (num_alloced == 0) { allocCurFree = allocAddrBase; }
     }
 }
 
@@ -161,6 +164,7 @@ void allocFreeAll() {
 }
 
 int allocFindAvailable(WORD sz) {
+    // allocDump();
     for (int i = 0; i < num_alloced; i++) {
         if ((allocTbl[i].available) && (allocTbl[i].sz >= sz)) return i;
     }
@@ -170,9 +174,11 @@ int allocFindAvailable(WORD sz) {
 CELL allocSpace(WORD sz) {
     int x = allocFindAvailable(sz);
     if (x >= 0) {
+        // printStringF("-alloc:reuse:%d-", x);
         allocTbl[x].available = 0;
         return allocTbl[x].addr;
     }
+    // printStringF("-alloc:%d,%d-\n", (int)sz, (int)allocCurFree);
     allocCurFree -= (sz);
     if (allocCurFree <= sys->HERE) {
         printString("-out of space!-");
@@ -189,6 +195,16 @@ CELL allocSpace(WORD sz) {
     return allocCurFree;
 }
 #pragma endregion
+
+void fDUMPDICT() {
+    FILE *to = (FILE *)pop();
+    to = to ? to : stdout;
+    fprintf(to, "%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
+    for (int i = 0; i < sys->HERE; i++) {
+        if (i % 16 == 0) fprintf(to, "\n %04x:", i);
+        fprintf(to, " %02x", dict[i]);
+    }
+}
 
 int compiling(char *w, int errIfNot) {
     if ((sys->STATE == 0) && (errIfNot)) {
@@ -998,7 +1014,7 @@ void fAPINSTORE() {
     CELL val = pop();
     #ifdef __DEV_BOARD__
         // printStringF("-analogWrite(%d, OUTPUT)-", pin);
-        analogWrite(addr, val);
+        analogWrite(pin, val);
     #else
         printStringF("-analogWrite(%ld, %ld)-", pin, val);
     #endif
@@ -1008,8 +1024,8 @@ void fDPINSTORE() {
     CELL pin = pop();
     CELL val = pop();
     #ifdef __DEV_BOARD__
-        // printStringF("-digitalWrite(%d, OUTPUT)-", pin);
-        digitalWrite(addr, val);(addr, val);
+        // printStringF("-digitalWrite(%d, %d)-", (int)pin, (int)val);
+        digitalWrite(pin, val);
     #else
         printStringF("-digitalWrite(%ld, %ld)-", pin, val);
     #endif
@@ -1017,7 +1033,7 @@ void fDPINSTORE() {
 // OP_APINFETCH (#81)    : apin@ ( n -- n ) ... ;
 void fAPINFETCH() {
     #ifdef __DEV_BOARD__
-        // printStringF("-analogRead(%d)-", T);
+        printStringF("-analogRead(%d, A0=%d)-", T, A0);
         T = analogRead(T);
     #else
         printStringF("-analogRead(%ld)-", T);
