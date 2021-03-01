@@ -35,11 +35,10 @@ void loadBaseSystem() {
     loadSource(PSTR(": */ >r * r> / ;"));
     loadSource(PSTR(": */mod >r * r> /mod ;"));
     loadSource(PSTR(": +! tuck @ + swap ! ;"));
-    loadSource(PSTR(": 0< 0 < ;"));
-    loadSource(PSTR(": 0= 0 = ;"));
-    loadSource(PSTR(": 0> 0 > ;"));
-    loadSource(PSTR(": 2+ 1+ 1+ ;"));
-    loadSource(PSTR(": 2- 1- 1- ;"));
+    loadSource(PSTR("// free"));
+    loadSource(PSTR(": <> = 1- ;"));
+    loadSource(PSTR(": 0< 0 < ; : 0= 0 = ; : 0> 0 > ;"));
+    loadSource(PSTR(": 2+ 1+ 1+ ; : 2- 1- 1- ;"));
     loadSource(PSTR(": ?dup if- dup then ;"));
     loadSource(PSTR(": negate 0 swap - ;"));
     loadSource(PSTR(": abs dup 0< if negate then ;"));
@@ -53,7 +52,8 @@ void loadBaseSystem() {
     loadSource(PSTR(": max 2dup > if drop else nip then ;"));
     loadSource(PSTR(": between rot dup >r min max r> = ;"));
     loadSource(PSTR(": cr #13 emit #10 emit ;"));
-    loadSource(PSTR(": space $20 emit ;"));
+    loadSource(PSTR(": space $20 emit ; inline : . space (.) ; inline"));
+    loadSource(PSTR("  : .. dup . ;"));
     loadSource(PSTR(": spaces if- begin space 1- while- then drop ;"));
     loadSource(PSTR(": type if- begin >r dup c@ emit 1+ r> 1- while- then 2drop ;"));
     loadSource(PSTR(": .( ;"));
@@ -64,7 +64,9 @@ void loadBaseSystem() {
     loadSource(PSTR(": does> ;"));
     loadSource(PSTR(": [ 0 state ! ; immediate"));
     loadSource(PSTR(": ] 1 state ! ;"));
-    loadSource(PSTR(": .word addr + 1+ count type ;"));
-    loadSource(PSTR(": words last begin dup .word space a@ while- drop ;"));
+    loadSource(PSTR(": .wordl .. dup >body . addr + dup c@ . 1+ space count type cr ;"));
+    loadSource(PSTR(": .word addr + 1+ count type space ;"));
+    loadSource(PSTR(": wordsl last begin dup .wordl a@ while- drop ;"));
+    loadSource(PSTR(": words  last begin dup .word  a@ while- drop ;"));
 }
 // ^^^^^ - NimbleText generated - ^^^^^

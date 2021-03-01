@@ -131,12 +131,18 @@ void loadUserWords() {
     loadSource(PSTR(": low->high 2dup > if swap then ;"));
     loadSource(PSTR(": high->low 2dup < if swap then ;"));
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": led 13 ; : led-on 1 led dpin! ; : led-off 0 led dpin! ;"));
+    loadSource(PSTR(": led 13 ; led output-pin"));
+    loadSource(PSTR(": led-on 1 led dpin! ; : led-off 0 led dpin! ;"));
     loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
     loadSource(PSTR(": k 1000 * ; : mil k k ;"));
     loadSource(PSTR(": blinks 0 swap do blink loop ;"));
-    loadSource(PSTR(": blinker blink ;"));
-    loadSource(PSTR("led output-pin"));
+    loadSource(PSTR(": pp  3 ; pp input-pin"));
+    loadSource(PSTR(": bp 33 ; bp input-pin"));
+    loadSource(PSTR(": pp@ pp apin@ ; "));
+    loadSource(PSTR(": bp@ bp dpin@ ; : bp->led bp@ led dpin! ;"));
+    loadSource(PSTR("variable pplv"));
+    loadSource(PSTR(": .pp dup pplv @ - abs 3 > if .. cr pplv ! else drop then ;"));
+    loadSource(PSTR(": go bp->led pp@ .pp ;"));
     // loadSource(PSTR(""));
 }
 

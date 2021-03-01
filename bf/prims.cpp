@@ -491,28 +491,25 @@ void fEMIT() {
 void fDOT() {
     CELL v = pop();
     if (sys->BASE == 10) {
-        printStringF(" %ld", v);
+        printStringF("%ld", v);
     } else if (sys->BASE == 16) {
-        printStringF(" %lx", v);
+        printStringF("%lx", v);
     } else {
-        printStringF(" %ld (in %ld)", v, sys->BASE);
+        printStringF("(%ld:%ld)", sys->BASE, v);
     }
 }
 void fDOTS() {
     if (sys->DSP) {
         push('('); fEMIT();
         for (int i = 1; i <= sys->DSP; i++) {
+            push(' '); fEMIT();
             push(dstk[i]);
             fDOT();
         }
         push(' '); fEMIT();
         push(')'); fEMIT();
     } else {
-        #ifndef __DEV_BOARD__
-            printStringF("(%c)", 237);
-        #else
-            printString("(-n-)");
-        #endif
+        printStringF("()");
     }
 }
 void fDOTQUOTE() {     // opcode #43
@@ -640,9 +637,21 @@ void fPARSEWORD() {    // opcode #59
         DICT_T *dp = (DICT_T *)&dict[T];
         fGETXT();
         CELL xt = pop();
-        if ((compiling(w, 0)) && (dp->flags == 0)) {
-            CCOMMA(OP_CALL);
-            ACOMMA((ADDR)xt);
+        if (compiling(w, 0)) {
+            if (dp->flags == 1) {
+                // 1 => IMMEDIATE
+                run(xt, 0);
+            } else if (dp->flags == 2) {
+                // 2 => INLINE
+                BYTE x = dict[xt];
+                while (x != OP_RET) {
+                    CCOMMA(x);
+                    x = dict[++xt];
+                }
+            } else {
+                CCOMMA(OP_CALL);
+                ACOMMA((ADDR)xt);
+            }
         } else {
             run(xt, 0);
         }
@@ -1033,7 +1042,7 @@ void fDPINSTORE() {
 // OP_APINFETCH (#81)    : apin@ ( n -- n ) ... ;
 void fAPINFETCH() {
     #ifdef __DEV_BOARD__
-        printStringF("-analogRead(%d, A0=%d)-", T, A0);
+        // printStringF("-analogRead(%d, A0=%d)-", T, A0);
         T = analogRead(T);
     #else
         printStringF("-analogRead(%ld)-", T);
