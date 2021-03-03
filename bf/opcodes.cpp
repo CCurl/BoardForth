@@ -89,14 +89,14 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, PSTR(">")) == 0) return OP_GREATER;       //  opcode #72
     if (strcmp_PF(w, PSTR("i")) == 0) return OP_I;       //  opcode #73
     if (strcmp_PF(w, PSTR("j")) == 0) return OP_J;       //  opcode #74
-    if (strcmp_PF(w, PSTR("input-pin")) == 0) return OP_INPUTPIN;       //  opcode #75
-    if (strcmp_PF(w, PSTR("output-pin")) == 0) return OP_OUTPUTPIN;       //  opcode #76
+    if (strcmp_PF(w, PSTR("input")) == 0) return OP_INPUTPIN;       //  opcode #75
+    if (strcmp_PF(w, PSTR("output")) == 0) return OP_OUTPUTPIN;       //  opcode #76
     if (strcmp_PF(w, PSTR("ms")) == 0) return OP_DELAY;       //  opcode #77
     if (strcmp_PF(w, PSTR("tick")) == 0) return OP_TICK;       //  opcode #78
-    if (strcmp_PF(w, PSTR("apin!")) == 0) return OP_APINSTORE;       //  opcode #79
-    if (strcmp_PF(w, PSTR("dpin!")) == 0) return OP_DPINSTORE;       //  opcode #80
-    if (strcmp_PF(w, PSTR("apin@")) == 0) return OP_APINFETCH;       //  opcode #81
-    if (strcmp_PF(w, PSTR("dpin@")) == 0) return OP_DPINFETCH;       //  opcode #82
+    if (strcmp_PF(w, PSTR("ap!")) == 0) return OP_APINSTORE;       //  opcode #79
+    if (strcmp_PF(w, PSTR("dp!")) == 0) return OP_DPINSTORE;       //  opcode #80
+    if (strcmp_PF(w, PSTR("ap@")) == 0) return OP_APINFETCH;       //  opcode #81
+    if (strcmp_PF(w, PSTR("dp@")) == 0) return OP_DPINFETCH;       //  opcode #82
     if (strcmp_PF(w, PSTR("mc@")) == 0) return OP_MCFETCH;       //  opcode #83
     if (strcmp_PF(w, PSTR("mc!")) == 0) return OP_MCSTORE;       //  opcode #84
     if (strcmp_PF(w, PSTR("bye")) == 0) return OP_BYE;       //  opcode #85

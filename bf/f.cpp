@@ -119,6 +119,8 @@ void loadUserWords() {
     char *buf = (char *)&dict[sys->HERE + 16];
     sprintf(buf, ": ds $%lx ;", &dict[0]);
     parseLine(buf);
+    // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
+    // parseLine(buf);
     loadSource(PSTR(": mw@ dup 1+  mc@   $100 * swap mc@ or ;"));
     loadSource(PSTR(": m@  dup 2 + mw@ $10000 * swap mw@ or ;"));
     loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
@@ -131,18 +133,21 @@ void loadUserWords() {
     loadSource(PSTR(": low->high 2dup > if swap then ;"));
     loadSource(PSTR(": high->low 2dup < if swap then ;"));
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": led 13 ; led output-pin"));
-    loadSource(PSTR(": led-on 1 led dpin! ; : led-off 0 led dpin! ;"));
+    loadSource(PSTR(": led 13 ; led output"));
+    loadSource(PSTR(": led-on 1 led dp! ; : led-off 0 led dp! ;"));
     loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
     loadSource(PSTR(": k 1000 * ; : mil k k ;"));
     loadSource(PSTR(": blinks 0 swap do blink loop ;"));
-    loadSource(PSTR(": pp  3 ; pp input-pin"));
-    loadSource(PSTR(": bp 33 ; bp input-pin"));
-    loadSource(PSTR(": pp@ pp apin@ ; "));
-    loadSource(PSTR(": bp@ bp dpin@ ; : bp->led bp@ led dpin! ;"));
-    loadSource(PSTR("variable pplv"));
-    loadSource(PSTR(": .pp dup pplv @ - abs 3 > if .. cr pplv ! else drop then ;"));
-    loadSource(PSTR(": go bp->led pp@ .pp ;"));
+    loadSource(PSTR("variable pot  3 pot ! "));
+    loadSource(PSTR("variable but  6 but ! "));
+    loadSource(PSTR(": init pot @ input but @ input ;"));
+    loadSource(PSTR("variable pot-lv variable sens 4 sens !"));
+    loadSource(PSTR(": but@ but @ dp@ ;"));
+    loadSource(PSTR(": pot@ pot @ ap@ ;"));
+    loadSource(PSTR(": bp->led but@ if led-on else led-off then ;"));
+    loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if .. cr pot-lv ! else drop then ;"));
+    loadSource(PSTR(": go bp->led .pot? ;"));
+    loadSource(PSTR("init // auto-run-last"));
     // loadSource(PSTR(""));
 }
 

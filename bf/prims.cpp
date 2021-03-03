@@ -1023,7 +1023,7 @@ void fAPINSTORE() {
     CELL val = pop();
     #ifdef __DEV_BOARD__
         // printStringF("-analogWrite(%d, OUTPUT)-", pin);
-        analogWrite(pin, val);
+        analogWrite((int)pin, (int)val);
     #else
         printStringF("-analogWrite(%ld, %ld)-", pin, val);
     #endif
@@ -1034,7 +1034,7 @@ void fDPINSTORE() {
     CELL val = pop();
     #ifdef __DEV_BOARD__
         // printStringF("-digitalWrite(%d, %d)-", (int)pin, (int)val);
-        digitalWrite(pin, val);
+        digitalWrite((int)pin, (int)val);
     #else
         printStringF("-digitalWrite(%ld, %ld)-", pin, val);
     #endif
@@ -1043,7 +1043,7 @@ void fDPINSTORE() {
 void fAPINFETCH() {
     #ifdef __DEV_BOARD__
         // printStringF("-analogRead(%d, A0=%d)-", T, A0);
-        T = analogRead(T);
+        T = analogRead((int)T);
     #else
         printStringF("-analogRead(%ld)-", T);
     #endif
@@ -1052,7 +1052,7 @@ void fAPINFETCH() {
 void fDPINFETCH() {
     #ifdef __DEV_BOARD__
         // printStringF("-digitalRead(%d)-", T);
-        T = digitalRead(T);
+        T = digitalRead((int)T);
     #else
         printStringF("-digitalRead(%ld)-", T);
     #endif
