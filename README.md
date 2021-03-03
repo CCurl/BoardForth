@@ -1,5 +1,5 @@
 # BoardForth
-A token-threaded implementation of a Machine-Forth like VM for development boards, written in C.
+A token-threaded implementation of a Forth VM for development boards and the PC, written in C.
 
 It supports automatically running a user-defined word during the loop() phase of the arduino interface.
 
