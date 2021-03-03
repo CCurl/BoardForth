@@ -121,17 +121,17 @@ void loadUserWords() {
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
-    loadSource(PSTR(": mc@ dup 1+  mw@   $FF and ;"));
-    loadSource(PSTR(": m@  dup 2 + mw@ $10000 * swap mw@ or ;"));
+    loadSource(PSTR(": mc@ dup 1+ mw@ $FF and ;"));
+    loadSource(PSTR(": m@  dup 1+ 1+ mw@ $10000 * swap mw@ or ;"));
     loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
-    loadSource(PSTR(": m!  over $10000 / over 2+ mw! mw! ;"));
+    loadSource(PSTR(": m!  over $10000 / over 1+ 1+ mw! mw! ;"));
     loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
     loadSource(PSTR(": auto-run-off 0 0 a! ;"));
 
     loadSource(PSTR(": elapsed tick swap - 1000 /mod . . ;"));
     loadSource(PSTR(": bm tick swap begin 1- while- drop elapsed ;"));
-    loadSource(PSTR(": low->high 2dup > if swap then ;"));
-    loadSource(PSTR(": high->low 2dup < if swap then ;"));
+    loadSource(PSTR(": low->high over over > if swap then ;"));
+    loadSource(PSTR(": high->low over over < if swap then ;"));
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
     loadSource(PSTR(": led 13 ; led output"));
     loadSource(PSTR(": led-on 1 led dp! ; : led-off 0 led dp! ;"));
@@ -145,7 +145,7 @@ void loadUserWords() {
     loadSource(PSTR(": but@ but @ dp@ ;"));
     loadSource(PSTR(": pot@ pot @ ap@ ;"));
     loadSource(PSTR(": bp->led but@ if led-on else led-off then ;"));
-    loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if .. cr pot-lv ! else drop then ;"));
+    loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
     loadSource(PSTR(": go bp->led .pot? ;"));
     loadSource(PSTR("init // auto-run-last"));
     // loadSource(PSTR(""));

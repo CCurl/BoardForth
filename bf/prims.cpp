@@ -274,7 +274,7 @@ FP prims[] = {
     fRFETCH,           // OP_RFETCH (#38) ***RFETCH R@ (-- N )***
     fRTOD,             // OP_RTOD (#39) ***RTOD R> ( -- N )***
     fEMIT,             // OP_EMIT (#40) ***EMIT EMIT (N -- )***
-    fDOT,              // OP_DOT (#41) ***DOT . (N -- )***
+    fTYPE,             // OP_TYPE (#41) ***TYPE type (a n -- )***
     fDOTS,             // OP_DOTS (#42) ***DOTS .S ( -- )***
     fDOTQUOTE,         // OP_DOTQUOTE (#43) ***DOTQUOTE .\" ( -- )***
     fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
@@ -489,14 +489,14 @@ void fRTOD() {         // opcode #39
 void fEMIT() {
     printStringF("%c", (char)pop());
 }
-void fDOT() {
-    CELL v = pop();
-    if (sys->BASE == 10) {
-        printStringF("%ld", v);
-    } else if (sys->BASE == 16) {
-        printStringF("%lx", v);
-    } else {
-        printStringF("(%ld:%ld)", sys->BASE, v);
+void fTYPE() {
+    CELL n = pop();
+    CELL a = pop();
+    char x[2];
+    x[1] = 0;
+    for (int i = 0; i < n; i++ ) {
+        x[0] = dict[a++];
+        printString(x);
     }
 }
 void fDOTS() {
@@ -505,7 +505,9 @@ void fDOTS() {
         for (int i = 1; i <= sys->DSP; i++) {
             push(' '); fEMIT();
             push(dstk[i]);
-            fDOT();
+            push(0);
+            fNUM2STR();
+            fTYPE();
         }
         push(' '); fEMIT();
         push(')'); fEMIT();
@@ -1070,7 +1072,7 @@ void fMCSTORE() {
 }
 // OP_NUM2STR (#85)    : num>str ( n l -- a ) ... ;
 void fNUM2STR() {      
-    BYTE dlen = (BYTE)pop();
+    BYTE reqLen = (BYTE)pop();
     CELL num = pop();
     BYTE len = 0;
     int isNeg = (num < 0);
@@ -1087,12 +1089,13 @@ void fNUM2STR() {
         num /= sys->BASE;
     } while (num > 0);
 
-    while (len < dlen) {
+    while (len < reqLen) {
         dict[cp--] = '0';
         ++len;
     }
     dict[cp] = len;
-    push(cp);
+    push(cp+1);
+    push(len);
     allocFree(pad);
 }
 // OP_BYE (#86)    : bye ( -- ) ... ;

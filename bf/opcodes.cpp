@@ -55,7 +55,7 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, PSTR("r@")) == 0) return OP_RFETCH;       //  opcode #38
     if (strcmp_PF(w, PSTR("r>")) == 0) return OP_RTOD;       //  opcode #39
     if (strcmp_PF(w, PSTR("emit")) == 0) return OP_EMIT;       //  opcode #40
-    if (strcmp_PF(w, PSTR("(.)")) == 0) return OP_DOT;       //  opcode #41
+    if (strcmp_PF(w, PSTR("type")) == 0) return OP_TYPE;       //  opcode #41
     if (strcmp_PF(w, PSTR(".s")) == 0) return OP_DOTS;       //  opcode #42
     if (strcmp_PF(w, PSTR(".\"")) == 0) return OP_DOTQUOTE;       //  opcode #43
     if (strcmp_PF(w, PSTR("(")) == 0) return OP_PAREN;       //  opcode #44

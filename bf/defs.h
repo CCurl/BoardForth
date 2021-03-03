@@ -171,7 +171,7 @@ $once
 #define OP_RFETCH        38     // R@
 #define OP_RTOD          39     // R>
 #define OP_EMIT          40     // EMIT
-#define OP_DOT           41     // .
+#define OP_TYPE          41     // type
 #define OP_DOTS          42     // .S
 #define OP_DOTQUOTE      43     // .\"
 #define OP_PAREN         44     // (
@@ -259,7 +259,7 @@ void fDTOR();            // OP_DTOR
 void fRFETCH();          // OP_RFETCH
 void fRTOD();            // OP_RTOD
 void fEMIT();            // OP_EMIT
-void fDOT();             // OP_DOT
+void fTYPE();            // OP_TYPE
 void fDOTS();            // OP_DOTS
 void fDOTQUOTE();        // OP_DOTQUOTE
 void fPAREN();           // OP_PAREN

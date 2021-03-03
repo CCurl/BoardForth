@@ -39,7 +39,7 @@ DTOR >r
 RFETCH r@
 RTOD r>
 EMIT emit
-DOT .
+TYPE type
 DOTS .s
 DOTQUOTE .\
 PAREN (
