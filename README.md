@@ -51,20 +51,20 @@ Notes:
 To control the internal LED (pin #13), do this:
 
     - : led 13 ;           \ name the LED at pin #13
-    - led output-pin
-    - : led-on 0 led dpin! ;
-    - : led-off 1 led dpin! ;
+    - led output
+    - : led-on 0 led dp! ;
+    - : led-off 1 led dp! ;
     - led-on               \ the LED turns on
     - led-off              \ the LED turns off
 
 To read pin #36, do this:
 
     - : myPin 36 ;         \ name the pin at #36
-    - myPin input-pin
-    - myPin dpin@ .
+    - myPin input
+    - myPin dp@ .
 
 To turn on the LED depending on the value of whether another pin:
 
-    - : main myPin dpin@ led dpin! ;   \ this turns the LED on or off depending on pin 36
+    - : main myPin dp@ led dp! ;   \ this turns the LED on or off depending on pin 36
     - auto-run-last                    \ now when you switch pin 36 on and off, the LED changes
     - auto-run-off                     \ the LED is no longer changed when pin 36 changes

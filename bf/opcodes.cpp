@@ -97,9 +97,10 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, PSTR("dp!")) == 0) return OP_DPINSTORE;       //  opcode #80
     if (strcmp_PF(w, PSTR("ap@")) == 0) return OP_APINFETCH;       //  opcode #81
     if (strcmp_PF(w, PSTR("dp@")) == 0) return OP_DPINFETCH;       //  opcode #82
-    if (strcmp_PF(w, PSTR("mc@")) == 0) return OP_MCFETCH;       //  opcode #83
+    if (strcmp_PF(w, PSTR("mw@")) == 0) return OP_MWFETCH;       //  opcode #83
     if (strcmp_PF(w, PSTR("mc!")) == 0) return OP_MCSTORE;       //  opcode #84
-    if (strcmp_PF(w, PSTR("bye")) == 0) return OP_BYE;       //  opcode #85
+    if (strcmp_PF(w, PSTR("num>str")) == 0) return OP_NUM2STR;       //  opcode #85
+    if (strcmp_PF(w, PSTR("bye")) == 0) return OP_BYE;       //  opcode #86
     return 0xFF;
 }
 // ^^^^^ - NimbleText generated - ^^^^^

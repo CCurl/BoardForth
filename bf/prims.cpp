@@ -308,17 +308,18 @@ FP prims[] = {
     fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
     fI,                // OP_I (#73) ***I I ( -- n )***
     fJ,                // OP_J (#74) ***J J ( -- n )***
-    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input-pin ( n -- )***
-    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output-pin ( n -- )***
+    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input ( n -- )***
+    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output ( n -- )***
     fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
     fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
-    fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  apin! ( n1 n2 -- )***
-    fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dpin! ( n1 n2 -- )***
-    fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH apin@ ( n1 -- n2 )***
-    fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dpin@ ( n1 -- n2 )***
-    fMCFETCH,          // OP_MCFETCH (#83) ***MCFETCH mc@ ( n1 -- n2 )***
+    fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  ap! ( n1 n2 -- )***
+    fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dp! ( n1 n2 -- )***
+    fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH ap@ ( n1 -- n2 )***
+    fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dp@ ( n1 -- n2 )***
+    fMWFETCH,          // OP_MWFETCH (#83) ***MWFETCH mw@ ( n1 -- n2 )***
     fMCSTORE,          // OP_MCSTORE (#84) ***MCSTORE mc! ( n1 n2 -- )***
-    fBYE,              // OP_BYE (#85) ***BYE bye ( -- )***
+    fNUM2STR,          // OP_NUM2STR (#85) ***NUM2STR num>str ( n l -- a )***
+    fBYE,              // OP_BYE (#86) ***BYE bye ( -- )***
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -980,7 +981,7 @@ void fJ() {
         push(0);
     }
 }
-// OP_INPUTPIN (#75)    : input-pin ( n -- ) ... ;
+// OP_INPUTPIN (#75)    : input ( n -- ) ... ;
 void fINPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
@@ -990,7 +991,7 @@ void fINPUTPIN() {
         printStringF("-pinMode(%d, INPUT)-", pin);
     #endif
 }
-// OP_OUTPUTPIN (#76)    : output-pin ( n -- ) ... ;
+// OP_OUTPUTPIN (#76)    : output ( n -- ) ... ;
 void fOUTPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
@@ -1017,7 +1018,7 @@ void fTICK() {
         push(GetTickCount());
     #endif
 }
-// OP_APINSTORE (#79)    : apin! ( n1 n2 -- ) ... ;
+// OP_APINSTORE (#79)    : ap! ( n1 n2 -- ) ... ;
 void fAPINSTORE() {
     CELL pin = pop();
     CELL val = pop();
@@ -1028,7 +1029,7 @@ void fAPINSTORE() {
         printStringF("-analogWrite(%ld, %ld)-", pin, val);
     #endif
 }
-// OP_DPINSTORE (#80)    : dpin! ( n1 n2 -- ) ... ;
+// OP_DPINSTORE (#80)    : dp! ( n1 n2 -- ) ... ;
 void fDPINSTORE() {
     CELL pin = pop();
     CELL val = pop();
@@ -1039,7 +1040,7 @@ void fDPINSTORE() {
         printStringF("-digitalWrite(%ld, %ld)-", pin, val);
     #endif
 }
-// OP_APINFETCH (#81)    : apin@ ( n -- n ) ... ;
+// OP_APINFETCH (#81)    : ap@ ( n -- n ) ... ;
 void fAPINFETCH() {
     #ifdef __DEV_BOARD__
         // printStringF("-analogRead(%d, A0=%d)-", T, A0);
@@ -1048,7 +1049,7 @@ void fAPINFETCH() {
         printStringF("-analogRead(%ld)-", T);
     #endif
 }
-// OP_DPINFETCH (#82)    : dpin@ ( n -- n ) ... ;
+// OP_DPINFETCH (#82)    : dp@ ( n -- n ) ... ;
 void fDPINFETCH() {
     #ifdef __DEV_BOARD__
         // printStringF("-digitalRead(%d)-", T);
@@ -1057,18 +1058,44 @@ void fDPINFETCH() {
         printStringF("-digitalRead(%ld)-", T);
     #endif
 }
-// OP_MCFETCH (#83)    : mc@ ( TODO -- TODO ) ... ;
-void fMCFETCH() {  
-    BYTE *a = (BYTE *)T;
-    T = (CELL)(*a);
+// OP_MWFETCH (#83)    : mw@ ( n1 -- n2 ) ... ;
+void fMWFETCH() {  
+    T = wordAt(T);
 }
-// OP_MCSTORE (#84)    : mc! ( TODO -- TODO ) ... ;
+// OP_MCSTORE (#84)    : mc! ( n1 n2 -- ) ... ;
 void fMCSTORE() {  
     BYTE *a = (BYTE *)pop();
     BYTE v = (BYTE)pop();
     *a = v;
 }
-// OP_BYE (#85)    : bye ( TODO -- TODO ) ... ;
+// OP_NUM2STR (#85)    : num>str ( n l -- a ) ... ;
+void fNUM2STR() {      
+    BYTE dlen = (BYTE)pop();
+    CELL num = pop();
+    BYTE len = 0;
+    int isNeg = (num < 0);
+    CELL pad = allocSpace(48);
+    CELL cp = pad+47;
+    dict[cp--] = (BYTE) 0;
+    num = (isNeg) ? -num : num;
+
+    do {
+        BYTE r = (num % sys->BASE) + '0';
+        if ('9' < r) { r += 7; }
+        dict[cp--] = r;
+        len++;
+        num /= sys->BASE;
+    } while (num > 0);
+
+    while (len < dlen) {
+        dict[cp--] = '0';
+        ++len;
+    }
+    dict[cp] = len;
+    push(cp);
+    allocFree(pad);
+}
+// OP_BYE (#86)    : bye ( -- ) ... ;
 void fBYE() {      
     // TODO N = N*T; push(T); pop();
 }

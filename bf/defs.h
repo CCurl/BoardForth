@@ -205,17 +205,18 @@ $once
 #define OP_GREATER       72     // >
 #define OP_I             73     // I
 #define OP_J             74     // J
-#define OP_INPUTPIN      75     // input-pin
-#define OP_OUTPUTPIN     76     // output-pin
+#define OP_INPUTPIN      75     // input
+#define OP_OUTPUTPIN     76     // output
 #define OP_DELAY         77     // MS
 #define OP_TICK          78     // TICK
 #define OP_APINSTORE     79     // 
-#define OP_DPINSTORE     80     // dpin!
-#define OP_APINFETCH     81     // apin@
-#define OP_DPINFETCH     82     // dpin@
-#define OP_MCFETCH       83     // mc@
+#define OP_DPINSTORE     80     // dp!
+#define OP_APINFETCH     81     // ap@
+#define OP_DPINFETCH     82     // dp@
+#define OP_MWFETCH       83     // mw@
 #define OP_MCSTORE       84     // mc!
-#define OP_BYE           85     // BYE
+#define OP_NUM2STR       85     // num>str
+#define OP_BYE           86     // BYE
 // ------- NimbleText generated continues
 void fNOOP();            // OP_NOOP
 void fCLIT();            // OP_CLIT
@@ -300,8 +301,9 @@ void fAPINSTORE();       // OP_APINSTORE
 void fDPINSTORE();       // OP_DPINSTORE
 void fAPINFETCH();       // OP_APINFETCH
 void fDPINFETCH();       // OP_DPINFETCH
-void fMCFETCH();         // OP_MCFETCH
+void fMWFETCH();         // OP_MWFETCH
 void fMCSTORE();         // OP_MCSTORE
+void fNUM2STR();         // OP_NUM2STR
 void fBYE();             // OP_BYE
 // ^^^^^ - NimbleText generated - ^^^^^
 

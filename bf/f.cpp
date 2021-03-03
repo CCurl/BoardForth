@@ -121,7 +121,7 @@ void loadUserWords() {
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
-    loadSource(PSTR(": mw@ dup 1+  mc@   $100 * swap mc@ or ;"));
+    loadSource(PSTR(": mc@ dup 1+  mw@   $FF and ;"));
     loadSource(PSTR(": m@  dup 2 + mw@ $10000 * swap mw@ or ;"));
     loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
     loadSource(PSTR(": m!  over $10000 / over 2+ mw! mw! ;"));
