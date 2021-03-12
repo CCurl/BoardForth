@@ -22,7 +22,7 @@
     #define PSTR(str) (char *)str
     #define strcmp_PF(str1, str2) strcmp(str1, str2)
 #else
-    #define DICT_SZ (256*1024)
+    #define DICT_SZ (128*1024)
     #define STK_SZ 32
     #define TIB_SZ 100
     #define ALLOC_SZ 32
@@ -70,32 +70,17 @@ typedef struct {
     WORD sz;
 } ALLOC_T;
 
-#define ADDR_AUTORUN    (CELL_SZ*0)
-#define ADDR_RES_1      (CELL_SZ*1)
-#define ADDR_TIB        (CELL_SZ*2)
-#define ADDR_TOIN       (CELL_SZ*3)
-#define ADDR_HERE       (CELL_SZ*4)
-#define ADDR_LAST       (CELL_SZ*5)
-#define ADDR_BASE       (CELL_SZ*6)
-#define ADDR_STATE      (CELL_SZ*7)
-#define ADDR_DSTK       (CELL_SZ*8)
-#define ADDR_RSTK       (CELL_SZ*9)
-#define ADDR_DSP        (CELL_SZ*10)
-#define ADDR_RSP        (CELL_SZ*11)
-
-#define ADDR_HERE_BASE  (CELL_SZ*12)
-
 extern BYTE IR;
-extern BYTE *PC;
+extern ADDR PC;
 extern CELL DSP, RSP;
-extern BYTE *HERE, *LAST;
+extern ADDR HERE, LAST;
 extern CELL dstk[], rstk[];
 extern CELL BASE, STATE;
 extern FP prims[];
 extern BYTE dict[];
-extern BYTE *toIn;
-extern BYTE *allocAddrBase;
-extern BYTE *allocCurFree;
+extern ADDR toIn;
+extern ADDR allocAddrBase;
+extern ADDR allocCurFree;
 extern CELL loopDepth;
 extern char TIB[];
 extern int numTIB;
@@ -108,30 +93,30 @@ CELL pop();
 void rpush(CELL);
 CELL rpop();
 void run(BYTE *, CELL);
-BYTE *allocSpace(WORD);
-void allocFree(BYTE *);
+ADDR allocSpace(WORD);
+void allocFree(ADDR);
 BYTE getOpcode(char *);
-BYTE *align4(BYTE *);
+ADDR align4(ADDR);
 BYTE nextChar();
 void is_hex(char *);
 void is_decimal(char *);
 void is_binary(char *);
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
-void COMMA(CELL v);
-void ACOMMA(ADDR v);
+void COMMA(CELL);
+void ACOMMA(ADDR);
 void parseLine(char *);
 void loadBaseSystem();
-BYTE getOpcode(char *w);
+BYTE getOpcode(char *);
 void allocFreeAll();
-void printString(const char *str);
-void printStringF(const char *fmt, ...);
+void printString(const char *);
+void printStringF(const char *, ...);
 void loadUserWords();
 void ok();
 void autoRun();
-CELL cellAt(BYTE *);
-CELL wordAt(BYTE *);
-BYTE *addrAt(BYTE *);
+CELL cellAt(ADDR);
+CELL wordAt(ADDR);
+ADDR addrAt(ADDR);
 void fDUMPDICT();
 
 // ---------------------------------------------------------------------

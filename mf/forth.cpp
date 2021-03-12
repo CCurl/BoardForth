@@ -1546,24 +1546,23 @@ $once
 // vvvvv - NimbleText generated - vvvvv
 void loadBaseSystem() {
     // ***MAX 64***  123456789 123456789 123456789 123456789 123456789 123456789 1234
-    char buf[24];
+    char buf[32];
     sprintf(buf, ": ds $%lx ;", (long)&dict[0]);
     parseLine(buf);
     sprintf(buf, ": (h) $%lx ; : here (h) @ ;", (long)&HERE);
     parseLine(buf);
     sprintf(buf, ": (l) $%lx ; : last (l) @ ;", (long)&LAST);
     parseLine(buf);
-    sprintf(buf, ": base $%lx ;", (long)&BASE);
-    parseLine(buf);
-    sprintf(buf, ": state $%lx ;", (long)&STATE);
+    sprintf(buf, ": base $%lx ; : state $%lx ;", (long)&BASE, (long)&STATE);
     parseLine(buf);
     sprintf(buf, ": tib $%lx ;", (long)&TIB[0]);
     parseLine(buf);
-    sprintf(buf, ": dsp $%lx ;", (long)&DSP);
-    parseLine(buf);
-    sprintf(buf, ": rsp $%lx ;", (long)&RSP);
+    sprintf(buf, ": dsp $%lx ; : rsp $%lx ;", (long)&DSP, (long)&RSP);
     parseLine(buf);
 
+    loadSource(PSTR(": hex $10 base ! ;"));
+    loadSource(PSTR(": decimal #10 base ! ;"));
+    loadSource(PSTR(": binary %10 base ! ;"));
     loadSource(PSTR(": +! tuck @ + swap ! ;"));
     loadSource(PSTR(": ?dup if- dup then ;"));
     loadSource(PSTR(": abs dup 0 < if 0 swap - then ;"));
