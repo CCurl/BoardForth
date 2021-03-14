@@ -1,7 +1,43 @@
+// ---------------------------------------------------------------------
+// defs.h
+// ---------------------------------------------------------------------
 #ifndef __DEFS_H__
-#define __DEFS_H__
+    
+// #define __DEV_BOARD__
 
-#include "board.h"
+#ifdef __DEV_BOARD__
+    // #include <Arduino.h>
+    // #include <Keyboard.h>
+    #include "mbed.h"
+    #define __HAS_KEYBOARD__
+    #define SERIAL Serial
+    // #define SERIAL SerialUSB
+    void printSerial(const char *);
+    void loadSource(const char *source);
+    #define DICT_SZ (24*1024)   // Boards with 32K SRAM
+    // #define DICT_SZ (4 * 256)      // LEONARDO
+    #define STK_SZ 16
+    #define TIB_SZ 100
+    #define ALLOC_SZ 16
+    #define F(str) (char *)str
+    #define PSTR(str) (char *)str
+    #define strcmp_PF(str1, str2) strcmp(str1, str2)
+#else
+    #define DICT_SZ (128*1024)
+    #define STK_SZ 32
+    #define TIB_SZ 100
+    #define ALLOC_SZ 32
+    #define F(str) (char *)str
+    #define PSTR(str) (char *)str
+    #define strcmp_PF(str1, str2) strcmp(str1, str2)
+    void loadSource(const char *source);
+#endif
+
+
+#ifndef __DEV_BOARD__
+    #include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,110 +45,79 @@
 
 typedef void (*FP)();
 typedef long  CELL;
-typedef unsigned long  UCELL;
-typedef unsigned short ADDR;
+typedef unsigned long  ulong;
 typedef unsigned short WORD;
 typedef unsigned char  BYTE;
+typedef BYTE *ADDR;
 
-#define CELL_SZ (4)
+#define CELL_SZ (sizeof(CELL))
 #define WORD_SZ (2)
-#define ADDR_SZ (2)
+#define ADDR_SZ (sizeof(ADDR))
 
-#define T dstk[sys->DSP]
-#define N dstk[sys->DSP-1]
-#define R rstk[sys->RSP]
+#define T dstk[DSP]
+#define N dstk[DSP-1]
+#define R rstk[RSP]
 
 typedef struct {
     ADDR prev;
     BYTE flags;
     BYTE len;
-    BYTE name[32]; // not really 32 ... but we need a number
+    char name[32]; // not really 32 ... but we need a number
 } DICT_T;
 
 typedef struct {
-    CELL autoRun;
-    CELL RESERVED1;
-    CELL TIB;
-    CELL TOIN;
-    CELL HERE;
-    CELL LAST;
-    CELL BASE;
-    CELL STATE;
-    CELL DSTACK;
-    CELL RSTACK;
-    CELL DSP;
-    CELL RSP;
-} SYSVARS_T;
-
-typedef struct {
-    CELL addr;
+    ADDR addr;
     BYTE available;
     WORD sz;
 } ALLOC_T;
 
-#define ADDR_AUTORUN    (CELL_SZ*0)
-#define ADDR_RES_1      (CELL_SZ*1)
-#define ADDR_TIB        (CELL_SZ*2)
-#define ADDR_TOIN       (CELL_SZ*3)
-#define ADDR_HERE       (CELL_SZ*4)
-#define ADDR_LAST       (CELL_SZ*5)
-#define ADDR_BASE       (CELL_SZ*6)
-#define ADDR_STATE      (CELL_SZ*7)
-#define ADDR_DSTK       (CELL_SZ*8)
-#define ADDR_RSTK       (CELL_SZ*9)
-#define ADDR_DSP        (CELL_SZ*10)
-#define ADDR_RSP        (CELL_SZ*11)
-
-#define ADDR_HERE_BASE  (CELL_SZ*12)
-
 extern BYTE IR;
-extern CELL PC;
-extern int DSP, RSP;
-extern CELL HERE, LAST;
-extern CELL *dstk, *rstk;
+extern ADDR PC;
+extern CELL DSP, RSP;
+extern ADDR HERE, LAST;
+extern CELL dstk[], rstk[];
 extern CELL BASE, STATE;
 extern FP prims[];
 extern BYTE dict[];
-extern SYSVARS_T *sys;
-extern CELL toIn;
-extern CELL allocAddrBase;
-extern CELL allocCurFree;
+extern ADDR toIn;
+extern ADDR allocAddrBase;
+extern ADDR allocCurFree;
 extern CELL loopDepth;
-extern void dumpDict();
+extern char TIB[];
+extern int numTIB;
 
-
+void dumpDict();
+void startUp();
 void vmInit();
 void push(CELL);
 CELL pop();
 void rpush(CELL);
 CELL rpop();
-void run(CELL, CELL);
-CELL allocSpace(WORD);
-void allocFree(CELL);
-CELL stringToDict(char *, CELL);
+void run(ADDR , CELL);
+ADDR allocSpace(WORD);
+void allocFree(ADDR);
 BYTE getOpcode(char *);
-CELL align2(CELL);
-CELL align4(CELL);
+ADDR align4(ADDR);
 BYTE nextChar();
 void is_hex(char *);
 void is_decimal(char *);
 void is_binary(char *);
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
-void COMMA(CELL v);
-void ACOMMA(ADDR v);
+void COMMA(CELL);
+void ACOMMA(ADDR);
 void parseLine(char *);
 void loadBaseSystem();
-BYTE getOpcode(char *w);
+BYTE getOpcode(char *);
 void allocFreeAll();
-void printString(const char *str);
-void printStringF(const char *fmt, ...);
+void printString(const char *);
+void printStringF(const char *, ...);
 void loadUserWords();
 void ok();
 void autoRun();
-CELL cellAt(CELL);
-CELL wordAt(CELL);
-CELL addrAt(CELL);
+CELL cellAt(ADDR);
+CELL wordAt(ADDR);
+ADDR addrAt(ADDR);
 void fDUMPDICT();
 
 // ---------------------------------------------------------------------
@@ -216,7 +221,8 @@ $once
 #define OP_MWFETCH       83     // mw@
 #define OP_MCSTORE       84     // mc!
 #define OP_NUM2STR       85     // num>str
-#define OP_BYE           86     // BYE
+#define OP_COM           86     // com
+#define OP_BYE           87     // BYE
 // ------- NimbleText generated continues
 void fNOOP();            // OP_NOOP
 void fCLIT();            // OP_CLIT
@@ -304,6 +310,7 @@ void fDPINFETCH();       // OP_DPINFETCH
 void fMWFETCH();         // OP_MWFETCH
 void fMCSTORE();         // OP_MCSTORE
 void fNUM2STR();         // OP_NUM2STR
+void fCOM();             // OP_COM
 void fBYE();             // OP_BYE
 // ^^^^^ - NimbleText generated - ^^^^^
 

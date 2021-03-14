@@ -1,4 +1,8 @@
-#include <stdarg.h>
+#include "board.h"
+#ifndef __DEV_BOARD__
+    #include <windows.h>
+#endif
+
 #include "defs.h"
 
 CELL *dstk;
@@ -143,10 +147,13 @@ int allocFind(CELL addr) {
 }
 
 void allocFree(CELL addr) {
+    // printStringF("-allocFree:%d-", (int)addr);
     int x = allocFind(addr);
     if (x >= 0) {
+        // printStringF("-found:%d-", (int)x);
         allocTbl[x].available = 1;
         if ((x+1) == num_alloced) { -- num_alloced; }
+        if (num_alloced == 0) { allocCurFree = allocAddrBase; }
     }
 }
 
@@ -157,6 +164,7 @@ void allocFreeAll() {
 }
 
 int allocFindAvailable(WORD sz) {
+    // allocDump();
     for (int i = 0; i < num_alloced; i++) {
         if ((allocTbl[i].available) && (allocTbl[i].sz >= sz)) return i;
     }
@@ -166,9 +174,11 @@ int allocFindAvailable(WORD sz) {
 CELL allocSpace(WORD sz) {
     int x = allocFindAvailable(sz);
     if (x >= 0) {
+        // printStringF("-alloc:reuse:%d-", x);
         allocTbl[x].available = 0;
         return allocTbl[x].addr;
     }
+    // printStringF("-alloc:%d,%d-\n", (int)sz, (int)allocCurFree);
     allocCurFree -= (sz);
     if (allocCurFree <= sys->HERE) {
         printString("-out of space!-");
@@ -185,6 +195,16 @@ CELL allocSpace(WORD sz) {
     return allocCurFree;
 }
 #pragma endregion
+
+void fDUMPDICT() {
+    FILE *to = (FILE *)pop();
+    to = to ? to : stdout;
+    fprintf(to, "%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
+    for (int i = 0; i < sys->HERE; i++) {
+        if (i % 16 == 0) fprintf(to, "\n %04x:", i);
+        fprintf(to, " %02x", dict[i]);
+    }
+}
 
 int compiling(char *w, int errIfNot) {
     if ((sys->STATE == 0) && (errIfNot)) {
@@ -254,7 +274,7 @@ FP prims[] = {
     fRFETCH,           // OP_RFETCH (#38) ***RFETCH R@ (-- N )***
     fRTOD,             // OP_RTOD (#39) ***RTOD R> ( -- N )***
     fEMIT,             // OP_EMIT (#40) ***EMIT EMIT (N -- )***
-    fDOT,              // OP_DOT (#41) ***DOT . (N -- )***
+    fTYPE,             // OP_TYPE (#41) ***TYPE type (a n -- )***
     fDOTS,             // OP_DOTS (#42) ***DOTS .S ( -- )***
     fDOTQUOTE,         // OP_DOTQUOTE (#43) ***DOTQUOTE .\" ( -- )***
     fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
@@ -288,17 +308,18 @@ FP prims[] = {
     fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
     fI,                // OP_I (#73) ***I I ( -- n )***
     fJ,                // OP_J (#74) ***J J ( -- n )***
-    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input-pin ( n -- )***
-    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output-pin ( n -- )***
+    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input ( n -- )***
+    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output ( n -- )***
     fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
     fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
-    fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  apin! ( n1 n2 -- )***
-    fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dpin! ( n1 n2 -- )***
-    fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH apin@ ( n1 -- n2 )***
-    fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dpin@ ( n1 -- n2 )***
-    fMCFETCH,          // OP_MCFETCH (#83) ***MCFETCH mc@ ( n1 -- n2 )***
+    fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  ap! ( n1 n2 -- )***
+    fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dp! ( n1 n2 -- )***
+    fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH ap@ ( n1 -- n2 )***
+    fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dp@ ( n1 -- n2 )***
+    fMWFETCH,          // OP_MWFETCH (#83) ***MWFETCH mw@ ( n1 -- n2 )***
     fMCSTORE,          // OP_MCSTORE (#84) ***MCSTORE mc! ( n1 n2 -- )***
-    fBYE,              // OP_BYE (#85) ***BYE bye ( -- )***
+    fNUM2STR,          // OP_NUM2STR (#85) ***NUM2STR num>str ( n l -- a )***
+    fBYE,              // OP_BYE (#86) ***BYE bye ( -- )***
     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
@@ -468,14 +489,14 @@ void fRTOD() {         // opcode #39
 void fEMIT() {
     printStringF("%c", (char)pop());
 }
-void fDOT() {
-    CELL v = pop();
-    if (sys->BASE == 10) {
-        printStringF("%ld", v);
-    } else if (sys->BASE == 16) {
-        printStringF("%lx", v);
-    } else {
-        printStringF("b%d:%ld", (int)sys->BASE, v);
+void fTYPE() {
+    CELL n = pop();
+    CELL a = pop();
+    char x[2];
+    x[1] = 0;
+    for (int i = 0; i < n; i++ ) {
+        x[0] = dict[a++];
+        printString(x);
     }
 }
 void fDOTS() {
@@ -484,16 +505,14 @@ void fDOTS() {
         for (int i = 1; i <= sys->DSP; i++) {
             push(' '); fEMIT();
             push(dstk[i]);
-            fDOT();
+            push(0);
+            fNUM2STR();
+            fTYPE();
         }
         push(' '); fEMIT();
         push(')'); fEMIT();
     } else {
-        #ifndef __DEV_BOARD__
-            printStringF("(%c)", 237);
-        #else
-            printString("(-n-)");
-        #endif
+        printStringF("()");
     }
 }
 void fDOTQUOTE() {     // opcode #43
@@ -623,8 +642,10 @@ void fPARSEWORD() {    // opcode #59
         CELL xt = pop();
         if (compiling(w, 0)) {
             if (dp->flags == 1) {
+                // 1 => IMMEDIATE
                 run(xt, 0);
             } else if (dp->flags == 2) {
+                // 2 => INLINE
                 BYTE x = dict[xt];
                 while (x != OP_RET) {
                     CCOMMA(x);
@@ -963,7 +984,7 @@ void fJ() {
         push(0);
     }
 }
-// OP_INPUTPIN (#75)    : input-pin ( n -- ) ... ;
+// OP_INPUTPIN (#75)    : input ( n -- ) ... ;
 void fINPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
@@ -973,7 +994,7 @@ void fINPUTPIN() {
         printStringF("-pinMode(%d, INPUT)-", pin);
     #endif
 }
-// OP_OUTPUTPIN (#76)    : output-pin ( n -- ) ... ;
+// OP_OUTPUTPIN (#76)    : output ( n -- ) ... ;
 void fOUTPUTPIN() { 
     CELL pin = pop();
     #ifdef __DEV_BOARD__
@@ -1000,58 +1021,85 @@ void fTICK() {
         push(GetTickCount());
     #endif
 }
-// OP_APINSTORE (#79)    : apin! ( n1 n2 -- ) ... ;
+// OP_APINSTORE (#79)    : ap! ( n1 n2 -- ) ... ;
 void fAPINSTORE() {
     CELL pin = pop();
     CELL val = pop();
     #ifdef __DEV_BOARD__
         // printStringF("-analogWrite(%d, OUTPUT)-", pin);
-        analogWrite(pin, val);
+        analogWrite((int)pin, (int)val);
     #else
         printStringF("-analogWrite(%ld, %ld)-", pin, val);
     #endif
 }
-// OP_DPINSTORE (#80)    : dpin! ( n1 n2 -- ) ... ;
+// OP_DPINSTORE (#80)    : dp! ( n1 n2 -- ) ... ;
 void fDPINSTORE() {
     CELL pin = pop();
     CELL val = pop();
     #ifdef __DEV_BOARD__
-        // printStringF("-digitalWrite(%d, OUTPUT)-", pin);
-        digitalWrite(pin, val);
+        // printStringF("-digitalWrite(%d, %d)-", (int)pin, (int)val);
+        digitalWrite((int)pin, (int)val);
     #else
         printStringF("-digitalWrite(%ld, %ld)-", pin, val);
     #endif
 }
-// OP_APINFETCH (#81)    : apin@ ( n -- n ) ... ;
+// OP_APINFETCH (#81)    : ap@ ( n -- n ) ... ;
 void fAPINFETCH() {
     #ifdef __DEV_BOARD__
-        // printStringF("-analogRead(%d)-", T);
-        T = analogRead(T);
+        // printStringF("-analogRead(%d, A0=%d)-", T, A0);
+        T = analogRead((int)T);
     #else
         printStringF("-analogRead(%ld)-", T);
     #endif
 }
-// OP_DPINFETCH (#82)    : dpin@ ( n -- n ) ... ;
+// OP_DPINFETCH (#82)    : dp@ ( n -- n ) ... ;
 void fDPINFETCH() {
     #ifdef __DEV_BOARD__
         // printStringF("-digitalRead(%d)-", T);
-        T = digitalRead(T);
+        T = digitalRead((int)T);
     #else
         printStringF("-digitalRead(%ld)-", T);
     #endif
 }
-// OP_MCFETCH (#83)    : mc@ ( TODO -- TODO ) ... ;
-void fMCFETCH() {  
-    BYTE *a = (BYTE *)T;
-    T = (CELL)(*a);
+// OP_MWFETCH (#83)    : mw@ ( n1 -- n2 ) ... ;
+void fMWFETCH() {  
+    T = wordAt(T);
 }
-// OP_MCSTORE (#84)    : mc! ( TODO -- TODO ) ... ;
+// OP_MCSTORE (#84)    : mc! ( n1 n2 -- ) ... ;
 void fMCSTORE() {  
     BYTE *a = (BYTE *)pop();
     BYTE v = (BYTE)pop();
     *a = v;
 }
-// OP_BYE (#85)    : bye ( TODO -- TODO ) ... ;
+// OP_NUM2STR (#85)    : num>str ( n l -- a ) ... ;
+void fNUM2STR() {      
+    BYTE reqLen = (BYTE)pop();
+    CELL num = pop();
+    BYTE len = 0;
+    int isNeg = (num < 0);
+    CELL pad = allocSpace(48);
+    CELL cp = pad+47;
+    dict[cp--] = (BYTE) 0;
+    num = (isNeg) ? -num : num;
+
+    do {
+        BYTE r = (num % sys->BASE) + '0';
+        if ('9' < r) { r += 7; }
+        dict[cp--] = r;
+        len++;
+        num /= sys->BASE;
+    } while (num > 0);
+
+    while (len < reqLen) {
+        dict[cp--] = '0';
+        ++len;
+    }
+    dict[cp] = len;
+    push(cp+1);
+    push(len);
+    allocFree(pad);
+}
+// OP_BYE (#86)    : bye ( -- ) ... ;
 void fBYE() {      
     // TODO N = N*T; push(T); pop();
 }

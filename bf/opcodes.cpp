@@ -55,7 +55,7 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, PSTR("r@")) == 0) return OP_RFETCH;       //  opcode #38
     if (strcmp_PF(w, PSTR("r>")) == 0) return OP_RTOD;       //  opcode #39
     if (strcmp_PF(w, PSTR("emit")) == 0) return OP_EMIT;       //  opcode #40
-    if (strcmp_PF(w, PSTR("(.)")) == 0) return OP_DOT;       //  opcode #41
+    if (strcmp_PF(w, PSTR("type")) == 0) return OP_TYPE;       //  opcode #41
     if (strcmp_PF(w, PSTR(".s")) == 0) return OP_DOTS;       //  opcode #42
     if (strcmp_PF(w, PSTR(".\"")) == 0) return OP_DOTQUOTE;       //  opcode #43
     if (strcmp_PF(w, PSTR("(")) == 0) return OP_PAREN;       //  opcode #44
@@ -89,17 +89,18 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, PSTR(">")) == 0) return OP_GREATER;       //  opcode #72
     if (strcmp_PF(w, PSTR("i")) == 0) return OP_I;       //  opcode #73
     if (strcmp_PF(w, PSTR("j")) == 0) return OP_J;       //  opcode #74
-    if (strcmp_PF(w, PSTR("input-pin")) == 0) return OP_INPUTPIN;       //  opcode #75
-    if (strcmp_PF(w, PSTR("output-pin")) == 0) return OP_OUTPUTPIN;       //  opcode #76
+    if (strcmp_PF(w, PSTR("input")) == 0) return OP_INPUTPIN;       //  opcode #75
+    if (strcmp_PF(w, PSTR("output")) == 0) return OP_OUTPUTPIN;       //  opcode #76
     if (strcmp_PF(w, PSTR("ms")) == 0) return OP_DELAY;       //  opcode #77
     if (strcmp_PF(w, PSTR("tick")) == 0) return OP_TICK;       //  opcode #78
-    if (strcmp_PF(w, PSTR("apin!")) == 0) return OP_APINSTORE;       //  opcode #79
-    if (strcmp_PF(w, PSTR("dpin!")) == 0) return OP_DPINSTORE;       //  opcode #80
-    if (strcmp_PF(w, PSTR("apin@")) == 0) return OP_APINFETCH;       //  opcode #81
-    if (strcmp_PF(w, PSTR("dpin@")) == 0) return OP_DPINFETCH;       //  opcode #82
-    if (strcmp_PF(w, PSTR("mc@")) == 0) return OP_MCFETCH;       //  opcode #83
+    if (strcmp_PF(w, PSTR("ap!")) == 0) return OP_APINSTORE;       //  opcode #79
+    if (strcmp_PF(w, PSTR("dp!")) == 0) return OP_DPINSTORE;       //  opcode #80
+    if (strcmp_PF(w, PSTR("ap@")) == 0) return OP_APINFETCH;       //  opcode #81
+    if (strcmp_PF(w, PSTR("dp@")) == 0) return OP_DPINFETCH;       //  opcode #82
+    if (strcmp_PF(w, PSTR("mw@")) == 0) return OP_MWFETCH;       //  opcode #83
     if (strcmp_PF(w, PSTR("mc!")) == 0) return OP_MCSTORE;       //  opcode #84
-    if (strcmp_PF(w, PSTR("bye")) == 0) return OP_BYE;       //  opcode #85
+    if (strcmp_PF(w, PSTR("num>str")) == 0) return OP_NUM2STR;       //  opcode #85
+    if (strcmp_PF(w, PSTR("bye")) == 0) return OP_BYE;       //  opcode #86
     return 0xFF;
 }
 // ^^^^^ - NimbleText generated - ^^^^^

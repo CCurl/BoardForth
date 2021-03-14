@@ -98,7 +98,9 @@ void is_binary(char *word) {
 }
 
 CELL stringToDict(char *s, CELL to) {
+    // printStringF("-sd.%d", (int)to);
     if (to == 0) to = allocSpace(strlen(s)+2);
+    // printStringF(":%d-\n", (int)to);
     CELL x = to;
     while (*s) {
         dict[x++] = *(s++);
@@ -117,23 +119,35 @@ void loadUserWords() {
     char *buf = (char *)&dict[sys->HERE + 16];
     sprintf(buf, ": ds $%lx ;", &dict[0]);
     parseLine(buf);
-    loadSource(PSTR(": mw@ dup 1+  mc@   $100 * swap mc@ or ;"));
-    loadSource(PSTR(": m@  dup 2 + mw@ $10000 * swap mw@ or ;"));
+    // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
+    // parseLine(buf);
+    loadSource(PSTR(": mc@ dup 1+ mw@ $FF and ;"));
+    loadSource(PSTR(": m@  dup 1+ 1+ mw@ $10000 * swap mw@ or ;"));
     loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
-    loadSource(PSTR(": m!  over $10000 / over 2+ mw! mw! ;"));
+    loadSource(PSTR(": m!  over $10000 / over 1+ 1+ mw! mw! ;"));
     loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
     loadSource(PSTR(": auto-run-off 0 0 a! ;"));
 
     loadSource(PSTR(": elapsed tick swap - 1000 /mod . . ;"));
     loadSource(PSTR(": bm tick swap begin 1- while- drop elapsed ;"));
-    loadSource(PSTR(": low->high 2dup > if swap then ;"));
-    loadSource(PSTR(": high->low 2dup < if swap then ;"));
+    loadSource(PSTR(": low->high over over > if swap then ;"));
+    loadSource(PSTR(": high->low over over < if swap then ;"));
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": led 13 ; : led-on 0 led dpin! ; : led-off 1 led dpin! ;"));
+    loadSource(PSTR(": led 13 ; led output"));
+    loadSource(PSTR(": led-on 1 led dp! ; : led-off 0 led dp! ;"));
     loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
     loadSource(PSTR(": k 1000 * ; : mil k k ;"));
     loadSource(PSTR(": blinks 0 swap do blink loop ;"));
-    loadSource(PSTR(": blinker blink ;"));
+    loadSource(PSTR("variable pot  3 pot ! "));
+    loadSource(PSTR("variable but  6 but ! "));
+    loadSource(PSTR(": init pot @ input but @ input ;"));
+    loadSource(PSTR("variable pot-lv variable sens 4 sens !"));
+    loadSource(PSTR(": but@ but @ dp@ ;"));
+    loadSource(PSTR(": pot@ pot @ ap@ ;"));
+    loadSource(PSTR(": bp->led but@ if led-on else led-off then ;"));
+    loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
+    loadSource(PSTR(": go bp->led .pot? ;"));
+    loadSource(PSTR("init // auto-run-last"));
     // loadSource(PSTR(""));
 }
 
@@ -187,11 +201,8 @@ int main() {
     repl();
     FILE *fp = fopen("f.bin","wt");
     if (fp) {
-        fprintf(fp, "%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
-        for (int i = 0; i < sys->HERE; i++) {
-            if (i % 16 == 0) fprintf(fp, "\n %04x:", i);
-            fprintf(fp, " %02x", dict[i]);
-        }
+        push((CELL)fp);
+        fDUMPDICT();
         fclose(fp);
     }
     // allocDump();
