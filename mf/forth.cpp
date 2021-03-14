@@ -12,9 +12,9 @@ void delay(int ms) {}
 long millis() { return 0; }
 
 BYTE IR;
-BYTE *PC;
-BYTE *HERE;
-BYTE *LAST;
+ADDR PC;
+ADDR HERE;
+ADDR LAST;
 char *toIN;
 BYTE dict[DICT_SZ];
 char TIB[TIB_SZ];
@@ -25,7 +25,7 @@ CELL rstk[STK_SZ+1];
 CELL loopDepth;
 ALLOC_T allocTbl[ALLOC_SZ];
 int num_alloced = 0, numTIB = 0;
-BYTE *allocAddrBase, *allocCurFree;
+ADDR allocAddrBase, allocCurFree;
 
 void vmInit() {
     HERE = &dict[0];
@@ -41,14 +41,14 @@ void vmInit() {
     loopDepth = 0;
 }
 
-void run(BYTE *start, CELL max_cycles) {
+void run(ADDR start, CELL max_cycles) {
     PC = start;
     // printStringF("\r\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
     while (1) {
         BYTE IR = *(PC++);
         if (IR == OP_RET) {
             if (RSP < 1) { return; }
-            PC = (BYTE *)rpop();
+            PC = (ADDR)rpop();
         } else if (IR <= OP_BYE) {
             prims[IR]();
             if (IR == OP_BYE) { return; }
@@ -62,7 +62,7 @@ void run(BYTE *start, CELL max_cycles) {
 }
 
 void autoRun() {
-    BYTE *addr = addrAt(0);
+    ADDR addr = addrAt(0);
     if (addr) {
         run(addr, 0);
     }
@@ -91,7 +91,6 @@ BYTE nextChar() {
     return 0;
 }
 
-
 // ---------------------------------------------------------------------
 void printString(const char *str) {
     #ifdef __DEV_BOARD__
@@ -111,31 +110,31 @@ void printStringF(const char *fmt, ...) {
     printString(buf);
 }
 
-CELL cellAt(BYTE *loc) {
+CELL cellAt(ADDR loc) {
     return (*(loc+3) << 24) + (*(loc+2) << 16) + (*(loc+1) <<  8) + *(loc);
 }
 
-CELL wordAt(BYTE *loc) {
+CELL wordAt(ADDR loc) {
     return (*(loc+1) <<  8) + *(loc);
 }
 
-BYTE *addrAt(BYTE *loc) {         // opcode #16
-    return (ADDR_SZ == 2) ? (BYTE *)wordAt(loc) : (BYTE *)cellAt(loc);
+ADDR addrAt(ADDR loc) {         // opcode #16
+    return (ADDR_SZ == 2) ? (ADDR)wordAt(loc) : (ADDR)cellAt(loc);
 }
 
-void wordStore(BYTE *addr, CELL val) {
+void wordStore(ADDR addr, CELL val) {
     *(addr)   = (val & 0xFF);
     *(addr+1) = (val >>  8) & 0xFF;
 }
 
-void cellStore(BYTE *addr, CELL val) {
+void cellStore(ADDR addr, CELL val) {
     *(addr)   = (val & 0xFF);
     *(addr+1) = (val >>  8) & 0xFF;
     *(addr+2) = (val >> 16) & 0xFF;
     *(addr+3) = (val >> 24) & 0xFF;
 }
 
-void addrStore(BYTE *addr, CELL val) {
+void addrStore(ADDR addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
 
@@ -148,14 +147,14 @@ void allocDump() {
     }
 }
 
-int allocFind(BYTE *addr) {
+int allocFind(ADDR addr) {
     for (int i = 0; i < num_alloced; i++) {
         if (allocTbl[i].addr == addr) return i;
     }
     return -1;
 }
 
-void allocFree(BYTE *addr) {
+void allocFree(ADDR addr) {
     // printStringF("-allocFree:%d-", (int)addr);
     int x = allocFind(addr);
     if (x >= 0) {
@@ -180,7 +179,7 @@ int allocFindAvailable(WORD sz) {
     return -1;
 }
 
-BYTE *allocSpace(WORD sz) {
+ADDR allocSpace(WORD sz) {
     int x = allocFindAvailable(sz);
     if (x >= 0) {
         // printStringF("-alloc:reuse:%d-", x);
@@ -206,13 +205,13 @@ BYTE *allocSpace(WORD sz) {
 #pragma endregion
 
 void fDUMPDICT() {
-    BYTE *addr = &dict[0];
+    ADDR addr = &dict[0];
     FILE *to = (FILE *)pop();
     to = to ? to : stdout;
-    fprintf(to, "%04lx %04lx (%ld %ld)", HERE, LAST, HERE, LAST);
+    fprintf(to, "%04lx %04lx (%lu %lu)", (ulong)HERE, (ulong)LAST, (ulong)HERE, (ulong)LAST);
     for (int i = 0; i < 999999; i++) {
         if (addr >= HERE) { return; }
-        if (i % 16 == 0) fprintf(to, "\r\n %08x:", addr);
+        if (i % 16 == 0) fprintf(to, "\r\n %08lx:", (ulong)addr);
         fprintf(to, " %02x", *(addr++));
     }
 }
@@ -336,11 +335,11 @@ void fLIT() {          // opcode #3
     PC += CELL_SZ;
 }
 void fCFETCH() {       // opcode #4
-    BYTE *addr = (BYTE *)T;
+    ADDR addr = (ADDR)T;
     T = *addr;
 }
 void fWFETCH() {       // opcode #5
-    BYTE *addr = (BYTE *)T;
+    ADDR addr = (ADDR)T;
     T = wordAt(addr);
 }
 void fAFETCH() {       // opcode #6
@@ -348,15 +347,15 @@ void fAFETCH() {       // opcode #6
 }
 void fFETCH() {        // opcode #7
     CELL addr = T;
-    T = cellAt((BYTE *)addr);
+    T = cellAt((ADDR)addr);
 }
 void fCSTORE() {       // opcode #8
-    BYTE *addr = (BYTE *)pop();
+    ADDR addr = (ADDR)pop();
     CELL val = pop();
     *(addr) = (val & 0xFF);
 }
 void fWSTORE() {       // opcode #9
-    BYTE *addr = (BYTE *)pop();
+    ADDR addr = (ADDR)pop();
     CELL val = pop();
     wordStore(addr, val);
 }
@@ -364,7 +363,7 @@ void fASTORE() {       // opcode #10
     (ADDR_SZ == 2) ? fWSTORE() : fSTORE();
 }
 void fSTORE() {        // opcode #11
-    BYTE *addr = (BYTE *)pop();
+    ADDR addr = (ADDR)pop();
     CELL val = pop();
     cellStore(addr, val);
 }
@@ -511,8 +510,8 @@ void fBREAK() {        // opcode #46
 // OP_CMOVE (#47)    : CMOVE ( TODO -- TODO ) ... ;
 void fCMOVE() {    
     CELL num = pop();
-    BYTE *to = (BYTE *)pop();
-    BYTE *from = (BYTE *)pop();
+    ADDR to = (ADDR)pop();
+    ADDR from = (ADDR)pop();
     while (num > 0) {
         *(to++) = *(from++);
         num--;
@@ -521,8 +520,8 @@ void fCMOVE() {
 // OP_CMOVE2 (#48)    : CMOVE> ( TODO -- TODO ) ... ;
 void fCMOVE2() {   
     CELL num = pop();
-    BYTE *to = (BYTE *)pop();
-    BYTE *from = (BYTE *)pop();
+    ADDR to = (ADDR)pop();
+    ADDR from = (ADDR)pop();
 
     to += (num-1);
     from += (num-1);
@@ -536,7 +535,7 @@ void fCMOVE2() {
 void fFILL() {    
     CELL val = pop();
     CELL num = pop();
-    BYTE *to = (BYTE *)pop();
+    ADDR to = (ADDR)pop();
     while (num > 0) {
         *(to++) = val;
         num--;
@@ -626,7 +625,7 @@ void fPARSELINE() {    // opcode #60
         push((CELL)buf);
         fNEXTWORD();
     }
-    allocFree((BYTE *)buf);
+    allocFree((ADDR)buf);
 }
 void fGETXT() {        // opcode #61
     DICT_T *dp = (DICT_T *)T;
@@ -802,7 +801,9 @@ void fDPINSTORE() {
     CELL val = pop();
     #ifdef __DEV_BOARD__
         // printStringF("-digitalWrite(%d, %d)-", (int)pin, (int)val);
-        digitalWrite((int)pin, (int)val);
+        PinName pinNum = (PinName)pop();
+        DigitalOut pin(pinNum);
+        pin = val;
     #else
         printStringF("-digitalWrite(%ld, %ld)-", pin, val);
     #endif
@@ -827,11 +828,11 @@ void fDPINFETCH() {
 }
 // OP_MWFETCH (#83)    : mw@ ( n1 -- n2 ) ... ;
 void fMWFETCH() {  
-    T = wordAt((BYTE *)T);
+    T = wordAt((ADDR)T);
 }
 // OP_MCSTORE (#84)    : mc! ( n1 n2 -- ) ... ;
 void fMCSTORE() {  
-    BYTE *a = (BYTE *)pop();
+    ADDR a = (ADDR)pop();
     BYTE v = (BYTE)pop();
     *a = v;
 }
@@ -841,9 +842,9 @@ void fNUM2STR() {
     CELL num = pop();
     BYTE len = 0;
     int isNeg = (num < 0);
-    BYTE *pad = HERE + 10;
+    ADDR pad = HERE + 10;
     // allocFree(pad);
-    BYTE *cp = pad+35;
+    ADDR cp = pad+35;
     *(cp--) = (BYTE) 0;
     num = (isNeg) ? -num : num;
 
@@ -911,10 +912,10 @@ CELL getXT(CELL addr) {
     return pop();
 }
 
-BYTE *align4(BYTE *val) {
+ADDR align4(ADDR val) {
     push((CELL)val);
     fALIGN4();
-    return (BYTE *)pop();
+    return (ADDR)pop();
 }
 
 CELL align2(CELL val) {
@@ -937,13 +938,13 @@ int interpreting(char *w, int errIfNot) {
     return (STATE == 0) ? 1 : 0;
 }
 
-void compileOrExecute(int num, BYTE *bytes) {
+void compileOrExecute(int num, ADDR bytes) {
     if (STATE == 1) {
         for (int i = 0; i < num; i++) {
             CCOMMA(bytes[i]);
         }
     } else {
-        BYTE *xt = (HERE+0x0010);
+        ADDR xt = (HERE+0x0010);
         for (int i = 0; i < num; i++) {
             *(xt+i) = bytes[i];
         }
@@ -1049,7 +1050,7 @@ void fPARSEWORD() {    // opcode #59
     if (pop()) {
         DICT_T *dp = (DICT_T *)T;
         fGETXT();
-        BYTE *xt = (BYTE *)pop();
+        ADDR xt = (ADDR)pop();
         // printStringF("-found:%08lx/%08lx-", dp, xt);
         if (compiling(w, 0)) {
             if (dp->flags == 1) {
@@ -1083,7 +1084,6 @@ void fPARSEWORD() {    // opcode #59
         }
         return;
     }
-
 
     if (strcmp_PF(w, PSTR(";")) == 0) {
         if (! compiling(w, 1)) { return; }
@@ -1244,7 +1244,7 @@ void fPARSEWORD() {    // opcode #59
         if (compiling(w, 0)) {
             CCOMMA(op);
         } else {
-            BYTE *xt = HERE+0x20;
+            ADDR xt = HERE+0x20;
             *(xt) = op;
             *(xt+1) = OP_RET;
             run(xt, 0);
@@ -1353,6 +1353,33 @@ void loadUserWords() {
     loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
     loadSource(PSTR(": auto-run-off 0 0 a! ;"));
 
+    loadSource(": ALT0  $100 ;");
+    loadSource(": ALT1  $200 ;");
+    loadSource(": ALT2  $300 ;");
+    loadSource(": ALT3  $400 ;");
+    loadSource(": PA_0  $00 ;");
+    loadSource(": PA_1  $01 ;");
+    loadSource(": PA_2  $02 ;");
+    loadSource(": PA_3  $03 ;");
+    loadSource(": PA_4  $04 ;");
+    loadSource(": PA_5  $05 ;");
+    loadSource(": PA_6  $06 ;");
+    loadSource(": PA_7  $07 ;");
+    loadSource(": PA_8  $08 ;");
+    loadSource(": PA_9  $09 ;");
+    loadSource(": PA_10 $0A ;");
+    loadSource(": PA_11 $0B ;");
+    loadSource(": PA_12 $0C ;");
+    loadSource(": PA_13 $0D ;");
+    loadSource(": PA_14 $0E ;");
+    loadSource(": PA_15 $0F ;");
+    loadSource(": PA_1_ALT0  PA_1  ALT0 or ;");
+    loadSource(": PA_4_ALT0  PA_4  ALT0 or ;");
+    loadSource(": PA_7_ALT0  PA_7  ALT0 or ;");
+    loadSource(": PA_7_ALT1  PA_7  ALT1 or ;");
+    loadSource(": PA_7_ALT2  PA_7  ALT2 or ;");
+    loadSource(": PA_15_ALT0 PA_15 ALT0 or ;");
+
     loadSource(PSTR(": elapsed tick swap - 1000 /mod . . ;"));
     loadSource(PSTR(": bm tick swap begin 1- while- drop elapsed ;"));
     loadSource(PSTR(": low->high over over > if swap then ;"));
@@ -1373,39 +1400,19 @@ void loadUserWords() {
     loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
     loadSource(PSTR(": go bp->led .pot? ;"));
     #ifdef __DEV_BOARD__
-    loadSource(PSTR("init// auto-run-last"));
+    loadSource(PSTR("init // auto-run-last"));
     #endif
     // loadSource(PSTR(""));
 }
 
 void dumpDict() {
-    BYTE *addr = &dict[0];
+    ADDR addr = &dict[0];
     printStringF("%04x %04x (%ld %ld)", HERE, LAST, HERE, LAST);
     for (int i = 0; i < 9999; i++) {
         if (addr > HERE) { return; }
         if (i % 16 == 0) printStringF("\r\n %08lx:", addr);
         printStringF(" %02x", *(addr++));
     }
-}
-
-void startUp() {
-    printString("BoardForth v0.0.1 - Chris Curl\r\n");
-    printString("Source: https://github.com/CCurl/BoardForth \r\n");
-    printStringF("Dictionary size is: %d ($%04x) bytes. \r\n", (int)DICT_SZ, (int)DICT_SZ);
-    vmInit();
-    printString("Hello.");
-    // loadBaseSystem();
-    // loadUserWords();
-}
-
-void ok() {
-    printString(" ok. ");
-    fDOTS();
-    printString("\r\n");
-}
-
-void loadSource(const char *src) {
-    parseLine((char *)src);
 }
 
 // ---------------------------------------------------------------------
@@ -1519,18 +1526,12 @@ BYTE getOpcode(char *w) {
 }
 // ^^^^^ - NimbleText generated - ^^^^^
 
-
-
-
-
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
-
-
 
 /* -- NimbleText script:
 $once
@@ -1542,39 +1543,3 @@ $once
 }
 // ^^^^^ - NimbleText generated - ^^^^^
 */
-
-// vvvvv - NimbleText generated - vvvvv
-void loadBaseSystem() {
-    // ***MAX 64***  123456789 123456789 123456789 123456789 123456789 123456789 1234
-    char buf[32];
-    sprintf(buf, ": ds $%lx ;", (long)&dict[0]);
-    parseLine(buf);
-    sprintf(buf, ": (h) $%lx ; : here (h) @ ;", (long)&HERE);
-    parseLine(buf);
-    sprintf(buf, ": (l) $%lx ; : last (l) @ ;", (long)&LAST);
-    parseLine(buf);
-    sprintf(buf, ": base $%lx ; : state $%lx ;", (long)&BASE, (long)&STATE);
-    parseLine(buf);
-    sprintf(buf, ": tib $%lx ;", (long)&TIB[0]);
-    parseLine(buf);
-    sprintf(buf, ": dsp $%lx ; : rsp $%lx ;", (long)&DSP, (long)&RSP);
-    parseLine(buf);
-
-    loadSource(PSTR(": hex $10 base ! ;"));
-    loadSource(PSTR(": decimal #10 base ! ;"));
-    loadSource(PSTR(": binary %10 base ! ;"));
-    loadSource(PSTR(": +! tuck @ + swap ! ;"));
-    loadSource(PSTR(": ?dup if- dup then ;"));
-    loadSource(PSTR(": abs dup 0 < if 0 swap - then ;"));
-    loadSource(PSTR(": min over over < if drop else nip then ;"));
-    loadSource(PSTR(": max over over > if drop else nip then ;"));
-    loadSource(PSTR(": between rot dup >r min max r> = ;"));
-    loadSource(PSTR(": cr #13 emit #10 emit ;"));
-    loadSource(PSTR(": . 0 num>str space type ;"));
-    loadSource(PSTR(": allot here + (h) ! ;"));
-    loadSource(PSTR(": .word dup . space dup >body . addr +"));
-    loadSource(PSTR("    dup c@ . 1+ space count type cr ;"));
-    loadSource(PSTR(": words last begin dup .word a@ while- drop ;"));
-    // ***MAX 64***  123456789 123456789 123456789 123456789 123456789 123456789 1234
-}
-// ^^^^^ - NimbleText generated - ^^^^^

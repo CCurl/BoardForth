@@ -3,11 +3,12 @@
 // ---------------------------------------------------------------------
 #ifndef __DEFS_H__
     
-//#define __DEV_BOARD__
+// #define __DEV_BOARD__
 
 #ifdef __DEV_BOARD__
     // #include <Arduino.h>
     // #include <Keyboard.h>
+    #include "mbed.h"
     #define __HAS_KEYBOARD__
     #define SERIAL Serial
     // #define SERIAL SerialUSB
@@ -44,28 +45,28 @@
 
 typedef void (*FP)();
 typedef long  CELL;
-typedef unsigned long  UCELL;
-typedef BYTE *ADDR;
+typedef unsigned long  ulong;
 typedef unsigned short WORD;
 typedef unsigned char  BYTE;
+typedef BYTE *ADDR;
 
-#define CELL_SZ (4)
+#define CELL_SZ (sizeof(CELL))
 #define WORD_SZ (2)
-#define ADDR_SZ (sizeof(BYTE *))
+#define ADDR_SZ (sizeof(ADDR))
 
 #define T dstk[DSP]
 #define N dstk[DSP-1]
 #define R rstk[RSP]
 
 typedef struct {
-    BYTE *prev;
+    ADDR prev;
     BYTE flags;
     BYTE len;
     char name[32]; // not really 32 ... but we need a number
 } DICT_T;
 
 typedef struct {
-    BYTE *addr;
+    ADDR addr;
     BYTE available;
     WORD sz;
 } ALLOC_T;
@@ -92,7 +93,7 @@ void push(CELL);
 CELL pop();
 void rpush(CELL);
 CELL rpop();
-void run(BYTE *, CELL);
+void run(ADDR , CELL);
 ADDR allocSpace(WORD);
 void allocFree(ADDR);
 BYTE getOpcode(char *);
