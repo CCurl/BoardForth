@@ -4,9 +4,9 @@ char buf[80];
 int len;
 
 void setup() {
-    SERIAL.begin(19200);
-    while (!SERIAL) {}
-    while (SERIAL.available()) {}
+    mySerial.begin(19200);
+    while (!mySerial) {}
+    while (mySerial.available()) {}
     printString("BoardForth v0.0.1 - Chris Curl\n");
     printString("Source: https://github.com/CCurl/BoardForth \n");
     printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
@@ -19,8 +19,8 @@ void setup() {
 }
 
 void loop() {
-  while (SERIAL.available()) {
-    char c = SERIAL.read();
+  while (mySerial.available()) {
+    char c = mySerial.read();
     if (c == 13) {
       buf[len] = (char)0;
       printString(buf);
@@ -36,7 +36,7 @@ void loop() {
 }
 
 void printSerial(const char *str) {
-  SERIAL.print(str);
+  mySerial.print(str);
 }
 
 void loadSource(const PROGMEM char *source) {

@@ -1,14 +1,14 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
-// #define __DEV_BOARD__
+#define __DEV_BOARD__
 
 #ifdef __DEV_BOARD__
     #include <Arduino.h>
-    #define SERIAL SerialUSB
+    #define mySerial SerialUSB
     void printSerial(const char *);
     void loadSource(const PROGMEM char *source);
-    #define DICT_SZ (24*1024)
+    #define DICT_SZ (3*1024)
     #define STK_SZ 16
     #define TIB_SZ 0x0064
     #define ALLOC_SZ 16
