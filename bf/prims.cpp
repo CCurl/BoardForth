@@ -18,22 +18,379 @@ ALLOC_T allocTbl[ALLOC_SZ];
 int num_alloced = 0;
 CELL allocAddrBase = 0, allocCurFree = 0;
 
-void run(CELL start, CELL max_cycles) {
-    PC = start;
-    // printStringF("\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
+void run(CELL PC, CELL max_cycles) {
+    CELL t1, t2, t3;
     while (1) {
-        BYTE IR = dict[PC++];
-        if (IR == OP_RET) {
-            if (sys->RSP < 1) { return; }
-            PC = rpop();
-        } else if (IR <= OP_BYE) {
-            prims[IR]();
-            if (IR == OP_BYE) { return; }
-        } else {
-            printStringF("-%04lx: unknown opcode: %d ($%02x)-", PC-1, IR, IR);
-        }
         if (max_cycles) {
             if (--max_cycles < 1) { return; }
+        }
+        BYTE IR = dict[PC++];
+        printStringF("-PC-%d:IR-%d-", PC-1, IR);
+        switch (IR) {
+            case OP_NOOP:     // noop (#0)
+                break;
+            case OP_CLIT:     // cliteral (#1)
+                push(dict[PC++]);
+                break;
+            case OP_WLIT:     // wliteral (#2)
+                T = wordAt(PC);
+                PC += WORD_SZ;
+                break;
+            case OP_LIT:     // literal (#3)
+                T = cellAt(PC);
+                PC += CELL_SZ;
+                break;
+            case OP_CFETCH:     // c@ (#4)
+                T = dict[T];
+                break;
+            case OP_WFETCH:     // w@ (#5)
+                T = wordAt(T);
+                break;
+            case OP_AFETCH:     // a@ (#6)
+                T = addrAt(T);
+                break;
+            case OP_FETCH:     // @ (#7)
+                T = cellAt(T);
+                break;
+            case OP_CSTORE:     // c! (#8)
+                t2 = pop();
+                t1 = pop();
+                dict[t2] = t1;
+                break;
+            case OP_WSTORE:     // w! (#9)
+                t2 = pop();
+                t1 = pop();
+                wordStore(t1, t2);
+                break;
+            case OP_ASTORE:     // a! (#10)
+                t2 = pop();
+                t1 = pop();
+                addrStore(t1, t2);
+                break;
+            case OP_STORE:     // ! (#11)
+                t2 = pop();
+                t1 = pop();
+                cellStore(t1, t2);
+                break;
+            case OP_CCOMMA:     // c, (#12)
+                t1 = pop();
+                dict[sys->HERE] = (t1 % 0xFF);
+                sys->HERE += 1;
+                break;
+            case OP_WCOMMA:     // w, (#13)
+                t1 = pop();
+                wordStore(sys->HERE, t1);
+                sys->HERE += WORD_SZ;
+                break;
+            case OP_COMMA:     // , (#14)
+                t1 = pop();
+                cellStore(sys->HERE, t1);
+                sys->HERE += CELL_SZ;
+                break;
+            case OP_ACOMMA:     // a, (#15)
+                t1 = pop();
+                cellStore(sys->HERE, t1);
+                sys->HERE += ADDR_SZ;
+                break;
+            case OP_CALL:     // call (#16)
+                rpush(PC+ADDR_SZ);
+                PC = addrAt(PC);
+                break;
+            case OP_RET:     // exit (#17)
+                if (sys->RSP < 1) { return; }
+                PC = rpop();
+                break;
+            case OP_JMP:     // -n- (#18)
+                PC = addrAt(PC);
+                break;
+            case OP_JMPZ:     // -n- (#19)
+                if (pop() == 0) {
+                    PC = addrAt(PC);
+                }
+                else {
+                    PC += ADDR_SZ;
+                }
+                break;
+            case OP_JMPNZ:     // -n- (#20)
+                if (pop() != 0) {
+                    PC = addrAt(PC);
+                }
+                else {
+                    PC += ADDR_SZ;
+                }
+                break;
+            case OP_ONEMINUS:     // 1- (#21)
+                T--;
+                break;
+            case OP_ONEPLUS:     // 1+ (#22)
+                T++;
+                break;
+            case OP_DUP:     // dup (#23)
+                push(T);
+                break;
+            case OP_SWAP:     // swap (#24)
+                t1 = T;
+                T = N;
+                N = t1;
+                break;
+            case OP_DROP:     // drop (#25)
+                pop();
+                break;
+            case OP_OVER:     // over (#26)
+                push(N);
+                break;
+            case OP_ADD:     // + (#27)
+                N += T; pop();
+                break;
+            case OP_SUB:     // - (#28)
+                N -= T; pop();
+                break;
+            case OP_MULT:     // * (#29)
+                N *= T; pop();
+                break;
+            case OP_SLMOD:     // /mod (#30)
+                t2 = pop();
+                t1 = pop();
+                push(t1 % t2);
+                push(t1 / t2);
+                break;
+            case OP_LSHIFT:     // << (#31)
+                N *= 2;
+                break;
+            case OP_RSHIFT:     // >> (#32)
+                N *= 2;
+                break;
+            case OP_AND:     // and (#33)
+                N &= T; pop();
+                break;
+            case OP_OR:     // or (#34)
+                N |= T; pop();
+                break;
+            case OP_XOR:     // xor (#35)
+                N ^= T; pop();
+                break;
+            case OP_NOT:     // not (#36)
+                T = (T == 0) ? 1 : 0;
+                break;
+            case OP_DTOR:     // >r (#37)
+                rpush(pop());
+                break;
+            case OP_RFETCH:     // r@ (#38)
+                push(R);
+                break;
+            case OP_RTOD:     // r> (#39)
+                push(rpop());
+                break;
+            case OP_EMIT:     // emit (#40)
+                fEMIT();
+                break;
+            case OP_TYPE:     // type (#41)
+                fTYPE();
+                break;
+            case OP_DOTS:     // .s (#42)
+                fDOTS();
+                break;
+            case OP_DOTQUOTE:     // .\" (#43)
+                // TODO: N += T; pop();
+                break;
+            case OP_PAREN:     // ( (#44)
+                // N += T; pop();
+                break;
+            case OP_WDTFEED:     // wdtfeed (#45)
+                // N += T; pop();
+                break;
+            case OP_BREAK:     // brk (#46)
+                // N += T; pop();
+                break;
+            case OP_CMOVE:     // cmove (#47)
+                t3 = pop();
+                t2 = pop();
+                t1 = pop();
+                while (t3 > 0) {
+                    dict[t2++] = dict[t1++];
+                    t3--;
+                }
+                break;
+            case OP_CMOVE2:     // cmove> (#48)
+                t3 = pop();
+                t2 = pop();
+                t1 = pop();
+
+                t2 += (t3-1);
+                t1 += (t3-1);
+
+                while (t3 > 0) {
+                    dict[t2--] = dict[t1--];
+                    t3--;
+                }
+                break;
+            case OP_FILL:     // fill (#49)
+                t3 = pop();
+                t2 = pop();
+                t1 = pop();
+                while (t2 > 0) {
+                    dict[t1++] = t3;
+                    t2--;
+                }
+                break;
+            case OP_OPENBLOCK:     // open-block (#50)
+                // N += T; pop();
+                break;
+            case OP_FILECLOSE:     // file-close (#51)
+                // N += T; pop();
+                break;
+            case OP_FILEREAD:     // file-read (#52)
+                // N += T; pop();
+                break;
+            case OP_LOAD:     // load (#53)
+                // N += T; pop();
+                break;
+            case OP_THRU:     // thru (#54)
+                // N += T; pop();
+                break;
+            case OP_DO:     // do (#55)
+                if (loopDepth < 4) {
+                    CELL t = pop();
+                    CELL f = pop();
+                    int x = loopDepth * 3;
+                    // printStringF("-DO(%ld,%ld,%d)-", f, t, f);
+                    loopSTK[x] = f;
+                    loopSTK[x+1] = t;
+                    loopSTK[x+2] = f;
+                    ++loopDepth;
+                } else {
+                    printString("-DO:too deep-");
+                }
+                break;
+            case OP_LOOP:     // loop (#56)
+                if (loopDepth > 0) {
+                    int x = (loopDepth-1) * 3;
+                    CELL f = loopSTK[x];
+                    CELL t = loopSTK[x+1];
+                    loopSTK[x+2] += 1;
+                    CELL i = loopSTK[x+2];
+                    // printString("-LOOP(%ld,%ld,%d)-", f, t, i);
+                    if ((f < i) && (i < t)) { push(1); return; }
+                    loopDepth -= 1;
+                    push(0);
+                }
+                else {
+                    printString("-LOOP:depthErr-");
+                    push(0);
+                }
+                break;
+            case OP_LOOPP:     // loop+ (#57)
+                if (loopDepth > 0) {
+                    int x = (loopDepth-1) * 3;
+                    CELL f = loopSTK[x];
+                    CELL t = loopSTK[x+1];
+                    loopSTK[x+2] += pop();
+                    CELL i = loopSTK[x+2];
+                    // printStringF("-LOOP(%ld,%ld,%ld)-", f, t, i);
+                    if ((f < i) && (i < t)) { push(1); return; }
+                    if ((t < i) && (i < f)) { push(1); return; }
+                    loopDepth -= 1;
+                    push(0);
+                }
+                else {
+                    printString("-LOOP:depthErr-");
+                    push(0);
+                }
+                break;
+            case OP_UNUSED7:     // -n- (#58)
+                N += T; pop();
+                break;
+            case OP_PARSEWORD:     // parse-word (#59)
+                fPARSEWORD();
+                break;
+            case OP_PARSELINE:     // parse-line (#60)
+                fPARSELINE();
+                break;
+            case OP_GETXT:     // >body (#61)
+                fGETXT();
+                break;
+            case OP_ALIGN2:     // align2 (#62)
+                fALIGN2();
+                break;
+            case OP_ALIGN4:     // align4 (#63)
+                fALIGN4();
+                break;
+            case OP_CREATE:     // create (#64)
+                fCREATE();
+                break;
+            case OP_FIND:     // find (#65)
+                fFIND();
+                break;
+            case OP_NEXTWORD:     // next-word (#66)
+                fNEXTWORD();
+                break;
+            case OP_ISNUMBER:     // number? (#67)
+                fISNUMBER();
+                break;
+            case OP_NJMPZ:     // -n- (#68)
+                fNJMPZ();
+                break;
+            case OP_NJMPNZ:     // -n- (#69)
+                fNJMPNZ();
+                break;
+            case OP_LESS:     // < (#70)
+                N = (N < T) ? 1 : 0;
+                pop();
+                break;
+            case OP_EQUALS:     // = (#71)
+                N = (N == T) ? 1 : 0;
+                pop();
+                break;
+            case OP_GREATER:     // > (#72)
+                N = (N > T) ? 1 : 0;
+                pop();
+                break;
+            case OP_I:     // i (#73)
+                fI();
+                break;
+            case OP_J:     // j (#74)
+                fJ();
+                break;
+            case OP_INPUTPIN:     // input (#75)
+                fINPUTPIN();
+                break;
+            case OP_OUTPUTPIN:     // output (#76)
+                fOUTPUTPIN();
+                break;
+            case OP_DELAY:     // ms (#77)
+                fDELAY();
+                break;
+            case OP_TICK:     // ms (#78)
+                fTICK();
+                break;
+            case OP_APINSTORE:     //  (#79)
+                fAPINSTORE();
+                break;
+            case OP_DPINSTORE:     // dp! (#80)
+                fDPINSTORE();
+                break;
+            case OP_APINFETCH:     // ap@ (#81)
+                fAPINFETCH();
+                break;
+            case OP_DPINFETCH:     // dp@ (#82)
+                fDPINFETCH();
+                break;
+            case OP_MWFETCH:     // mw@ (#83)
+                fMWFETCH();
+                break;
+            case OP_MCSTORE:     // mc! (#84)
+                fMCSTORE();
+                break;
+            case OP_NUM2STR:     // num>str (#85)
+                fNUM2STR();
+                break;
+            // case OP_COM:     // com (#86)
+            //     fco
+            //     break;
+            case OP_BYE:     // bye (#87)
+                // N += T; pop();
+                break;
+ 
         }
     }
 }
@@ -94,7 +451,7 @@ void printString(const char *str) {
 
 // ---------------------------------------------------------------------
 void printStringF(const char *fmt, ...) {
-    char buf[64];
+    char buf[500];
     va_list args;
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
@@ -492,6 +849,7 @@ void fEMIT() {
 void fTYPE() {
     CELL n = pop();
     CELL a = pop();
+    printStringF("-t:%d:%d-", n, a);
     char x[2];
     x[1] = 0;
     for (int i = 0; i < n; i++ ) {
@@ -854,6 +1212,7 @@ void fPARSELINE() {    // opcode #60
     push(buf);
     fNEXTWORD();
     while (pop()) {
+        // printStringF("-pw:%s-", w);
         if (strcmp(w, "//") == 0) { break; }
         if (strcmp(w, "\\") == 0) { break; }
         push(buf);
