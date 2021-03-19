@@ -65,8 +65,6 @@ typedef struct {
 
 #define ADDR_HERE_BASE  (CELL_SZ*12)
 
-extern BYTE IR;
-extern CELL PC;
 extern int DSP, RSP;
 extern CELL HERE, LAST;
 extern CELL *dstk, *rstk;

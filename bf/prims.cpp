@@ -8,8 +8,6 @@
 CELL *dstk;
 CELL *rstk;
 
-BYTE IR;
-CELL PC;
 BYTE dict[DICT_SZ];
 SYSVARS_T *sys;
 CELL loopSTK[12];
@@ -25,7 +23,7 @@ void run(CELL PC, CELL max_cycles) {
             if (--max_cycles < 1) { return; }
         }
         BYTE IR = dict[PC++];
-        printStringF("-PC-%d:IR-%d-", PC-1, IR);
+        // printStringF("\n-PC-%d/%lx:IR-%d/%x-", PC-1, PC-1, (int)IR, (unsigned int)IR); fDOTS();
         switch (IR) {
             case OP_NOOP:     // noop (#0)
                 break;
@@ -33,7 +31,7 @@ void run(CELL PC, CELL max_cycles) {
                 push(dict[PC++]);
                 break;
             case OP_WLIT:     // wliteral (#2)
-                T = wordAt(PC);
+                push(wordAt(PC));
                 PC += WORD_SZ;
                 break;
             case OP_LIT:     // literal (#3)
@@ -270,9 +268,12 @@ void run(CELL PC, CELL max_cycles) {
                     loopSTK[x+2] += 1;
                     CELL i = loopSTK[x+2];
                     // printString("-LOOP(%ld,%ld,%d)-", f, t, i);
-                    if ((f < i) && (i < t)) { push(1); return; }
-                    loopDepth -= 1;
-                    push(0);
+                    if ((f < i) && (i < t)) {
+                        push(1);
+                    } else {
+                        loopDepth -= 1;
+                        push(0);
+                    }
                 }
                 else {
                     printString("-LOOP:depthErr-");
@@ -328,10 +329,18 @@ void run(CELL PC, CELL max_cycles) {
                 fISNUMBER();
                 break;
             case OP_NJMPZ:     // -n- (#68)
-                fNJMPZ();
+                if (T == 0) {
+                    PC = addrAt(PC);
+                } else {
+                    PC += ADDR_SZ;
+                }
                 break;
             case OP_NJMPNZ:     // -n- (#69)
-                fNJMPNZ();
+                if (T != 0) {
+                    PC = addrAt(PC);
+                } else {
+                    PC += ADDR_SZ;
+                }
                 break;
             case OP_LESS:     // < (#70)
                 N = (N < T) ? 1 : 0;
@@ -346,10 +355,25 @@ void run(CELL PC, CELL max_cycles) {
                 pop();
                 break;
             case OP_I:     // i (#73)
-                fI();
+                if (loopDepth > 0) {
+                    t1 = (loopDepth-1) * 3;
+                    push(loopSTK[t1+2]);
+                }
+                else {
+                    printString("-I:depthErr-");
+                    push(0);
+                }
                 break;
             case OP_J:     // j (#74)
-                fJ();
+                if (loopDepth > 1) {
+                    t1 = (loopDepth-2) * 3;
+                    push(loopSTK[t1+2]);
+                }
+                else {
+                    printString("-J:depthErr-");
+                    push(0);
+                }
+
                 break;
             case OP_INPUTPIN:     // input (#75)
                 fINPUTPIN();
@@ -589,110 +613,110 @@ $once
 */
 
 // vvvvv - NimbleText generated - vvvvv
-FP prims[] = {
-    fNOOP,             // OP_NOOP (#0) ***NOOP NOOP***
-    fCLIT,             // OP_CLIT (#1) ***CLIT CLITERAL ( -- N8 )***
-    fWLIT,             // OP_WLIT (#2) ***WLIT WLITERAL ( -- N16 )***
-    fLIT,              // OP_LIT (#3) ***LIT LITERAL ( -- N )***
-    fCFETCH,           // OP_CFETCH (#4) ***CFETCH C@ (A -- N8)***
-    fWFETCH,           // OP_WFETCH (#5) ***WFETCH W@ (A -- N16)***
-    fAFETCH,           // OP_AFETCH (#6) ***AFETCH A@ (A -- N)***
-    fFETCH,            // OP_FETCH (#7) ***FETCH @ (A -- N8)***
-    fCSTORE,           // OP_CSTORE (#8) ***CSTORE C! ( N A -- )***
-    fWSTORE,           // OP_WSTORE (#9) ***WSTORE W! ( N A -- )***
-    fASTORE,           // OP_ASTORE (#10) ***ASTORE A! ( N A -- )***
-    fSTORE,            // OP_STORE (#11) ***STORE ! (  N A -- )***
-    fCCOMMA,           // OP_CCOMMA (#12) ***CCOMMA C, ( N -- )***
-    fWCOMMA,           // OP_WCOMMA (#13) ***WCOMMA W, ( N -- )***
-    fCOMMA,            // OP_COMMA (#14) ***COMMA , ( N -- )***
-    fACOMMA,           // OP_ACOMMA (#15) ***ACOMMA A, ( N -- )***
-    fCALL,             // OP_CALL (#16) ***CALL CALL ( -- )***
-    fRET,              // OP_RET (#17) ***RET EXIT ( -- )***
-    fJMP,              // OP_JMP (#18) ***JMP -N- ( -- ) ***
-    fJMPZ,             // OP_JMPZ (#19) ***JMPZ -N- ( N -- )***
-    fJMPNZ,            // OP_JMPNZ (#20) ***JMPNZ -N- ( N -- )***
-    fONEMINUS,         // OP_ONEMINUS (#21) ***ONEMINUS 1- ( N -- N-1 )***
-    fONEPLUS,          // OP_ONEPLUS (#22) ***ONEPLUS 1+ ( N -- N+1 )***
-    fDUP,              // OP_DUP (#23) ***DUP DUP ( N -- N N )***
-    fSWAP,             // OP_SWAP (#24) ***SWAP SWAP ( N1 N2 -- N2 N1 )***
-    fDROP,             // OP_DROP (#25) ***DROP DROP (N -- )***
-    fOVER,             // OP_OVER (#26) ***OVER OVER ( N1 N2 -- N1 N2 N1 )***
-    fADD,              // OP_ADD (#27) ***ADD + ( N1 N2 -- N3 )***
-    fSUB,              // OP_SUB (#28) ***SUB - ( N1 N2 -- N3 )***
-    fMULT,             // OP_MULT (#29) ***MULT * ( N1 N2 -- N3 )***
-    fSLMOD,            // OP_SLMOD (#30) ***SLMOD /MOD ( N1 N2 -- N3 N4 )***
-    fLSHIFT,           // OP_LSHIFT (#31) ***LSHIFT << ( N -- N*2 )***
-    fRSHIFT,           // OP_RSHIFT (#32) ***RSHIFT >> ( N -- N/2 )***
-    fAND,              // OP_AND (#33) ***AND AND  ( N1 N2 -- N3 )***
-    fOR,               // OP_OR (#34) ***OR OR ( N1 N2 -- N3 )***
-    fXOR,              // OP_XOR (#35) ***XOR XOR ( N1 N2 -- N3 )***
-    fNOT,              // OP_NOT (#36) ***NOT NOT ( N1 -- N2 )***
-    fDTOR,             // OP_DTOR (#37) ***DTOR >R ( N -- )***
-    fRFETCH,           // OP_RFETCH (#38) ***RFETCH R@ (-- N )***
-    fRTOD,             // OP_RTOD (#39) ***RTOD R> ( -- N )***
-    fEMIT,             // OP_EMIT (#40) ***EMIT EMIT (N -- )***
-    fTYPE,             // OP_TYPE (#41) ***TYPE type (a n -- )***
-    fDOTS,             // OP_DOTS (#42) ***DOTS .S ( -- )***
-    fDOTQUOTE,         // OP_DOTQUOTE (#43) ***DOTQUOTE .\" ( -- )***
-    fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
-    fWDTFEED,          // OP_WDTFEED (#45) ***WDTFEED WDTFEED ( -- )***
-    fBREAK,            // OP_BREAK (#46) ***BREAK BRK ( -- )***
-    fCMOVE,            // OP_CMOVE (#47) ***CMOVE CMOVE ( a1 a2 u -- )***
-    fCMOVE2,           // OP_CMOVE2 (#48) ***CMOVE2 CMOVE> ( a1 a2 u -- )***
-    fFILL,             // OP_FILL (#49) ***FILL FILL ( a u n -- )***
-    fOPENBLOCK,        // OP_OPENBLOCK (#50) ***OPENBLOCK OPEN-BLOCK***
-    fFILECLOSE,        // OP_FILECLOSE (#51) ***FILECLOSE FILE-CLOSE***
-    fFILEREAD,         // OP_FILEREAD (#52) ***FILEREAD FILE-READ***
-    fLOAD,             // OP_LOAD (#53) ***LOAD LOAD***
-    fTHRU,             // OP_THRU (#54) ***THRU THRU***
-    fDO,               // OP_DO (#55) ***DO DO ( f t -- )***
-    fLOOP,             // OP_LOOP (#56) ***LOOP LOOP ( -- )***
-    fLOOPP,            // OP_LOOPP (#57) ***LOOPP LOOP+  ( n -- )***
-    fUNUSED7,          // OP_UNUSED7 (#58) ***UNUSED7 -n- ( -- )***
-    fPARSEWORD,        // OP_PARSEWORD (#59) ***PARSEWORD PARSE-WORD ( A -- )***
-    fPARSELINE,        // OP_PARSELINE (#60) ***PARSELINE PARSE-LINE (A -- )***
-    fGETXT,            // OP_GETXT (#61) ***GETXT >BODY ( A1 -- A2 )***
-    fALIGN2,           // OP_ALIGN2 (#62) ***ALIGN2 ALIGN2 ( N1 -- N2 )***
-    fALIGN4,           // OP_ALIGN4 (#63) ***ALIGN4 ALIGN4 ( N1 -- N2 )***
-    fCREATE,           // OP_CREATE (#64) ***CREATE CREATE ( A -- )***
-    fFIND,             // OP_FIND (#65) ***FIND FIND ( A1 -- (A1 1)|0 )***
-    fNEXTWORD,         // OP_NEXTWORD (#66) ***NEXTWORD NEXT-WORD ( A -- )***
-    fISNUMBER,         // OP_ISNUMBER (#67) ***ISNUMBER NUMBER? ( A -- (N 1)|0 )***
-    fNJMPZ,            // OP_NJMPZ (#68) ***NJMPZ -N- ( N -- N )***
-    fNJMPNZ,           // OP_NJMPNZ (#69) ***NJMPNZ -N- ( N -- N )***
-    fLESS,             // OP_LESS (#70) ***LESS < ( N1 N2 -- N3 )***
-    fEQUALS,           // OP_EQUALS (#71) ***EQUALS = ( N1 N2 -- N3 )***
-    fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
-    fI,                // OP_I (#73) ***I I ( -- n )***
-    fJ,                // OP_J (#74) ***J J ( -- n )***
-    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input ( n -- )***
-    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output ( n -- )***
-    fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
-    fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
-    fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  ap! ( n1 n2 -- )***
-    fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dp! ( n1 n2 -- )***
-    fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH ap@ ( n1 -- n2 )***
-    fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dp@ ( n1 -- n2 )***
-    fMWFETCH,          // OP_MWFETCH (#83) ***MWFETCH mw@ ( n1 -- n2 )***
-    fMCSTORE,          // OP_MCSTORE (#84) ***MCSTORE mc! ( n1 n2 -- )***
-    fNUM2STR,          // OP_NUM2STR (#85) ***NUM2STR num>str ( n l -- a )***
-    fBYE,              // OP_BYE (#86) ***BYE bye ( -- )***
-    0};
+// FP prims[] = {
+//     fNOOP,             // OP_NOOP (#0) ***NOOP NOOP***
+//     fCLIT,             // OP_CLIT (#1) ***CLIT CLITERAL ( -- N8 )***
+//     fWLIT,             // OP_WLIT (#2) ***WLIT WLITERAL ( -- N16 )***
+//     fLIT,              // OP_LIT (#3) ***LIT LITERAL ( -- N )***
+//     fCFETCH,           // OP_CFETCH (#4) ***CFETCH C@ (A -- N8)***
+//     fWFETCH,           // OP_WFETCH (#5) ***WFETCH W@ (A -- N16)***
+//     fAFETCH,           // OP_AFETCH (#6) ***AFETCH A@ (A -- N)***
+//     fFETCH,            // OP_FETCH (#7) ***FETCH @ (A -- N8)***
+//     fCSTORE,           // OP_CSTORE (#8) ***CSTORE C! ( N A -- )***
+//     fWSTORE,           // OP_WSTORE (#9) ***WSTORE W! ( N A -- )***
+//     fASTORE,           // OP_ASTORE (#10) ***ASTORE A! ( N A -- )***
+//     fSTORE,            // OP_STORE (#11) ***STORE ! (  N A -- )***
+//     fCCOMMA,           // OP_CCOMMA (#12) ***CCOMMA C, ( N -- )***
+//     fWCOMMA,           // OP_WCOMMA (#13) ***WCOMMA W, ( N -- )***
+//     fCOMMA,            // OP_COMMA (#14) ***COMMA , ( N -- )***
+//     fACOMMA,           // OP_ACOMMA (#15) ***ACOMMA A, ( N -- )***
+//     fCALL,             // OP_CALL (#16) ***CALL CALL ( -- )***
+//     fRET,              // OP_RET (#17) ***RET EXIT ( -- )***
+//     fJMP,              // OP_JMP (#18) ***JMP -N- ( -- ) ***
+//     fJMPZ,             // OP_JMPZ (#19) ***JMPZ -N- ( N -- )***
+//     fJMPNZ,            // OP_JMPNZ (#20) ***JMPNZ -N- ( N -- )***
+//     fONEMINUS,         // OP_ONEMINUS (#21) ***ONEMINUS 1- ( N -- N-1 )***
+//     fONEPLUS,          // OP_ONEPLUS (#22) ***ONEPLUS 1+ ( N -- N+1 )***
+//     fDUP,              // OP_DUP (#23) ***DUP DUP ( N -- N N )***
+//     fSWAP,             // OP_SWAP (#24) ***SWAP SWAP ( N1 N2 -- N2 N1 )***
+//     fDROP,             // OP_DROP (#25) ***DROP DROP (N -- )***
+//     fOVER,             // OP_OVER (#26) ***OVER OVER ( N1 N2 -- N1 N2 N1 )***
+//     fADD,              // OP_ADD (#27) ***ADD + ( N1 N2 -- N3 )***
+//     fSUB,              // OP_SUB (#28) ***SUB - ( N1 N2 -- N3 )***
+//     fMULT,             // OP_MULT (#29) ***MULT * ( N1 N2 -- N3 )***
+//     fSLMOD,            // OP_SLMOD (#30) ***SLMOD /MOD ( N1 N2 -- N3 N4 )***
+//     fLSHIFT,           // OP_LSHIFT (#31) ***LSHIFT << ( N -- N*2 )***
+//     fRSHIFT,           // OP_RSHIFT (#32) ***RSHIFT >> ( N -- N/2 )***
+//     fAND,              // OP_AND (#33) ***AND AND  ( N1 N2 -- N3 )***
+//     fOR,               // OP_OR (#34) ***OR OR ( N1 N2 -- N3 )***
+//     fXOR,              // OP_XOR (#35) ***XOR XOR ( N1 N2 -- N3 )***
+//     fNOT,              // OP_NOT (#36) ***NOT NOT ( N1 -- N2 )***
+//     fDTOR,             // OP_DTOR (#37) ***DTOR >R ( N -- )***
+//     fRFETCH,           // OP_RFETCH (#38) ***RFETCH R@ (-- N )***
+//     fRTOD,             // OP_RTOD (#39) ***RTOD R> ( -- N )***
+//     fEMIT,             // OP_EMIT (#40) ***EMIT EMIT (N -- )***
+//     fTYPE,             // OP_TYPE (#41) ***TYPE type (a n -- )***
+//     fDOTS,             // OP_DOTS (#42) ***DOTS .S ( -- )***
+//     fDOTQUOTE,         // OP_DOTQUOTE (#43) ***DOTQUOTE .\" ( -- )***
+//     fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
+//     fWDTFEED,          // OP_WDTFEED (#45) ***WDTFEED WDTFEED ( -- )***
+//     fBREAK,            // OP_BREAK (#46) ***BREAK BRK ( -- )***
+//     fCMOVE,            // OP_CMOVE (#47) ***CMOVE CMOVE ( a1 a2 u -- )***
+//     fCMOVE2,           // OP_CMOVE2 (#48) ***CMOVE2 CMOVE> ( a1 a2 u -- )***
+//     fFILL,             // OP_FILL (#49) ***FILL FILL ( a u n -- )***
+//     fOPENBLOCK,        // OP_OPENBLOCK (#50) ***OPENBLOCK OPEN-BLOCK***
+//     fFILECLOSE,        // OP_FILECLOSE (#51) ***FILECLOSE FILE-CLOSE***
+//     fFILEREAD,         // OP_FILEREAD (#52) ***FILEREAD FILE-READ***
+//     fLOAD,             // OP_LOAD (#53) ***LOAD LOAD***
+//     fTHRU,             // OP_THRU (#54) ***THRU THRU***
+//     fDO,               // OP_DO (#55) ***DO DO ( f t -- )***
+//     fLOOP,             // OP_LOOP (#56) ***LOOP LOOP ( -- )***
+//     fLOOPP,            // OP_LOOPP (#57) ***LOOPP LOOP+  ( n -- )***
+//     fUNUSED7,          // OP_UNUSED7 (#58) ***UNUSED7 -n- ( -- )***
+//     fPARSEWORD,        // OP_PARSEWORD (#59) ***PARSEWORD PARSE-WORD ( A -- )***
+//     fPARSELINE,        // OP_PARSELINE (#60) ***PARSELINE PARSE-LINE (A -- )***
+//     fGETXT,            // OP_GETXT (#61) ***GETXT >BODY ( A1 -- A2 )***
+//     fALIGN2,           // OP_ALIGN2 (#62) ***ALIGN2 ALIGN2 ( N1 -- N2 )***
+//     fALIGN4,           // OP_ALIGN4 (#63) ***ALIGN4 ALIGN4 ( N1 -- N2 )***
+//     fCREATE,           // OP_CREATE (#64) ***CREATE CREATE ( A -- )***
+//     fFIND,             // OP_FIND (#65) ***FIND FIND ( A1 -- (A1 1)|0 )***
+//     fNEXTWORD,         // OP_NEXTWORD (#66) ***NEXTWORD NEXT-WORD ( A -- )***
+//     fISNUMBER,         // OP_ISNUMBER (#67) ***ISNUMBER NUMBER? ( A -- (N 1)|0 )***
+//     fNJMPZ,            // OP_NJMPZ (#68) ***NJMPZ -N- ( N -- N )***
+//     fNJMPNZ,           // OP_NJMPNZ (#69) ***NJMPNZ -N- ( N -- N )***
+//     fLESS,             // OP_LESS (#70) ***LESS < ( N1 N2 -- N3 )***
+//     fEQUALS,           // OP_EQUALS (#71) ***EQUALS = ( N1 N2 -- N3 )***
+//     fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
+//     fI,                // OP_I (#73) ***I I ( -- n )***
+//     fJ,                // OP_J (#74) ***J J ( -- n )***
+//     fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input ( n -- )***
+//     fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output ( n -- )***
+//     fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
+//     fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
+//     fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  ap! ( n1 n2 -- )***
+//     fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dp! ( n1 n2 -- )***
+//     fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH ap@ ( n1 -- n2 )***
+//     fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dp@ ( n1 -- n2 )***
+//     fMWFETCH,          // OP_MWFETCH (#83) ***MWFETCH mw@ ( n1 -- n2 )***
+//     fMCSTORE,          // OP_MCSTORE (#84) ***MCSTORE mc! ( n1 n2 -- )***
+//     fNUM2STR,          // OP_NUM2STR (#85) ***NUM2STR num>str ( n l -- a )***
+//     fBYE,              // OP_BYE (#86) ***BYE bye ( -- )***
+//     0};
 // ^^^^^ - NimbleText generated - ^^^^^
 
 
 void fNOOP() {         // opcode #0
 }
 void fCLIT() {         // opcode #1
-    push(dict[PC++]);
+    // push(dict[PC++]);
 }
 void fWLIT() {         // opcode #2
-    push(wordAt(PC));
-    PC += WORD_SZ;
+    // push(wordAt(PC));
+    // PC += WORD_SZ;
 }
 void fLIT() {          // opcode #3
-    push(cellAt(PC));
-    PC += CELL_SZ;
+    // push(cellAt(PC));
+    // PC += CELL_SZ;
 }
 void fCFETCH() {       // opcode #4
     CELL addr = T;
@@ -762,23 +786,23 @@ void fACOMMA() {       // opcode #15
     (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA();
 }
 void fCALL() {         // opcode #16
-    rpush(PC+ADDR_SZ);
-    PC = addrAt(PC);
+    // rpush(PC_OLD+ADDR_SZ);
+    // PC_OLD = addrAt(PC_OLD);
     // printStringF("-call:%lx-", PC);
 }
 void fRET() {          // opcode #17
     // handled in run()
 }
 void fJMP() {          // opcode #18
-    PC = addrAt(PC);
+    // PC_OLD = addrAt(PC_OLD);
 }
 void fJMPZ() {         // opcode #19
-    if (pop() == 0) PC = addrAt(PC);
-    else PC += ADDR_SZ;
+    // if (pop() == 0) PC_OLD = addrAt(PC_OLD);
+    // else PC_OLD += ADDR_SZ;
 }
 void fJMPNZ() {        // opcode #20
-    if (pop()) PC = addrAt(PC);
-    else PC += ADDR_SZ;
+    // if (pop()) PC_OLD = addrAt(PC_OLD);
+    // else PC_OLD += ADDR_SZ;
 }
 void fONEMINUS() {     // opcode #21
     T -= 1;
@@ -849,7 +873,7 @@ void fEMIT() {
 void fTYPE() {
     CELL n = pop();
     CELL a = pop();
-    printStringF("-t:%d:%d-", n, a);
+    // printStringF("-t:%d:%d-", n, a);
     char x[2];
     x[1] = 0;
     for (int i = 0; i < n; i++ ) {
@@ -936,55 +960,55 @@ void fTHRU() {         // opcode #54
 }
 // OP_DO (#55)    : DO ( f t -- ) ... ;
 void fDO() {       
-    if (loopDepth < 4) {
-        CELL t = pop();
-        CELL f = pop();
-        int x = loopDepth * 3;
-        // printStringF("-DO(%ld,%ld,%d)-", f, t, f);
-        loopSTK[x] = f;
-        loopSTK[x+1] = t;
-        loopSTK[x+2] = f;
-        ++loopDepth;
-    } else {
-        printString("-DO:too deep-");
-    }
+    // if (loopDepth < 4) {
+    //     CELL t = pop();
+    //     CELL f = pop();
+    //     int x = loopDepth * 3;
+    //     // printStringF("-DO(%ld,%ld,%d)-", f, t, f);
+    //     loopSTK[x] = f;
+    //     loopSTK[x+1] = t;
+    //     loopSTK[x+2] = f;
+    //     ++loopDepth;
+    // } else {
+    //     printString("-DO:too deep-");
+    // }
 }
 // OP_LOOP (#56)    : LOOP ( -- ) ... ;
 void fLOOP() {     
-    if (loopDepth > 0) {
-        int x = (loopDepth-1) * 3;
-        CELL f = loopSTK[x];
-        CELL t = loopSTK[x+1];
-        loopSTK[x+2] += 1;
-        CELL i = loopSTK[x+2];
-        // printString("-LOOP(%ld,%ld,%d)-", f, t, i);
-        if ((f < i) && (i < t)) { push(1); return; }
-        loopDepth -= 1;
-        push(0);
-    }
-    else {
-        printString("-LOOP:depthErr-");
-        push(0);
-    }
+    // if (loopDepth > 0) {
+    //     int x = (loopDepth-1) * 3;
+    //     CELL f = loopSTK[x];
+    //     CELL t = loopSTK[x+1];
+    //     loopSTK[x+2] += 1;
+    //     CELL i = loopSTK[x+2];
+    //     // printString("-LOOP(%ld,%ld,%d)-", f, t, i);
+    //     if ((f < i) && (i < t)) { push(1); return; }
+    //     loopDepth -= 1;
+    //     push(0);
+    // }
+    // else {
+    //     printString("-LOOP:depthErr-");
+    //     push(0);
+    // }
 }
 // OP_LOOPP (#57)    : LOOP+ ( n -- ) ... ;
 void fLOOPP() {    
-    if (loopDepth > 0) {
-        int x = (loopDepth-1) * 3;
-        CELL f = loopSTK[x];
-        CELL t = loopSTK[x+1];
-        loopSTK[x+2] += pop();
-        CELL i = loopSTK[x+2];
-        // printStringF("-LOOP(%ld,%ld,%ld)-", f, t, i);
-        if ((f < i) && (i < t)) { push(1); return; }
-        if ((t < i) && (i < f)) { push(1); return; }
-        loopDepth -= 1;
-        push(0);
-    }
-    else {
-        printString("-LOOP:depthErr-");
-        push(0);
-    }
+    // if (loopDepth > 0) {
+    //     int x = (loopDepth-1) * 3;
+    //     CELL f = loopSTK[x];
+    //     CELL t = loopSTK[x+1];
+    //     loopSTK[x+2] += pop();
+    //     CELL i = loopSTK[x+2];
+    //     // printStringF("-LOOP(%ld,%ld,%ld)-", f, t, i);
+    //     if ((f < i) && (i < t)) { push(1); return; }
+    //     if ((t < i) && (i < f)) { push(1); return; }
+    //     loopDepth -= 1;
+    //     push(0);
+    // }
+    // else {
+    //     printString("-LOOP:depthErr-");
+    //     push(0);
+    // }
 }
 void fUNUSED7() {         // opcode #58
 }
@@ -1301,12 +1325,12 @@ void fISNUMBER() {     // opcode #67
     push(0);
 }
 void fNJMPZ() {        // opcode #68
-    if (T == 0) PC = addrAt(PC);
-    else PC += ADDR_SZ;
+    // if (T == 0) PC_OLD = addrAt(PC_OLD);
+    // else PC_OLD += ADDR_SZ;
 }
 void fNJMPNZ() {       // opcode #69
-    if (T) PC = addrAt(PC);
-    else PC += ADDR_SZ;
+    // if (T) PC_OLD = addrAt(PC_OLD);
+    // else PC_OLD += ADDR_SZ;
 }
 // OP_LESS (#70)    : < ( TODO -- TODO ) ... ;
 void fLESS() {     
@@ -1333,14 +1357,14 @@ void fI() {
 }
 // OP_J (#74)    : J ( -- n ) ... ;
 void fJ() {        
-    if (loopDepth > 1) {
-        CELL x = (loopDepth-2) * 3;
-        push(loopSTK[x+2]);
-    }
-    else {
-        printString("-J:depthErr-");
-        push(0);
-    }
+    // if (loopDepth > 1) {
+    //     CELL x = (loopDepth-2) * 3;
+    //     push(loopSTK[x+2]);
+    // }
+    // else {
+    //     printString("-J:depthErr-");
+    //     push(0);
+    // }
 }
 // OP_INPUTPIN (#75)    : input ( n -- ) ... ;
 void fINPUTPIN() { 
