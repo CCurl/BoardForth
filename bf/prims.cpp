@@ -31,7 +31,7 @@ void run(CELL PC, CELL max_cycles) {
                 push(dict[PC++]);
                 break;
             case OP_WLIT:     // wliteral (#2)
-                T = wordAt(PC);
+                push(wordAt(PC));
                 PC += WORD_SZ;
                 break;
             case OP_LIT:     // literal (#3)
