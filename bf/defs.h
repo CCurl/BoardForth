@@ -1,6 +1,8 @@
 #ifndef __DEFS_H__
 #define __DEFS_H__
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "board.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +67,8 @@ typedef struct {
 
 #define ADDR_HERE_BASE  (CELL_SZ*12)
 
+extern BYTE IR;
+extern CELL PC;
 extern int DSP, RSP;
 extern CELL HERE, LAST;
 extern CELL *dstk, *rstk;
@@ -85,7 +89,7 @@ CELL pop();
 void rpush(CELL);
 CELL rpop();
 void run(CELL, CELL);
-CELL allocSpace(WORD);
+CELL allocSpace(int);
 void allocFree(CELL);
 CELL stringToDict(char *, CELL);
 BYTE getOpcode(char *);

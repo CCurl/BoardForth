@@ -54,5 +54,8 @@ Module.symvers
 Mkfile.old
 dkms.conf
 /bf/.vs/bf/v16
-/bf/ConsoleApplication1/Debug
 /bf/Debug
+/bf/Release
+/zz-bf/.vs/bf/v16
+/bf/bf.user
+/bf/.vs

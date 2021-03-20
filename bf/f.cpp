@@ -99,7 +99,7 @@ void is_binary(char *word) {
 
 CELL stringToDict(char *s, CELL to) {
     // printStringF("-sd.%d", (int)to);
-    if (to == 0) to = allocSpace(strlen(s)+2);
+    if (to == 0) to = allocSpace((int)strlen(s)+2);
     // printStringF(":%d-\n", (int)to);
     CELL x = to;
     while (*s) {
@@ -117,7 +117,7 @@ void parseLine(char *line) {
 
 void loadUserWords() {
     char *buf = (char *)&dict[sys->HERE + 16];
-    sprintf(buf, ": ds $%lx ;", &dict[0]);
+    sprintf(buf, ": ds $%p ;", &dict[0]);
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
@@ -178,11 +178,17 @@ void doHistory(char *l) {
     }
 }
 
+void rtrim(char* str) {
+    int l = strlen(str);
+    while ((l > 0) && (str[l-1] < 33)) str[--l] = 0;
+}
+
 void repl() {
     char *tib = (char *)&dict[sys->TIB];
     while (1) {
         ok();
-        gets(tib);
+        fgets(tib, TIB_SZ, stdin);
+        rtrim(tib);
         if (strcmp(tib, "bye") == 0) return;
         doHistory(tib);
         push(sys->TIB);
