@@ -19,11 +19,12 @@ CELL allocAddrBase = 0, allocCurFree = 0;
 
 void run(CELL PC, CELL max_cycles) {
     CELL t1, t2, t3;
+    BYTE IR, *a1;
     while (1) {
         if (max_cycles) {
             if (--max_cycles < 1) { return; }
         }
-        BYTE IR = dict[PC++];
+        IR = dict[PC++];
         // printStringF("\n-PC-%d/%lx:IR-%d/%x-", PC-1, PC-1, (int)IR, (unsigned int)IR); fDOTS();
         switch (IR) {
         case OP_NOOP:     // noop (#0)
@@ -36,7 +37,7 @@ void run(CELL PC, CELL max_cycles) {
             PC += WORD_SZ;
             break;
         case OP_LIT:     // literal (#3)
-            T = cellAt(PC);
+            push(cellAt(PC));
             PC += CELL_SZ;
             break;
         case OP_CFETCH:     // c@ (#4)
@@ -59,17 +60,17 @@ void run(CELL PC, CELL max_cycles) {
         case OP_WSTORE:     // w! (#9)
             t2 = pop();
             t1 = pop();
-            wordStore(t1, t2);
+            wordStore(t2, t1);
             break;
         case OP_ASTORE:     // a! (#10)
             t2 = pop();
             t1 = pop();
-            addrStore(t1, t2);
+            addrStore(t2, t1);
             break;
         case OP_STORE:     // ! (#11)
             t2 = pop();
             t1 = pop();
-            cellStore(t1, t2);
+            cellStore(t2, t1);
             break;
         case OP_CCOMMA:     // c, (#12)
             t1 = pop();
@@ -405,7 +406,8 @@ void run(CELL PC, CELL max_cycles) {
             fDPINFETCH();
             break;
         case OP_MWFETCH:     // mw@ (#83)
-            fMWFETCH();
+            a1 = (BYTE*)T;
+            T = (*(a1 + 1) << 8) | (*a1);
             break;
         case OP_MCSTORE:     // mc! (#84)
             fMCSTORE();
@@ -1459,7 +1461,6 @@ void fDPINFETCH() {
 }
 // OP_MWFETCH (#83)    : mw@ ( n1 -- n2 ) ... ;
 void fMWFETCH() {
-    T = wordAt(T);
 }
 // OP_MCSTORE (#84)    : mc! ( n1 n2 -- ) ... ;
 void fMCSTORE() {
