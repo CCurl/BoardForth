@@ -6,15 +6,27 @@
 #include "defs.h"
 #pragma warning(disable: 4996)
 
+void init() {
+    printString("BoardForth v0.0.1 - Chris Curl\n");
+    printString("Source: https://github.com/CCurl/BoardForth \n");
+    printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
+    printStringF("Hello.");
+    vmInit();
+    loadBaseSystem();
+    loadUserWords();
+    ok();
+}
+
 #ifdef __DEV_BOARD__
 void startUp() {
-
+    init();
 }
 
 void loop() {
 
 }
-#else __DEV_BOARD__
+#else
+
 void loadSource(const char* src) {
     parseLine((char*)src);
 }
@@ -35,26 +47,20 @@ void rtrim(char* str) {
 void repl() {
     char* tib = (char*)&dict[sys->TIB];
     while (1) {
-        ok();
         fgets(tib, TIB_SZ, stdin);
         rtrim(tib);
         if (strcmp(tib, "bye") == 0) return;
         doHistory(tib);
         push(sys->TIB);
         fPARSELINE();
+        ok();
     }
 }
 
 int main() {
-    printString("BoardForth v0.0.1 - Chris Curl\n");
-    printString("Source: https://github.com/CCurl/BoardForth \n");
-    printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
-    printStringF("Hello.");
-    vmInit();
-    loadBaseSystem();
-    loadUserWords();
+    init();
     repl();
-    FILE* fp = fopen("..\\f-dump.txt", "wt");
+    FILE *fp = fopen("..\\f-dump.txt", "wt");
     if (fp) {
         push((CELL)fp);
         fDUMPDICT();
@@ -63,4 +69,4 @@ int main() {
     // allocDump();
     // printStringF("\n");
 }
-#endif
+#endif // __DEV_BOARD__
