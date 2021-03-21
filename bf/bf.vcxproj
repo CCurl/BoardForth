@@ -152,14 +152,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="f.cpp" />
-    <ClCompile Include="loader.cpp" />
-    <ClCompile Include="opcodes.cpp" />
-    <ClCompile Include="prims.cpp" />
+    <ClCompile Include="forth.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h" />
     <ClInclude Include="defs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="f-dump.txt" />
+    <Text Include="history.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

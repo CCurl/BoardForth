@@ -586,13 +586,22 @@ CELL allocSpace(int sz) {
 #pragma endregion
 
 void fDUMPDICT() {
+    char x[20];
+    int n = 0;
     FILE* to = (FILE*)pop();
     to = to ? to : stdout;
     fprintf(to, "%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
     for (int i = 0; i < sys->HERE; i++) {
-        if (i % 16 == 0) fprintf(to, "\n %04x:", i);
+        if (i % 16 == 0) {
+            if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
+            fprintf(to, "\n %04x:", i);
+            n = 0;
+        }
+        BYTE b = dict[i];
+        x[n++] = ((31 < b) && (b < 128)) ? b : '.';
         fprintf(to, " %02x", dict[i]);
     }
+    if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
 }
 
 int compiling(char* w, int errIfNot) {
@@ -1513,3 +1522,350 @@ void f<%($0 + '() {               ').substring(0,13)%>
 $once
 // ^^^^^ - NimbleText generated - ^^^^^
 */
+
+
+
+
+
+#include"defs.h"
+
+
+/* -- NimbleText script:
+$once
+// vvvvv - NimbleText generated - vvvvv
+void loadBaseSystem() {
+$each
+    parseLine_P(F("$row"));
+$once
+}
+// ^^^^^ - NimbleText generated - ^^^^^
+*/
+
+// vvvvv - NimbleText generated - vvvvv
+void loadBaseSystem() {
+    loadSource(PSTR(": cell 4 ;           : addr 2 ;"));
+    loadSource(PSTR("// : tib    #8 @ ;      : >in   #12 ;"));
+    loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
+    loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
+    loadSource(PSTR(": base  #24 ;        : state #28 ;"));
+    loadSource(PSTR(": sp0   #32 @ ;      // : rp0   #36 @ ;"));
+    loadSource(PSTR(": (dsp) #40 ;        : dsp (dsp) @ ;"));
+    loadSource(PSTR("// : (rsp) #44 ;        : rsp (rsp) @ ;"));
+    loadSource(PSTR(": !sp 0 (dsp) ! ;    // : !rsp 0 (rsp) ! ;"));
+    loadSource(PSTR("// : cells 4 * ;        // : cell+ 4 + ;"));
+    loadSource(PSTR(": inline    2 last addr + c! ;"));
+    loadSource(PSTR("// : immediate 1 last addr + c! ;"));
+    loadSource(PSTR(": nip swap drop   ; inline"));
+    loadSource(PSTR(": tuck swap over  ; inline"));
+    loadSource(PSTR(": / /mod nip      ; inline"));
+    loadSource(PSTR(": mod /mod drop   ; inline"));
+    loadSource(PSTR(": +! tuck @ + swap ! ;"));
+    loadSource(PSTR(": <> = not ; inline"));
+    loadSource(PSTR(": ?dup if- dup then ;"));
+    loadSource(PSTR(": abs dup 0 < if 0 swap - then ;"));
+    loadSource(PSTR(": execute >r ;"));
+    loadSource(PSTR(": depth dsp 1- ;"));
+    loadSource(PSTR("// : pick depth swap - 1- cells sp0 + @ ;"));
+    loadSource(PSTR(": rot >r swap r> swap ;"));
+    loadSource(PSTR(": min over over < if drop else nip then ;"));
+    loadSource(PSTR(": max over over > if drop else nip then ;"));
+    loadSource(PSTR(": between rot dup >r min max r> = ;"));
+    loadSource(PSTR(": cr #13 emit #10 emit ;"));
+    loadSource(PSTR(": space $20 emit ; inline"));
+    loadSource(PSTR(": count dup 1+ swap c@ ;"));
+    loadSource(PSTR(": . 0 num>str space type ;"));
+    loadSource(PSTR(": .2 2 num>str type ; : .4 4 num>str type ;"));
+    loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
+    loadSource(PSTR(": allot here + (h) ! ;"));
+    loadSource(PSTR("// : [ 0 state ! ; immediate"));
+    loadSource(PSTR("// : ] 1 state ! ;"));
+    loadSource(PSTR(": .wordl dup .4 space dup >body .4 addr + dup c@ . 1+ space count type cr ;"));
+    loadSource(PSTR(": .word addr + 1+ count type space ;"));
+    loadSource(PSTR(": wordsl last begin dup .wordl a@ while- drop ;"));
+    loadSource(PSTR(": words  last begin dup .word  a@ while- drop ;"));
+}
+// ^^^^^ - NimbleText generated - ^^^^^
+
+
+
+
+
+#include "defs.h"
+
+/* -- NimbleText script:
+$once
+// vvvvv - NimbleText generated - vvvvv
+BYTE getOpcode(char *w) {
+$each
+    if (strcmp_PF(w, PSTR("$1")) == 0) return OP_$0;       //  opcode #$rownum
+$once
+    return 0xFF;
+}
+// ^^^^^ - NimbleText generated - ^^^^^
+*/
+
+// vvvvv - NimbleText generated - vvvvv
+BYTE getOpcode(char* w) {
+    if (strcmp_PF(w, PSTR("noop")) == 0) return OP_NOOP;       //  opcode #0
+    if (strcmp_PF(w, PSTR("cliteral")) == 0) return OP_CLIT;       //  opcode #1
+    if (strcmp_PF(w, PSTR("wliteral")) == 0) return OP_WLIT;       //  opcode #2
+    if (strcmp_PF(w, PSTR("literal")) == 0) return OP_LIT;       //  opcode #3
+    if (strcmp_PF(w, PSTR("c@")) == 0) return OP_CFETCH;       //  opcode #4
+    if (strcmp_PF(w, PSTR("w@")) == 0) return OP_WFETCH;       //  opcode #5
+    if (strcmp_PF(w, PSTR("a@")) == 0) return OP_AFETCH;       //  opcode #6
+    if (strcmp_PF(w, PSTR("@")) == 0) return OP_FETCH;       //  opcode #7
+    if (strcmp_PF(w, PSTR("c!")) == 0) return OP_CSTORE;       //  opcode #8
+    if (strcmp_PF(w, PSTR("w!")) == 0) return OP_WSTORE;       //  opcode #9
+    if (strcmp_PF(w, PSTR("a!")) == 0) return OP_ASTORE;       //  opcode #10
+    if (strcmp_PF(w, PSTR("!")) == 0) return OP_STORE;       //  opcode #11
+    if (strcmp_PF(w, PSTR("c,")) == 0) return OP_CCOMMA;       //  opcode #12
+    if (strcmp_PF(w, PSTR("w,")) == 0) return OP_WCOMMA;       //  opcode #13
+    if (strcmp_PF(w, PSTR(",")) == 0) return OP_COMMA;       //  opcode #14
+    if (strcmp_PF(w, PSTR("a,")) == 0) return OP_ACOMMA;       //  opcode #15
+    if (strcmp_PF(w, PSTR("call")) == 0) return OP_CALL;       //  opcode #16
+    if (strcmp_PF(w, PSTR("exit")) == 0) return OP_RET;       //  opcode #17
+    if (strcmp_PF(w, PSTR("-n-")) == 0) return OP_JMP;       //  opcode #18
+    if (strcmp_PF(w, PSTR("-n-")) == 0) return OP_JMPZ;       //  opcode #19
+    if (strcmp_PF(w, PSTR("-n-")) == 0) return OP_JMPNZ;       //  opcode #20
+    if (strcmp_PF(w, PSTR("1-")) == 0) return OP_ONEMINUS;       //  opcode #21
+    if (strcmp_PF(w, PSTR("1+")) == 0) return OP_ONEPLUS;       //  opcode #22
+    if (strcmp_PF(w, PSTR("dup")) == 0) return OP_DUP;       //  opcode #23
+    if (strcmp_PF(w, PSTR("swap")) == 0) return OP_SWAP;       //  opcode #24
+    if (strcmp_PF(w, PSTR("drop")) == 0) return OP_DROP;       //  opcode #25
+    if (strcmp_PF(w, PSTR("over")) == 0) return OP_OVER;       //  opcode #26
+    if (strcmp_PF(w, PSTR("+")) == 0) return OP_ADD;       //  opcode #27
+    if (strcmp_PF(w, PSTR("-")) == 0) return OP_SUB;       //  opcode #28
+    if (strcmp_PF(w, PSTR("*")) == 0) return OP_MULT;       //  opcode #29
+    if (strcmp_PF(w, PSTR("/mod")) == 0) return OP_SLMOD;       //  opcode #30
+    if (strcmp_PF(w, PSTR("2*")) == 0) return OP_LSHIFT;       //  opcode #31
+    if (strcmp_PF(w, PSTR("2/")) == 0) return OP_RSHIFT;       //  opcode #32
+    if (strcmp_PF(w, PSTR("and")) == 0) return OP_AND;       //  opcode #33
+    if (strcmp_PF(w, PSTR("or")) == 0) return OP_OR;       //  opcode #34
+    if (strcmp_PF(w, PSTR("xor")) == 0) return OP_XOR;       //  opcode #35
+    if (strcmp_PF(w, PSTR("not")) == 0) return OP_NOT;       //  opcode #36
+    if (strcmp_PF(w, PSTR(">r")) == 0) return OP_DTOR;       //  opcode #37
+    if (strcmp_PF(w, PSTR("r@")) == 0) return OP_RFETCH;       //  opcode #38
+    if (strcmp_PF(w, PSTR("r>")) == 0) return OP_RTOD;       //  opcode #39
+    if (strcmp_PF(w, PSTR("emit")) == 0) return OP_EMIT;       //  opcode #40
+    if (strcmp_PF(w, PSTR("type")) == 0) return OP_TYPE;       //  opcode #41
+    if (strcmp_PF(w, PSTR(".s")) == 0) return OP_DOTS;       //  opcode #42
+    if (strcmp_PF(w, PSTR(".\"")) == 0) return OP_DOTQUOTE;       //  opcode #43
+    if (strcmp_PF(w, PSTR("(")) == 0) return OP_PAREN;       //  opcode #44
+    if (strcmp_PF(w, PSTR("wdtfeed")) == 0) return OP_WDTFEED;       //  opcode #45
+    if (strcmp_PF(w, PSTR("brk")) == 0) return OP_BREAK;       //  opcode #46
+    if (strcmp_PF(w, PSTR("cmove")) == 0) return OP_CMOVE;       //  opcode #47
+    if (strcmp_PF(w, PSTR("cmove>")) == 0) return OP_CMOVE2;       //  opcode #48
+    if (strcmp_PF(w, PSTR("fill")) == 0) return OP_FILL;       //  opcode #49
+    if (strcmp_PF(w, PSTR("open-block")) == 0) return OP_OPENBLOCK;       //  opcode #50
+    if (strcmp_PF(w, PSTR("file-close")) == 0) return OP_FILECLOSE;       //  opcode #51
+    if (strcmp_PF(w, PSTR("file-read")) == 0) return OP_FILEREAD;       //  opcode #52
+    if (strcmp_PF(w, PSTR("load")) == 0) return OP_LOAD;       //  opcode #53
+    if (strcmp_PF(w, PSTR("thru")) == 0) return OP_THRU;       //  opcode #54
+    if (strcmp_PF(w, PSTR("do")) == 0) return OP_DO;       //  opcode #55
+    if (strcmp_PF(w, PSTR("loop")) == 0) return OP_LOOP;       //  opcode #56
+    if (strcmp_PF(w, PSTR("loop+")) == 0) return OP_LOOPP;       //  opcode #57
+    if (strcmp_PF(w, PSTR("-n-")) == 0) return OP_UNUSED7;       //  opcode #58
+    if (strcmp_PF(w, PSTR("parse-word")) == 0) return OP_PARSEWORD;       //  opcode #59
+    if (strcmp_PF(w, PSTR("parse-line")) == 0) return OP_PARSELINE;       //  opcode #60
+    if (strcmp_PF(w, PSTR(">body")) == 0) return OP_GETXT;       //  opcode #61
+    if (strcmp_PF(w, PSTR("align2")) == 0) return OP_ALIGN2;       //  opcode #62
+    if (strcmp_PF(w, PSTR("align4")) == 0) return OP_ALIGN4;       //  opcode #63
+    if (strcmp_PF(w, PSTR("create")) == 0) return OP_CREATE;       //  opcode #64
+    if (strcmp_PF(w, PSTR("find")) == 0) return OP_FIND;       //  opcode #65
+    if (strcmp_PF(w, PSTR("next-word")) == 0) return OP_NEXTWORD;       //  opcode #66
+    if (strcmp_PF(w, PSTR("number?")) == 0) return OP_ISNUMBER;       //  opcode #67
+    if (strcmp_PF(w, PSTR("-n-")) == 0) return OP_NJMPZ;       //  opcode #68
+    if (strcmp_PF(w, PSTR("-n-")) == 0) return OP_NJMPNZ;       //  opcode #69
+    if (strcmp_PF(w, PSTR("<")) == 0) return OP_LESS;       //  opcode #70
+    if (strcmp_PF(w, PSTR("=")) == 0) return OP_EQUALS;       //  opcode #71
+    if (strcmp_PF(w, PSTR(">")) == 0) return OP_GREATER;       //  opcode #72
+    if (strcmp_PF(w, PSTR("i")) == 0) return OP_I;       //  opcode #73
+    if (strcmp_PF(w, PSTR("j")) == 0) return OP_J;       //  opcode #74
+    if (strcmp_PF(w, PSTR("input")) == 0) return OP_INPUTPIN;       //  opcode #75
+    if (strcmp_PF(w, PSTR("output")) == 0) return OP_OUTPUTPIN;       //  opcode #76
+    if (strcmp_PF(w, PSTR("ms")) == 0) return OP_DELAY;       //  opcode #77
+    if (strcmp_PF(w, PSTR("tick")) == 0) return OP_TICK;       //  opcode #78
+    if (strcmp_PF(w, PSTR("ap!")) == 0) return OP_APINSTORE;       //  opcode #79
+    if (strcmp_PF(w, PSTR("dp!")) == 0) return OP_DPINSTORE;       //  opcode #80
+    if (strcmp_PF(w, PSTR("ap@")) == 0) return OP_APINFETCH;       //  opcode #81
+    if (strcmp_PF(w, PSTR("dp@")) == 0) return OP_DPINFETCH;       //  opcode #82
+    if (strcmp_PF(w, PSTR("mw@")) == 0) return OP_MWFETCH;       //  opcode #83
+    if (strcmp_PF(w, PSTR("mc!")) == 0) return OP_MCSTORE;       //  opcode #84
+    if (strcmp_PF(w, PSTR("num>str")) == 0) return OP_NUM2STR;       //  opcode #85
+    if (strcmp_PF(w, PSTR("bye")) == 0) return OP_BYE;       //  opcode #86
+    return 0xFF;
+}
+// ^^^^^ - NimbleText generated - ^^^^^
+
+
+
+
+
+#include "defs.h"
+
+void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
+void WCOMMA(WORD v) { push(v); fWCOMMA(); }
+void COMMA(CELL v) { push(v); fCOMMA(); }
+void ACOMMA(ADDR v) { push(v); fACOMMA(); }
+
+CELL getXT(CELL addr) {
+    push(addr);
+    fGETXT();
+    return pop();
+}
+
+CELL align4(CELL val) {
+    push(val);
+    fALIGN4();
+    return pop();
+}
+
+CELL align2(CELL val) {
+    push(val);
+    fALIGN2();
+    return pop();
+}
+
+BYTE nextChar() {
+    if (dict[sys->TOIN]) return dict[sys->TOIN++];
+    return 0;
+}
+
+void is_hex(char* word) {
+    CELL num = 0;
+    if (*word == (char)0) { push(0); return; }
+    while (*word) {
+        char c = *(word++);
+        if ((c >= '0') && (c <= '9')) {
+            num *= 0x10;
+            num += (c - '0');
+            continue;
+        }
+        if ((c >= 'A') && (c <= 'F')) {
+            num *= 0x10;
+            num += ((c + 10) - 'A');
+            continue;
+        }
+        if ((c >= 'a') && (c <= 'f')) {
+            num *= 0x10;
+            num += ((c + 10) - 'a');
+            continue;
+        }
+        push(0);
+        return;
+    }
+    push((CELL)num);
+    push(1);
+}
+
+void is_decimal(char* word) {
+    long num = 0;
+    int is_neg = 0;
+    if (*word == '-') {
+        word++;
+        is_neg = 1;
+    }
+    if (*word == (char)0) { push(0); return; }
+    while (*word) {
+        char c = *(word++);
+        if ((c >= '0') && (c <= '9')) {
+            num *= 10;
+            num += (c - '0');
+        }
+        else {
+            push(0);
+            return;
+        }
+    }
+
+    num = is_neg ? -num : num;
+    push((CELL)num);
+    push(1);
+}
+
+void is_binary(char* word) {
+    CELL num = 0;
+    if (*word == (char)0) { push(0); return; }
+    while (*word) {
+        char c = *(word++);
+        if ((c >= '0') && (c <= '1')) {
+            num *= 2;
+            num += (c - '0');
+        }
+        else {
+            push(0);
+            return;
+        }
+    }
+
+    push((CELL)num);
+    push(1);
+}
+
+CELL stringToDict(char* s, CELL to) {
+    // printStringF("-sd.%d", (int)to);
+    if (to == 0) to = allocSpace((int)strlen(s) + 2);
+    // printStringF(":%d-\n", (int)to);
+    CELL x = to;
+    while (*s) {
+        dict[x++] = *(s++);
+    }
+    dict[x] = 0;
+    return to;
+}
+
+void parseLine(char* line) {
+    stringToDict(line, sys->TIB);
+    push(sys->TIB);
+    fPARSELINE();
+}
+
+void loadUserWords() {
+    char* buf = (char*)&dict[sys->HERE + 16];
+    sprintf(buf, ": ds $%p ;", &dict[0]);
+    parseLine(buf);
+    // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
+    // parseLine(buf);
+    loadSource(PSTR(": mc@ dup 1+ mw@ $FF and ;"));
+    loadSource(PSTR(": m@  dup 1+ 1+ mw@ $10000 * swap mw@ or ;"));
+    loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
+    loadSource(PSTR(": m!  over $10000 / over 1+ 1+ mw! mw! ;"));
+    loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
+    loadSource(PSTR(": auto-run-off 0 0 a! ;"));
+
+    loadSource(PSTR(": elapsed tick swap - 1000 /mod . . ;"));
+    loadSource(PSTR(": bm tick swap begin 1- while- drop elapsed ;"));
+    loadSource(PSTR(": low->high over over > if swap then ;"));
+    loadSource(PSTR(": high->low over over < if swap then ;"));
+    loadSource(PSTR(": dump low->high do i c@ . loop ;"));
+    loadSource(PSTR(": led 13 ; led output"));
+    loadSource(PSTR(": led-on 1 led dp! ; : led-off 0 led dp! ;"));
+    loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
+    loadSource(PSTR(": k 1000 * ; : mil k k ;"));
+    loadSource(PSTR(": blinks 0 swap do blink loop ;"));
+    loadSource(PSTR("variable pot  3 pot ! "));
+    loadSource(PSTR("variable but  6 but ! "));
+    loadSource(PSTR(": init pot @ input but @ input ;"));
+    loadSource(PSTR("variable pot-lv variable sens 4 sens !"));
+    loadSource(PSTR(": but@ but @ dp@ ;"));
+    loadSource(PSTR(": pot@ pot @ ap@ ;"));
+    loadSource(PSTR(": bp->led but@ if led-on else led-off then ;"));
+    loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
+    loadSource(PSTR(": go bp->led .pot? ;"));
+    loadSource(PSTR("init // auto-run-last"));
+    // loadSource(PSTR(""));
+}
+
+void dumpDict() {
+    printStringF("%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
+    for (int i = 0; i < sys->HERE; i++) {
+        if (i % 16 == 0) printStringF("\n %04x:", i);
+        printStringF(" %02x", dict[i]);
+    }
+}
+
+void ok() {
+    printString(" ok. ");
+    fDOTS();
+    printString("\n");
+}
