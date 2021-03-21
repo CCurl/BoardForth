@@ -60,3 +60,4 @@ dkms.conf
 /bf/bf.user
 /bf/.vs
 /bf/f-dump.txt
+/bf/vm-dump.txt

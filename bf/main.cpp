@@ -18,13 +18,46 @@ void init() {
 }
 
 #ifdef __DEV_BOARD__
-void startUp() {
+char buf[80];
+int len;
+
+void setup() {
+    mySerial.begin(19200);
+    while (!mySerial) {}
+    while (mySerial.available()) {}
     init();
+    len = 0;
 }
 
 void loop() {
-
+  while (mySerial.available()) {
+    char c = mySerial.read();
+    if (c == 13) {
+      buf[len] = (char)0;
+      printString(buf);
+      printString("\n");
+      parseLine(buf);
+      len = 0;
+      ok();
+    } else {
+      buf[len++] = c;
+    }
+  }
+  autoRun();
 }
+
+void printSerial(const char *str) {
+  mySerial.print(str);
+}
+
+void loadSource(const PROGMEM char *source) {
+    char buf[128];
+    strcpy_PF(buf, source);
+    printSerial(buf);
+    printSerial("\n");
+    parseLine(buf);
+}
+
 #else
 
 void loadSource(const char* src) {
@@ -60,7 +93,7 @@ void repl() {
 int main() {
     init();
     repl();
-    FILE *fp = fopen("..\\f-dump.txt", "wt");
+    FILE *fp = fopen("..\\vm-dump.txt", "wt");
     if (fp) {
         push((CELL)fp);
         fDUMPDICT();

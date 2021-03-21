@@ -160,7 +160,6 @@
     <ClInclude Include="defs.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="f-dump.txt" />
     <Text Include="history.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
