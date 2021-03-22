@@ -8,7 +8,7 @@
     #define mySerial SerialUSB
     void printSerial(const char *);
     void loadSource(const PROGMEM char *source);
-    #define DICT_SZ (3*1024)
+    #define DICT_SZ (8*1024)
     #define STK_SZ 16
     #define TIB_SZ 0x0064
     #define ALLOC_SZ 16

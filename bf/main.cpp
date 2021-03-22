@@ -6,7 +6,7 @@
 #include "defs.h"
 #pragma warning(disable: 4996)
 
-void init() {
+void sysInit() {
     printString("BoardForth v0.0.1 - Chris Curl\n");
     printString("Source: https://github.com/CCurl/BoardForth \n");
     printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
@@ -25,7 +25,7 @@ void setup() {
     mySerial.begin(19200);
     while (!mySerial) {}
     while (mySerial.available()) {}
-    init();
+    sysInit();
     len = 0;
 }
 
@@ -91,7 +91,7 @@ void repl() {
 }
 
 int main() {
-    init();
+    sysInit();
     repl();
     FILE *fp = fopen("..\\vm-dump.txt", "wt");
     if (fp) {

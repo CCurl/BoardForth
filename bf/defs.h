@@ -201,7 +201,7 @@ $once
 #define OP_DO 55 // do
 #define OP_LOOP 56 // loop
 #define OP_LOOPP 57 // loop+
-#define OP_UNUSED7 58 // -n-
+#define OP_DEBUGGER 58 // -n-
 #define OP_PARSEWORD 59 // parse-word
 #define OP_PARSELINE 60 // parse-line
 #define OP_GETXT 61 // >body
@@ -234,92 +234,16 @@ $once
 // ^^^^^ - NimbleText generated - ^^^^^
 
 
-void fNOOP();            // OP_NOOP
-void fCLIT();            // OP_CLIT
-void fWLIT();            // OP_WLIT
-void fLIT();             // OP_LIT
-void fCFETCH();          // OP_CFETCH
-void fWFETCH();          // OP_WFETCH
-void fAFETCH();          // OP_AFETCH
-void fFETCH();           // OP_FETCH
-void fCSTORE();          // OP_CSTORE
-void fWSTORE();          // OP_WSTORE
-void fASTORE();          // OP_ASTORE
 void fSTORE();           // OP_STORE
-void fCCOMMA();          // OP_CCOMMA
-void fWCOMMA();          // OP_WCOMMA
-void fCOMMA();           // OP_COMMA
-void fACOMMA();          // OP_ACOMMA
-void fCALL();            // OP_CALL
-void fRET();             // OP_RET
-void fJMP();             // OP_JMP
-void fJMPZ();            // OP_JMPZ
-void fJMPNZ();           // OP_JMPNZ
-void fONEMINUS();        // OP_ONEMINUS
-void fONEPLUS();         // OP_ONEPLUS
-void fDUP();             // OP_DUP
-void fSWAP();            // OP_SWAP
-void fDROP();            // OP_DROP
-void fOVER();            // OP_OVER
-void fADD();             // OP_ADD
-void fSUB();             // OP_SUB
-void fMULT();            // OP_MULT
-void fSLMOD();           // OP_SLMOD
-void fLSHIFT();          // OP_LSHIFT
-void fRSHIFT();          // OP_RSHIFT
-void fAND();             // OP_AND
-void fOR();              // OP_OR
-void fXOR();             // OP_XOR
-void fNOT();             // OP_NOT
-void fDTOR();            // OP_DTOR
-void fRFETCH();          // OP_RFETCH
-void fRTOD();            // OP_RTOD
 void fEMIT();            // OP_EMIT
 void fTYPE();            // OP_TYPE
 void fDOTS();            // OP_DOTS
-void fDOTQUOTE();        // OP_DOTQUOTE
-void fPAREN();           // OP_PAREN
-void fWDTFEED();         // OP_WDTFEED
-void fBREAK();           // OP_BREAK
-void fCMOVE();           // OP_CMOVE
-void fCMOVE2();          // OP_CMOVE2
-void fFILL();            // OP_FILL
-void fOPENBLOCK();       // OP_OPENBLOCK
-void fFILECLOSE();       // OP_FILECLOSE
-void fFILEREAD();        // OP_FILEREAD
-void fLOAD();            // OP_LOAD
-void fTHRU();            // OP_THRU
-void fDO();              // OP_DO
-void fLOOP();            // OP_LOOP
-void fLOOPP();           // OP_LOOPP
-void fUNUSED7();         // OP_UNUSED7
 void fPARSEWORD();       // OP_PARSEWORD
 void fPARSELINE();       // OP_PARSELINE
-void fGETXT();           // OP_GETXT
-void fALIGN2();          // OP_ALIGN2
-void fALIGN4();          // OP_ALIGN4
 void fCREATE();          // OP_CREATE
 void fFIND();            // OP_FIND
 void fNEXTWORD();        // OP_NEXTWORD
 void fISNUMBER();        // OP_ISNUMBER
-void fNJMPZ();           // OP_NJMPZ
-void fNJMPNZ();          // OP_NJMPNZ
-void fLESS();            // OP_LESS
-void fEQUALS();          // OP_EQUALS
-void fGREATER();         // OP_GREATER
-void fI();               // OP_I
-void fJ();               // OP_J
-void fINPUTPIN();        // OP_INPUTPIN
-void fOUTPUTPIN();       // OP_OUTPUTPIN
-void fDELAY();           // OP_DELAY
-void fTICK();            // OP_TICK
-void fAPINSTORE();       // OP_APINSTORE
-void fDPINSTORE();       // OP_DPINSTORE
-void fAPINFETCH();       // OP_APINFETCH
-void fDPINFETCH();       // OP_DPINFETCH
-void fMWFETCH();         // OP_MWFETCH
-void fMCSTORE();         // OP_MCSTORE
 void fNUM2STR();         // OP_NUM2STR
-void fBYE();             // OP_BYE
 
 #endif // __DEFS_H__

@@ -6,8 +6,8 @@
 #include "defs.h"
 #pragma warning(disable: 4996)
 
-CELL* dstk;
-CELL* rstk;
+CELL *dstk;
+CELL *rstk;
 
 BYTE dict[DICT_SZ];
 SYSVARS_T* sys;
@@ -104,20 +104,12 @@ void run(CELL PC, CELL max_cycles) {
             PC = addrAt(PC);
             break;
         case OP_JMPZ:     // -n- (#19)
-            if (pop() == 0) {
-                PC = addrAt(PC);
-            }
-            else {
-                PC += ADDR_SZ;
-            }
+            if (pop() == 0) { PC = addrAt(PC); }
+            else { PC += ADDR_SZ; }
             break;
         case OP_JMPNZ:     // -n- (#20)
-            if (pop() != 0) {
-                PC = addrAt(PC);
-            }
-            else {
-                PC += ADDR_SZ;
-            }
+            if (pop() != 0) { PC = addrAt(PC); }
+            else { PC += ADDR_SZ; }
             break;
         case OP_ONEMINUS:     // 1- (#21)
             T--;
@@ -302,8 +294,8 @@ void run(CELL PC, CELL max_cycles) {
                 push(0);
             }
             break;
-        case OP_UNUSED7:     // -n- (#58)
-            N += T; pop();
+        case OP_DEBUGGER:     // -n- (#58)
+            printString("-debugger-");
             break;
         case OP_PARSEWORD:     // parse-word (#59)
             fPARSEWORD();
@@ -312,13 +304,20 @@ void run(CELL PC, CELL max_cycles) {
             fPARSELINE();
             break;
         case OP_GETXT:     // >body (#61)
-            fGETXT();
+            {
+                DICT_T* dp = (DICT_T*)&dict[T];
+                T += ADDR_SZ + dp->len + 3;
+            }
             break;
         case OP_ALIGN2:     // align2 (#62)
-            fALIGN2();
+            t1 = T;
+            if (t1 & 0x01) { ++t1; }
+            T = t1;
             break;
         case OP_ALIGN4:     // align4 (#63)
-            fALIGN4();
+            t1 = T;
+            while (t1 & 0x03) { ++t1; }
+            T = t1;
             break;
         case OP_CREATE:     // create (#64)
             fCREATE();
@@ -333,20 +332,12 @@ void run(CELL PC, CELL max_cycles) {
             fISNUMBER();
             break;
         case OP_NJMPZ:     // -n- (#68)
-            if (T == 0) {
-                PC = addrAt(PC);
-            }
-            else {
-                PC += ADDR_SZ;
-            }
+            if (T == 0) { PC = addrAt(PC); }
+            else { PC += ADDR_SZ; }
             break;
         case OP_NJMPNZ:     // -n- (#69)
-            if (T != 0) {
-                PC = addrAt(PC);
-            }
-            else {
-                PC += ADDR_SZ;
-            }
+            if (T != 0) { PC = addrAt(PC); }
+            else { PC += ADDR_SZ; }
             break;
         case OP_LESS:     // < (#70)
             N = (N < T) ? 1 : 0;
@@ -382,48 +373,99 @@ void run(CELL PC, CELL max_cycles) {
 
             break;
         case OP_INPUTPIN:     // input (#75)
-            fINPUTPIN();
+            t1 = pop();
+            #ifdef __DEV_BOARD__
+                // printStringF("-pinMode(%d, INPUT)-", pin);
+                pinMode(t1, INPUT);
+            #else
+                printStringF("-pinMode(%d, INPUT)-", t1);
+            #endif
             break;
         case OP_OUTPUTPIN:     // output (#76)
-            fOUTPUTPIN();
+            t1 = pop();
+            #ifdef __DEV_BOARD__
+                // printStringF("-pinMode(%d, OUTPUT)-", t1);
+                pinMode(t1, OUTPUT);
+            #else
+                printStringF("-pinMode(%d, OUTPUT)-", t1);
+            #endif
             break;
         case OP_DELAY:     // ms (#77)
-            fDELAY();
+             t1 = pop();
+            #ifdef __DEV_BOARD__
+                delay(t1);
+            #else
+                Sleep(t1);
+            #endif
             break;
         case OP_TICK:     // ms (#78)
-            fTICK();
+            #ifdef __DEV_BOARD__
+                push(millis());
+            #else
+                push(GetTickCount());
+            #endif
             break;
         case OP_APINSTORE:     //  (#79)
-            fAPINSTORE();
+            t2 = pop();
+            t1 = pop();
+            #ifdef __DEV_BOARD__
+                // printStringF("-analogWrite(%d, OUTPUT)-", t2);
+                analogWrite((int)t2, (int)t1);
+            #else
+                printStringF("-analogWrite(%ld, %ld)-", t2, t1);
+            #endif
             break;
         case OP_DPINSTORE:     // dp! (#80)
-            fDPINSTORE();
+            t2 = pop();
+            t1 = pop();
+            #ifdef __DEV_BOARD__
+                // printStringF("-digitalWrite(%d, %d)-", (int)t2, (int)t1);
+                digitalWrite((int)t2, (int)t1);
+            #else
+                printStringF("-digitalWrite(%ld, %ld)-", t2, t1);
+            #endif
             break;
         case OP_APINFETCH:     // ap@ (#81)
-            fAPINFETCH();
+            #ifdef __DEV_BOARD__
+                // printStringF("-analogRead(%d, A0=%d)-", T, A0);
+                T = analogRead((int)T);
+            #else
+                printStringF("-analogRead(%ld)-", T);
+            #endif
             break;
         case OP_DPINFETCH:     // dp@ (#82)
-            fDPINFETCH();
+            #ifdef __DEV_BOARD__
+            // printStringF("-digitalRead(%d)-", T);
+                T = digitalRead((int)T);
+            #else
+                printStringF("-digitalRead(%ld)-", T);
+            #endif
             break;
         case OP_MWFETCH:     // mw@ (#83)
             a1 = (BYTE*)T;
             T = (*(a1 + 1) << 8) | (*a1);
             break;
         case OP_MCSTORE:     // mc! (#84)
-            fMCSTORE();
+            a1 = (BYTE*)pop();
+            t1 = pop();
+            *a1 = (BYTE)t1;
             break;
         case OP_NUM2STR:     // num>str (#85)
             fNUM2STR();
             break;
-            // case OP_COM:     // com (#86)
-            //     fco
-            //     break;
         case OP_BYE:     // bye (#87)
             // N += T; pop();
             break;
 
         }
     }
+}
+
+void runOpcode(BYTE opcode) {
+    CELL xt = sys->HERE + 17;
+    dict[xt] = opcode;
+    dict[xt+1] = OP_RET;
+    run(xt, 0);
 }
 
 void autoRun() {
@@ -618,157 +660,6 @@ int interpreting(char* w, int errIfNot) {
     return (sys->STATE == 0) ? 1 : 0;
 }
 
-/* NimbleText script
-$once
-// vvvvv - NimbleText generated - vvvvv
-FP prims[] = {
-$each
-    f<%($0 + ',               ').substring(0,13)%>     // OP_$0 (#$rownum) ***$row***
-$once
-    0};
-// ^^^^^ - NimbleText generated - ^^^^^
-*/
-
-// vvvvv - NimbleText generated - vvvvv
-// FP prims[] = {
-//     fNOOP,             // OP_NOOP (#0) ***NOOP NOOP***
-//     fCLIT,             // OP_CLIT (#1) ***CLIT CLITERAL ( -- N8 )***
-//     fWLIT,             // OP_WLIT (#2) ***WLIT WLITERAL ( -- N16 )***
-//     fLIT,              // OP_LIT (#3) ***LIT LITERAL ( -- N )***
-//     fCFETCH,           // OP_CFETCH (#4) ***CFETCH C@ (A -- N8)***
-//     fWFETCH,           // OP_WFETCH (#5) ***WFETCH W@ (A -- N16)***
-//     fAFETCH,           // OP_AFETCH (#6) ***AFETCH A@ (A -- N)***
-//     fFETCH,            // OP_FETCH (#7) ***FETCH @ (A -- N8)***
-//     fCSTORE,           // OP_CSTORE (#8) ***CSTORE C! ( N A -- )***
-//     fWSTORE,           // OP_WSTORE (#9) ***WSTORE W! ( N A -- )***
-//     fASTORE,           // OP_ASTORE (#10) ***ASTORE A! ( N A -- )***
-//     fSTORE,            // OP_STORE (#11) ***STORE ! (  N A -- )***
-//     fCCOMMA,           // OP_CCOMMA (#12) ***CCOMMA C, ( N -- )***
-//     fWCOMMA,           // OP_WCOMMA (#13) ***WCOMMA W, ( N -- )***
-//     fCOMMA,            // OP_COMMA (#14) ***COMMA , ( N -- )***
-//     fACOMMA,           // OP_ACOMMA (#15) ***ACOMMA A, ( N -- )***
-//     fCALL,             // OP_CALL (#16) ***CALL CALL ( -- )***
-//     fRET,              // OP_RET (#17) ***RET EXIT ( -- )***
-//     fJMP,              // OP_JMP (#18) ***JMP -N- ( -- ) ***
-//     fJMPZ,             // OP_JMPZ (#19) ***JMPZ -N- ( N -- )***
-//     fJMPNZ,            // OP_JMPNZ (#20) ***JMPNZ -N- ( N -- )***
-//     fONEMINUS,         // OP_ONEMINUS (#21) ***ONEMINUS 1- ( N -- N-1 )***
-//     fONEPLUS,          // OP_ONEPLUS (#22) ***ONEPLUS 1+ ( N -- N+1 )***
-//     fDUP,              // OP_DUP (#23) ***DUP DUP ( N -- N N )***
-//     fSWAP,             // OP_SWAP (#24) ***SWAP SWAP ( N1 N2 -- N2 N1 )***
-//     fDROP,             // OP_DROP (#25) ***DROP DROP (N -- )***
-//     fOVER,             // OP_OVER (#26) ***OVER OVER ( N1 N2 -- N1 N2 N1 )***
-//     fADD,              // OP_ADD (#27) ***ADD + ( N1 N2 -- N3 )***
-//     fSUB,              // OP_SUB (#28) ***SUB - ( N1 N2 -- N3 )***
-//     fMULT,             // OP_MULT (#29) ***MULT * ( N1 N2 -- N3 )***
-//     fSLMOD,            // OP_SLMOD (#30) ***SLMOD /MOD ( N1 N2 -- N3 N4 )***
-//     fLSHIFT,           // OP_LSHIFT (#31) ***LSHIFT << ( N -- N*2 )***
-//     fRSHIFT,           // OP_RSHIFT (#32) ***RSHIFT >> ( N -- N/2 )***
-//     fAND,              // OP_AND (#33) ***AND AND  ( N1 N2 -- N3 )***
-//     fOR,               // OP_OR (#34) ***OR OR ( N1 N2 -- N3 )***
-//     fXOR,              // OP_XOR (#35) ***XOR XOR ( N1 N2 -- N3 )***
-//     fNOT,              // OP_NOT (#36) ***NOT NOT ( N1 -- N2 )***
-//     fDTOR,             // OP_DTOR (#37) ***DTOR >R ( N -- )***
-//     fRFETCH,           // OP_RFETCH (#38) ***RFETCH R@ (-- N )***
-//     fRTOD,             // OP_RTOD (#39) ***RTOD R> ( -- N )***
-//     fEMIT,             // OP_EMIT (#40) ***EMIT EMIT (N -- )***
-//     fTYPE,             // OP_TYPE (#41) ***TYPE type (a n -- )***
-//     fDOTS,             // OP_DOTS (#42) ***DOTS .S ( -- )***
-//     fDOTQUOTE,         // OP_DOTQUOTE (#43) ***DOTQUOTE .\" ( -- )***
-//     fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
-//     fWDTFEED,          // OP_WDTFEED (#45) ***WDTFEED WDTFEED ( -- )***
-//     fBREAK,            // OP_BREAK (#46) ***BREAK BRK ( -- )***
-//     fCMOVE,            // OP_CMOVE (#47) ***CMOVE CMOVE ( a1 a2 u -- )***
-//     fCMOVE2,           // OP_CMOVE2 (#48) ***CMOVE2 CMOVE> ( a1 a2 u -- )***
-//     fFILL,             // OP_FILL (#49) ***FILL FILL ( a u n -- )***
-//     fOPENBLOCK,        // OP_OPENBLOCK (#50) ***OPENBLOCK OPEN-BLOCK***
-//     fFILECLOSE,        // OP_FILECLOSE (#51) ***FILECLOSE FILE-CLOSE***
-//     fFILEREAD,         // OP_FILEREAD (#52) ***FILEREAD FILE-READ***
-//     fLOAD,             // OP_LOAD (#53) ***LOAD LOAD***
-//     fTHRU,             // OP_THRU (#54) ***THRU THRU***
-//     fDO,               // OP_DO (#55) ***DO DO ( f t -- )***
-//     fLOOP,             // OP_LOOP (#56) ***LOOP LOOP ( -- )***
-//     fLOOPP,            // OP_LOOPP (#57) ***LOOPP LOOP+  ( n -- )***
-//     fUNUSED7,          // OP_UNUSED7 (#58) ***UNUSED7 -n- ( -- )***
-//     fPARSEWORD,        // OP_PARSEWORD (#59) ***PARSEWORD PARSE-WORD ( A -- )***
-//     fPARSELINE,        // OP_PARSELINE (#60) ***PARSELINE PARSE-LINE (A -- )***
-//     fGETXT,            // OP_GETXT (#61) ***GETXT >BODY ( A1 -- A2 )***
-//     fALIGN2,           // OP_ALIGN2 (#62) ***ALIGN2 ALIGN2 ( N1 -- N2 )***
-//     fALIGN4,           // OP_ALIGN4 (#63) ***ALIGN4 ALIGN4 ( N1 -- N2 )***
-//     fCREATE,           // OP_CREATE (#64) ***CREATE CREATE ( A -- )***
-//     fFIND,             // OP_FIND (#65) ***FIND FIND ( A1 -- (A1 1)|0 )***
-//     fNEXTWORD,         // OP_NEXTWORD (#66) ***NEXTWORD NEXT-WORD ( A -- )***
-//     fISNUMBER,         // OP_ISNUMBER (#67) ***ISNUMBER NUMBER? ( A -- (N 1)|0 )***
-//     fNJMPZ,            // OP_NJMPZ (#68) ***NJMPZ -N- ( N -- N )***
-//     fNJMPNZ,           // OP_NJMPNZ (#69) ***NJMPNZ -N- ( N -- N )***
-//     fLESS,             // OP_LESS (#70) ***LESS < ( N1 N2 -- N3 )***
-//     fEQUALS,           // OP_EQUALS (#71) ***EQUALS = ( N1 N2 -- N3 )***
-//     fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
-//     fI,                // OP_I (#73) ***I I ( -- n )***
-//     fJ,                // OP_J (#74) ***J J ( -- n )***
-//     fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input ( n -- )***
-//     fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output ( n -- )***
-//     fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
-//     fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
-//     fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  ap! ( n1 n2 -- )***
-//     fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dp! ( n1 n2 -- )***
-//     fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH ap@ ( n1 -- n2 )***
-//     fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dp@ ( n1 -- n2 )***
-//     fMWFETCH,          // OP_MWFETCH (#83) ***MWFETCH mw@ ( n1 -- n2 )***
-//     fMCSTORE,          // OP_MCSTORE (#84) ***MCSTORE mc! ( n1 n2 -- )***
-//     fNUM2STR,          // OP_NUM2STR (#85) ***NUM2STR num>str ( n l -- a )***
-//     fBYE,              // OP_BYE (#86) ***BYE bye ( -- )***
-//     0};
-// ^^^^^ - NimbleText generated - ^^^^^
-
-
-void fNOOP() {         // opcode #0
-}
-void fCLIT() {         // opcode #1
-    // push(dict[PC++]);
-}
-void fWLIT() {         // opcode #2
-    // push(wordAt(PC));
-    // PC += WORD_SZ;
-}
-void fLIT() {          // opcode #3
-    // push(cellAt(PC));
-    // PC += CELL_SZ;
-}
-void fCFETCH() {       // opcode #4
-    CELL addr = T;
-    if ((0 <= addr) && (addr < DICT_SZ)) {
-        T = dict[addr];
-        return;
-    }
-    printStringF("Invalid address: %ld ($%04lX)", addr, addr);
-}
-void fWFETCH() {       // opcode #5
-    CELL addr = T;
-    if ((0 <= addr) && ((addr + 2) < DICT_SZ)) {
-        T = wordAt(addr);
-        return;
-    }
-    printStringF("Invalid address: %ld ($%04lX)", addr, addr);
-}
-void fAFETCH() {       // opcode #6
-    (ADDR_SZ == 2) ? fWFETCH() : fFETCH();
-}
-void fFETCH() {        // opcode #7
-    CELL addr = T;
-    if ((0 <= addr) && ((addr + 4) < DICT_SZ)) {
-        T = cellAt(addr);
-        return;
-    }
-    printStringF("Invalid address: %ld ($%04lX)", addr, addr);
-}
-void fCSTORE() {       // opcode #8
-    CELL addr = pop();
-    CELL val = pop();
-    if ((0 <= addr) && (addr < DICT_SZ)) {
-        dict[addr++] = (val & 0xFF);
-    }
-}
 void fWSTORE() {       // opcode #9
     CELL addr = pop();
     CELL val = pop();
@@ -802,88 +693,8 @@ void fCOMMA() {        // opcode #14
 void fACOMMA() {       // opcode #15
     (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA();
 }
-void fCALL() {         // opcode #16
-    // rpush(PC_OLD+ADDR_SZ);
-    // PC_OLD = addrAt(PC_OLD);
-    // printStringF("-call:%lx-", PC);
-}
-void fRET() {          // opcode #17
-    // handled in run()
-}
-void fJMP() {          // opcode #18
-    // PC_OLD = addrAt(PC_OLD);
-}
-void fJMPZ() {         // opcode #19
-    // if (pop() == 0) PC_OLD = addrAt(PC_OLD);
-    // else PC_OLD += ADDR_SZ;
-}
-void fJMPNZ() {        // opcode #20
-    // if (pop()) PC_OLD = addrAt(PC_OLD);
-    // else PC_OLD += ADDR_SZ;
-}
-void fONEMINUS() {     // opcode #21
-    T -= 1;
-}
-void fONEPLUS() {      // opcode #22
-    T += 1;
-}
-void fDUP() {          // opcode #23
-    push(T);
-}
 void fSWAP() {         // opcode #24
     CELL t = T; T = N; N = t;
-}
-void fDROP() {         // opcode #25
-    pop();
-}
-void fOVER() {         // opcode #26
-    push(N);
-}
-void fADD() {          // opcode #27
-    N += T; pop();
-}
-void fSUB() {          // opcode #28
-    N -= T; pop();
-}
-void fMULT() {         // opcode #29
-    N *= T; pop();
-}
-void fSLMOD() {        // opcode #30
-    CELL x = N, y = T;
-    if (y) {
-        T = x / y;
-        N = x % y;
-    }
-    else {
-        printString("divide by 0!");
-    }
-}
-void fLSHIFT() {       // opcode #31
-    T = T << 1;
-}
-void fRSHIFT() {       // opcode #32
-    T = T >> 1;
-}
-void fAND() {          // opcode #33
-    N &= T; pop();
-}
-void fOR() {           // opcode #34
-    N |= T; pop();
-}
-void fXOR() {          // opcode #35
-    N ^= T; pop();
-}
-void fNOT() {          // opcode #36
-    T = ~T;
-}
-void fDTOR() {         // opcode #37
-    rpush(pop());
-}
-void fRFETCH() {       // opcode #38
-    push(R);
-}
-void fRTOD() {         // opcode #39
-    push(rpop());
 }
 void fEMIT() {
     printStringF("%c", (char)pop());
@@ -916,122 +727,6 @@ void fDOTS() {
         printStringF("()");
     }
 }
-void fDOTQUOTE() {     // opcode #43
-    N = N * T; push(T); pop();
-}
-void fPAREN() {        // opcode #44
-    N = N * T; push(T); pop();
-}
-void fWDTFEED() {      // opcode #45
-    N = N * T; push(T); pop();
-}
-void fBREAK() {        // opcode #46
-    N = N * T; push(T); pop();
-}
-// OP_CMOVE (#47)    : CMOVE ( TODO -- TODO ) ... ;
-void fCMOVE() {
-    CELL num = pop();
-    CELL to = pop();
-    CELL from = pop();
-    while (num > 0) {
-        dict[to++] = dict[from++];
-        num--;
-    }
-}
-// OP_CMOVE2 (#48)    : CMOVE> ( TODO -- TODO ) ... ;
-void fCMOVE2() {
-    CELL num = pop();
-    CELL to = pop();
-    CELL from = pop();
-
-    to += (num - 1);
-    from += (num - 1);
-
-    while (num > 0) {
-        dict[to--] = dict[from--];
-        num--;
-    }
-}
-// OP_FILL (#49)    : FILL ( TODO -- TODO ) ... ;
-void fFILL() {
-    CELL val = pop();
-    CELL num = pop();
-    CELL to = pop();
-    while (num > 0) {
-        dict[to++] = (BYTE)val;
-        num--;
-    }
-}
-void fOPENBLOCK() {    // opcode #50
-    N = N * T; push(T); pop();
-}
-void fFILECLOSE() {    // opcode #51
-    N = N * T; push(T); pop();
-}
-void fFILEREAD() {     // opcode #52
-    N = N * T; push(T); pop();
-}
-void fLOAD() {         // opcode #53
-    N = N * T; push(T); pop();
-}
-void fTHRU() {         // opcode #54
-    N = N * T; push(T); pop();
-}
-// OP_DO (#55)    : DO ( f t -- ) ... ;
-void fDO() {
-    // if (loopDepth < 4) {
-    //     CELL t = pop();
-    //     CELL f = pop();
-    //     int x = loopDepth * 3;
-    //     // printStringF("-DO(%ld,%ld,%d)-", f, t, f);
-    //     loopSTK[x] = f;
-    //     loopSTK[x+1] = t;
-    //     loopSTK[x+2] = f;
-    //     ++loopDepth;
-    // } else {
-    //     printString("-DO:too deep-");
-    // }
-}
-// OP_LOOP (#56)    : LOOP ( -- ) ... ;
-void fLOOP() {
-    // if (loopDepth > 0) {
-    //     int x = (loopDepth-1) * 3;
-    //     CELL f = loopSTK[x];
-    //     CELL t = loopSTK[x+1];
-    //     loopSTK[x+2] += 1;
-    //     CELL i = loopSTK[x+2];
-    //     // printString("-LOOP(%ld,%ld,%d)-", f, t, i);
-    //     if ((f < i) && (i < t)) { push(1); return; }
-    //     loopDepth -= 1;
-    //     push(0);
-    // }
-    // else {
-    //     printString("-LOOP:depthErr-");
-    //     push(0);
-    // }
-}
-// OP_LOOPP (#57)    : LOOP+ ( n -- ) ... ;
-void fLOOPP() {
-    // if (loopDepth > 0) {
-    //     int x = (loopDepth-1) * 3;
-    //     CELL f = loopSTK[x];
-    //     CELL t = loopSTK[x+1];
-    //     loopSTK[x+2] += pop();
-    //     CELL i = loopSTK[x+2];
-    //     // printStringF("-LOOP(%ld,%ld,%ld)-", f, t, i);
-    //     if ((f < i) && (i < t)) { push(1); return; }
-    //     if ((t < i) && (i < f)) { push(1); return; }
-    //     loopDepth -= 1;
-    //     push(0);
-    // }
-    // else {
-    //     printString("-LOOP:depthErr-");
-    //     push(0);
-    // }
-}
-void fUNUSED7() {         // opcode #58
-}
-// ( a -- )
 void fPARSEWORD() {    // opcode #59
     CELL wa = pop();
     char* w = (char*)&dict[wa];
@@ -1039,7 +734,8 @@ void fPARSEWORD() {    // opcode #59
     push(wa); fFIND();
     if (pop()) {
         DICT_T* dp = (DICT_T*)&dict[T];
-        fGETXT();
+
+        runOpcode(OP_GETXT);
         CELL xt = pop();
         if (compiling(w, 0)) {
             if (dp->flags == 1) {
@@ -1271,24 +967,12 @@ void fPARSELINE() {    // opcode #60
     }
     allocFree(buf);
 }
-void fGETXT() {        // opcode #61
-    DICT_T* dp = (DICT_T*)&dict[T];
-    T += ADDR_SZ + dp->len + 3;
-}
-void fALIGN2() {       // opcode #62
-    CELL val = T;
-    if (val & 0x01) { ++val; }
-    T = val;
-}
-void fALIGN4() {       // opcode #63
-    CELL val = T;
-    while (val & 0x03) { ++val; }
-    T = val;
-}
 void fCREATE() {       // opcode #64
     CELL wa = pop();
     char* name = (char*)&dict[wa];
-    sys->HERE = align2(sys->HERE);
+    push(sys->HERE);
+    runOpcode(OP_ALIGN2);
+    sys->HERE = pop();
     // printStringF("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
 
     DICT_T* dp = (DICT_T*)&dict[sys->HERE];
@@ -1300,7 +984,7 @@ void fCREATE() {       // opcode #64
     sys->HERE += ADDR_SZ + dp->len + 3;
     // printStringF(",XT:%d (%lx)-", sys->HERE, sys->HERE);
 }
-// (a1 -- [a2 1] | 0)
+//// (a1 -- [a2 1] | 0)
 void fFIND() {         // opcode #65
     char* name = (char*)&dict[pop()];
     // printStringF("-lf:[%s]-", name);
@@ -1349,134 +1033,6 @@ void fISNUMBER() {     // opcode #67
     if (sys->BASE == 2) { is_binary(w);  return; }
     push(0);
 }
-void fNJMPZ() {        // opcode #68
-    // if (T == 0) PC_OLD = addrAt(PC_OLD);
-    // else PC_OLD += ADDR_SZ;
-}
-void fNJMPNZ() {       // opcode #69
-    // if (T) PC_OLD = addrAt(PC_OLD);
-    // else PC_OLD += ADDR_SZ;
-}
-// OP_LESS (#70)    : < ( TODO -- TODO ) ... ;
-void fLESS() {
-    N = (N < T) ? 1 : 0; pop();
-}
-// OP_EQUALS (#71)    : = ( TODO -- TODO ) ... ;
-void fEQUALS() {
-    N = (N == T) ? 1 : 0; pop();
-}
-// OP_GREATER (#72)    : > ( TODO -- TODO ) ... ;
-void fGREATER() {
-    N = (N > T) ? 1 : 0; pop();
-}
-// OP_I (#73)    : I ( -- n ) ... ;
-void fI() {
-    if (loopDepth > 0) {
-        CELL x = (loopDepth - 1) * 3;
-        push(loopSTK[x + 2]);
-    }
-    else {
-        printString("-I:depthErr-");
-        push(0);
-    }
-}
-// OP_J (#74)    : J ( -- n ) ... ;
-void fJ() {
-    // if (loopDepth > 1) {
-    //     CELL x = (loopDepth-2) * 3;
-    //     push(loopSTK[x+2]);
-    // }
-    // else {
-    //     printString("-J:depthErr-");
-    //     push(0);
-    // }
-}
-// OP_INPUTPIN (#75)    : input ( n -- ) ... ;
-void fINPUTPIN() {
-    CELL pin = pop();
-#ifdef __DEV_BOARD__
-    // printStringF("-pinMode(%d, INPUT)-", pin);
-    pinMode(pin, INPUT);
-#else
-    printStringF("-pinMode(%d, INPUT)-", pin);
-#endif
-}
-// OP_OUTPUTPIN (#76)    : output ( n -- ) ... ;
-void fOUTPUTPIN() {
-    CELL pin = pop();
-#ifdef __DEV_BOARD__
-    // printStringF("-pinMode(%d, OUTPUT)-", pin);
-    pinMode(pin, OUTPUT);
-#else
-    printStringF("-pinMode(%d, OUTPUT)-", pin);
-#endif
-}
-// OP_DELAY (#77)    : MS ( n -- ) ... ;
-void fDELAY() {
-    CELL ms = pop();
-#ifdef __DEV_BOARD__
-    delay(ms);
-#else
-    Sleep(ms);
-#endif
-}
-// OP_TICK (#78)    : TICK ( -- n ) ... ;
-void fTICK() {
-#ifdef __DEV_BOARD__
-    push(millis());
-#else
-    push(GetTickCount());
-#endif
-}
-// OP_APINSTORE (#79)    : ap! ( n1 n2 -- ) ... ;
-void fAPINSTORE() {
-    CELL pin = pop();
-    CELL val = pop();
-#ifdef __DEV_BOARD__
-    // printStringF("-analogWrite(%d, OUTPUT)-", pin);
-    analogWrite((int)pin, (int)val);
-#else
-    printStringF("-analogWrite(%ld, %ld)-", pin, val);
-#endif
-}
-// OP_DPINSTORE (#80)    : dp! ( n1 n2 -- ) ... ;
-void fDPINSTORE() {
-    CELL pin = pop();
-    CELL val = pop();
-#ifdef __DEV_BOARD__
-    // printStringF("-digitalWrite(%d, %d)-", (int)pin, (int)val);
-    digitalWrite((int)pin, (int)val);
-#else
-    printStringF("-digitalWrite(%ld, %ld)-", pin, val);
-#endif
-}
-// OP_APINFETCH (#81)    : ap@ ( n -- n ) ... ;
-void fAPINFETCH() {
-#ifdef __DEV_BOARD__
-    // printStringF("-analogRead(%d, A0=%d)-", T, A0);
-    T = analogRead((int)T);
-#else
-    printStringF("-analogRead(%ld)-", T);
-#endif
-}
-// OP_DPINFETCH (#82)    : dp@ ( n -- n ) ... ;
-void fDPINFETCH() {
-#ifdef __DEV_BOARD__
-    // printStringF("-digitalRead(%d)-", T);
-    T = digitalRead((int)T);
-#else
-    printStringF("-digitalRead(%ld)-", T);
-#endif
-}
-// OP_MWFETCH (#83)    : mw@ ( n1 -- n2 ) ... ;
-void fMWFETCH() {
-}
-// OP_MCSTORE (#84)    : mc! ( n1 n2 -- ) ... ;
-void fMCSTORE() {
-    BYTE* a = (BYTE*)pop();
-    BYTE v = (BYTE)pop();
-    *a = v;
-}
 // OP_NUM2STR (#85)    : num>str ( n l -- a ) ... ;
 void fNUM2STR() {
     BYTE reqLen = (BYTE)pop();
@@ -1505,30 +1061,6 @@ void fNUM2STR() {
     push(len);
     allocFree(pad);
 }
-// OP_BYE (#86)    : bye ( -- ) ... ;
-void fBYE() {
-    // TODO N = N*T; push(T); pop();
-}
-
-
-/* NimbleText script
-$once
-// vvvvv - NimbleText generated - vvvvv
-$each
-// OP_$0 (#$rownum)    : $1 ( TODO -- TODO ) ... ;
-void f<%($0 + '() {               ').substring(0,13)%>
-    // TODO N = N*T; push(T); pop();
-}
-$once
-// ^^^^^ - NimbleText generated - ^^^^^
-*/
-
-
-
-
-
-#include"defs.h"
-
 
 /* -- NimbleText script:
 $once
@@ -1586,11 +1118,6 @@ void loadBaseSystem() {
 }
 // ^^^^^ - NimbleText generated - ^^^^^
 
-
-
-
-
-#include "defs.h"
 
 /* -- NimbleText script:
 $once
@@ -1664,7 +1191,7 @@ BYTE getOpcode(char* w) {
     if (strcmp_PF(w, PSTR("do")) == 0) return OP_DO;       //  opcode #55
     if (strcmp_PF(w, PSTR("loop")) == 0) return OP_LOOP;       //  opcode #56
     if (strcmp_PF(w, PSTR("loop+")) == 0) return OP_LOOPP;       //  opcode #57
-    if (strcmp_PF(w, PSTR("-n-")) == 0) return OP_UNUSED7;       //  opcode #58
+    if (strcmp_PF(w, PSTR("debugger")) == 0) return OP_DEBUGGER;       //  opcode #58
     if (strcmp_PF(w, PSTR("parse-word")) == 0) return OP_PARSEWORD;       //  opcode #59
     if (strcmp_PF(w, PSTR("parse-line")) == 0) return OP_PARSELINE;       //  opcode #60
     if (strcmp_PF(w, PSTR(">body")) == 0) return OP_GETXT;       //  opcode #61
@@ -1697,12 +1224,6 @@ BYTE getOpcode(char* w) {
 }
 // ^^^^^ - NimbleText generated - ^^^^^
 
-
-
-
-
-#include "defs.h"
-
 void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
 void WCOMMA(WORD v) { push(v); fWCOMMA(); }
 void COMMA(CELL v) { push(v); fCOMMA(); }
@@ -1710,19 +1231,7 @@ void ACOMMA(ADDR v) { push(v); fACOMMA(); }
 
 CELL getXT(CELL addr) {
     push(addr);
-    fGETXT();
-    return pop();
-}
-
-CELL align4(CELL val) {
-    push(val);
-    fALIGN4();
-    return pop();
-}
-
-CELL align2(CELL val) {
-    push(val);
-    fALIGN2();
+    runOpcode(OP_GETXT);
     return pop();
 }
 
