@@ -50,7 +50,7 @@ void printSerial(const char *str) {
   mySerial.print(str);
 }
 
-void loadSource(const PROGMEM char *source) {
+void loadSource(const char *source) {
     char buf[128];
     strcpy_PF(buf, source);
     printSerial(buf);

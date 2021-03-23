@@ -632,7 +632,7 @@ void fDUMPDICT() {
     int n = 0;
     FILE* to = (FILE*)pop();
     to = to ? to : stdout;
-    fprintf(to, "%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
+    fprintf(to, "%04x %04x (%ld %ld)", (uint)sys->HERE, (uint)sys->LAST, sys->HERE, sys->LAST);
     for (int i = 0; i < sys->HERE; i++) {
         if (i % 16 == 0) {
             if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
@@ -1330,8 +1330,12 @@ void parseLine(char* line) {
 }
 
 void loadUserWords() {
-    char* buf = (char*)&dict[sys->HERE + 16];
-    sprintf(buf, ": ds $%p ;", &dict[0]);
+    char* buf = (char*)&dict[sys->HERE + 256];
+    sprintf(buf, ": d-start $%lx ;", (ulong)&dict[0]);
+    printStringF("%s\n", buf);
+    parseLine(buf);
+    sprintf(buf, ": d-size #%lu ;", (ulong)DICT_SZ);
+    printStringF("%s\n", buf);
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);

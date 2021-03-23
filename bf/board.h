@@ -7,8 +7,8 @@
     #include <Arduino.h>
     #define mySerial SerialUSB
     void printSerial(const char *);
-    void loadSource(const PROGMEM char *source);
-    #define DICT_SZ (8*1024)
+    void loadSource(const char *source);
+    #define DICT_SZ (48*1024)
     #define STK_SZ 16
     #define TIB_SZ 0x0064
     #define ALLOC_SZ 16
@@ -21,6 +21,8 @@
     #define PSTR(str) (char *)str
     #define strcmp_PF(str1, str2) strcmp(str1, str2)
     void loadSource(const char *source);
+    typedef unsigned int uint;
+    typedef unsigned long ulong;
 #endif
 
 #endif
