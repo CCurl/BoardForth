@@ -182,8 +182,9 @@ void run(CELL PC, CELL max_cycles) {
         case OP_DOTS:     // .s (#42)
             fDOTS();
             break;
-        case OP_DOTQUOTE:     // .\" (#43)
-            // TODO: N += T; pop();
+        case OP_SQUOTE:     // s" (#43)
+            push(PC);
+            PC += (dict[PC] + 2);
             break;
         case OP_PAREN:     // ( (#44)
             // N += T; pop();
@@ -934,6 +935,23 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
+    if (strcmp(w, "s\"") == 0) {
+        if (! compiling(w, 1)) { return; }
+        BYTE c = nextChar();
+        int len = 0;
+        CCOMMA(OP_SQUOTE);
+        CELL h = sys->HERE;
+        CCOMMA(0);
+        while (c && (c != '"')) {
+            CCOMMA(c);
+            c = nextChar();
+            ++len;
+        }
+        CCOMMA(0);
+        dict[h] = len;
+        return;
+    }
+
     BYTE op = getOpcode(w);
     if (op < 0xFF) {
         if (compiling(w, 0)) {
@@ -1176,7 +1194,7 @@ BYTE getOpcode(char* w) {
     if (strcmp_PF(w, PSTR("emit")) == 0) return OP_EMIT;       //  opcode #40
     if (strcmp_PF(w, PSTR("type")) == 0) return OP_TYPE;       //  opcode #41
     if (strcmp_PF(w, PSTR(".s")) == 0) return OP_DOTS;       //  opcode #42
-    if (strcmp_PF(w, PSTR(".\"")) == 0) return OP_DOTQUOTE;       //  opcode #43
+    if (strcmp_PF(w, PSTR("s\"")) == 0) return OP_SQUOTE;       //  opcode #43
     if (strcmp_PF(w, PSTR("(")) == 0) return OP_PAREN;       //  opcode #44
     if (strcmp_PF(w, PSTR("wdtfeed")) == 0) return OP_WDTFEED;       //  opcode #45
     if (strcmp_PF(w, PSTR("brk")) == 0) return OP_BREAK;       //  opcode #46
