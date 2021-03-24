@@ -7,9 +7,9 @@
 #pragma warning(disable: 4996)
 
 void sysInit() {
-    printString("BoardForth v0.0.1 - Chris Curl\n");
-    printString("Source: https://github.com/CCurl/BoardForth \n");
-    printStringF("Dictionary size is: %d ($%04x) bytes.\n", (int)DICT_SZ, (int)DICT_SZ);
+    printString("BoardForth v0.0.1 - Chris Curl\r\n");
+    printString("Source: https://github.com/CCurl/BoardForth \r\n");
+    printStringF("Dictionary size is: %d ($%04x) bytes.\r\n", (int)DICT_SZ, (int)DICT_SZ);
     printStringF("Hello.");
     vmInit();
     loadBaseSystem();
@@ -34,13 +34,15 @@ void loop() {
     char c = mySerial.read();
     if (c == 13) {
       buf[len] = (char)0;
-      printString(buf);
-      printString("\n");
+      // printString(buf);
+      // printString("\r\n");
       parseLine(buf);
       len = 0;
       ok();
     } else {
       buf[len++] = c;
+      char b[2]; b[0] = c; b[1] = 0;
+      printString(b);
     }
   }
   autoRun();
@@ -54,7 +56,7 @@ void loadSource(const char *source) {
     char buf[128];
     strcpy_PF(buf, source);
     printSerial(buf);
-    printSerial("\n");
+    printSerial("\r\n");
     parseLine(buf);
 }
 
@@ -93,13 +95,13 @@ void repl() {
 int main() {
     sysInit();
     repl();
-    FILE *fp = fopen("..\\vm-dump.txt", "wt");
+    FILE *fp = fopen("..\\vm-dump.txt", "wb");
     if (fp) {
         push((CELL)fp);
         fDUMPDICT();
         fclose(fp);
     }
     // allocDump();
-    // printStringF("\n");
+    // printStringF("\r\n");
 }
 #endif // __DEV_BOARD__

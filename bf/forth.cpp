@@ -25,7 +25,7 @@ void run(CELL PC, CELL max_cycles) {
             if (--max_cycles < 1) { return; }
         }
         IR = dict[PC++];
-        // printStringF("\n-PC-%d/%lx:IR-%d/%x-", PC-1, PC-1, (int)IR, (unsigned int)IR); fDOTS();
+        // printStringF("\r\n-PC-%d/%lx:IR-%d/%x-", PC-1, PC-1, (int)IR, (unsigned int)IR); fDOTS();
         switch (IR) {
         case OP_NOOP:     // noop (#0)
             break;
@@ -562,10 +562,10 @@ void addrStore(CELL addr, CELL val) {
 
 #pragma region allocation
 void allocDump() {
-    printStringF("\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
-    printString("\n-------------------------------");
+    printStringF("\r\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
+    printString("\r\n-------------------------------");
     for (int i = 0; i < num_alloced; i++) {
-        printStringF("\n%2d %04lx %4d %s", i, allocTbl[i].addr, (int)allocTbl[i].sz, (int)allocTbl[i].available ? "available" : "in-use");
+        printStringF("\r\n%2d %04lx %4d %s", i, allocTbl[i].addr, (int)allocTbl[i].sz, (int)allocTbl[i].available ? "available" : "in-use");
     }
 }
 
@@ -608,7 +608,7 @@ CELL allocSpace(int sz) {
         allocTbl[x].available = 0;
         return allocTbl[x].addr;
     }
-    // printStringF("-alloc:%d,%d-\n", (int)sz, (int)allocCurFree);
+    // printStringF("-alloc:%d,%d-\r\n", (int)sz, (int)allocCurFree);
     allocCurFree -= (sz);
     if (allocCurFree <= sys->HERE) {
         printString("-out of space!-");
@@ -636,7 +636,7 @@ void fDUMPDICT() {
     for (int i = 0; i < sys->HERE; i++) {
         if (i % 16 == 0) {
             if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
-            fprintf(to, "\n %04x:", i);
+            fprintf(to, "\r\n %04x:", i);
             n = 0;
         }
         BYTE b = dict[i];
@@ -1314,7 +1314,7 @@ void is_binary(char* word) {
 CELL stringToDict(char* s, CELL to) {
     // printStringF("-sd.%d", (int)to);
     if (to == 0) to = allocSpace((int)strlen(s) + 2);
-    // printStringF(":%d-\n", (int)to);
+    // printStringF(":%d-\r\n", (int)to);
     CELL x = to;
     while (*s) {
         dict[x++] = *(s++);
@@ -1332,10 +1332,10 @@ void parseLine(char* line) {
 void loadUserWords() {
     char* buf = (char*)&dict[sys->HERE + 256];
     sprintf(buf, ": d-start $%lx ;", (ulong)&dict[0]);
-    printStringF("%s\n", buf);
+    printStringF("%s\r\n", buf);
     parseLine(buf);
     sprintf(buf, ": d-size #%lu ;", (ulong)DICT_SZ);
-    printStringF("%s\n", buf);
+    printStringF("%s\r\n", buf);
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
@@ -1372,7 +1372,7 @@ void loadUserWords() {
 void dumpDict() {
     printStringF("%04x %04x (%ld %ld)", sys->HERE, sys->LAST, sys->HERE, sys->LAST);
     for (int i = 0; i < sys->HERE; i++) {
-        if (i % 16 == 0) printStringF("\n %04x:", i);
+        if (i % 16 == 0) printStringF("\r\n %04x:", i);
         printStringF(" %02x", dict[i]);
     }
 }
@@ -1380,5 +1380,5 @@ void dumpDict() {
 void ok() {
     printString(" ok. ");
     fDOTS();
-    printString("\n");
+    printString("\r\n");
 }

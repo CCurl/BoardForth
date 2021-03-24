@@ -1,7 +1,7 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
-// #define __DEV_BOARD__
+#define __DEV_BOARD__
 
 #ifdef __DEV_BOARD__
     #include <Arduino.h>
