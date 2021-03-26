@@ -19,7 +19,9 @@ void sysInit() {
 
 #ifdef __DEV_BOARD__
 char buf[80];
-int len;
+int len, iLed = 13;
+ulong nextBlink = 0;
+int ledState = LOW;
 
 void setup() {
     mySerial.begin(19200);
@@ -27,14 +29,22 @@ void setup() {
     while (mySerial.available()) {}
     sysInit();
     len = 0;
+    pinMode(iLed, OUTPUT);
 }
 
 void loop() {
+    ulong curTm = millis();
+    if (nextBlink < curTm) {
+        ledState = (ledState == LOW) ? HIGH : LOW;
+        digitalWrite(iLed, ledState);
+        nextBlink = curTm + 777;
+    }
+
   while (mySerial.available()) {
     char c = mySerial.read();
     if (c == 13) {
       buf[len] = (char)0;
-      // printString(buf);
+      printString(" ");
       // printString("\r\n");
       parseLine(buf);
       len = 0;
@@ -67,7 +77,7 @@ void loadSource(const char* src) {
 }
 
 void doHistory(char* l) {
-    FILE* fp = fopen("..\\history.txt", "at");
+    FILE* fp = fopen("history.txt", "at");
     if (fp) {
         fprintf(fp, "%s\n", l);
         fclose(fp);
@@ -95,7 +105,7 @@ void repl() {
 int main() {
     sysInit();
     repl();
-    FILE *fp = fopen("..\\vm-dump.txt", "wb");
+    FILE *fp = fopen("vm-dump.txt", "wb");
     if (fp) {
         push((CELL)fp);
         fDUMPDICT();

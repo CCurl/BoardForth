@@ -8,6 +8,7 @@
     #define mySerial SerialUSB
     void printSerial(const char *);
     void loadSource(const char *source);
+    #define __NEEDS_ALIGN__
     #define DICT_SZ (48*1024)
     #define STK_SZ 16
     #define TIB_SZ 0x0064

@@ -147,10 +147,10 @@ void run(CELL PC, CELL max_cycles) {
             push(t1 / t2);
             break;
         case OP_LSHIFT:     // << (#31)
-            N *= 2;
+            T *= 2;
             break;
         case OP_RSHIFT:     // >> (#32)
-            N *= 2;
+            T /= 2;
             break;
         case OP_AND:     // and (#33)
             N &= T; pop();
@@ -534,11 +534,21 @@ void printStringF(const char* fmt, ...) {
 }
 
 CELL cellAt(CELL loc) {
-    return (dict[loc + 3] << 24) + (dict[loc + 2] << 16) + (dict[loc + 1] << 8) + dict[loc];
+#ifdef __NEEDS_ALIGN__
+    return (dict[loc + 3] << 24) | (dict[loc + 2] << 16) | (dict[loc + 1] << 8) | dict[loc];
+#else
+    CELL *x = (CELL *)&dict[loc];
+    return *x;
+#endif
 }
 
 CELL wordAt(CELL loc) {
-    return (dict[loc + 1] << 8) + dict[loc];
+#ifdef __NEEDS_ALIGN__
+    return (dict[loc + 1] << 8) | dict[loc];
+#else
+    WORD *x = (WORD *)&dict[loc];
+    return (CELL)(*x);
+#endif
 }
 
 CELL addrAt(CELL loc) {         // opcode #16
@@ -988,9 +998,11 @@ void fPARSELINE() {    // opcode #60
 void fCREATE() {       // opcode #64
     CELL wa = pop();
     char* name = (char*)&dict[wa];
+#ifdef __NEEDS_ALIGN__
     push(sys->HERE);
     runOpcode(OP_ALIGN2);
     sys->HERE = pop();
+#endif
     // printStringF("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
 
     DICT_T* dp = (DICT_T*)&dict[sys->HERE];
@@ -1369,21 +1381,21 @@ void loadUserWords() {
     loadSource(PSTR(": low->high over over > if swap then ;"));
     loadSource(PSTR(": high->low over over < if swap then ;"));
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": led 13 ; led output"));
+    loadSource(PSTR(": led 22 ; led output"));
     loadSource(PSTR(": led-on 1 led dp! ; : led-off 0 led dp! ;"));
     loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
     loadSource(PSTR(": k 1000 * ; : mil k k ;"));
     loadSource(PSTR(": blinks 0 swap do blink loop ;"));
     loadSource(PSTR("variable pot  3 pot ! "));
-    loadSource(PSTR("variable but  6 but ! "));
-    loadSource(PSTR(": init pot @ input but @ input ;"));
+    loadSource(PSTR("variable (but)  6 (but) ! "));
     loadSource(PSTR("variable pot-lv variable sens 4 sens !"));
-    loadSource(PSTR(": but@ but @ dp@ ;"));
+    loadSource(PSTR(": button (but) @ ;"));
     loadSource(PSTR(": pot@ pot @ ap@ ;"));
-    loadSource(PSTR(": bp->led but@ if led-on else led-off then ;"));
+    loadSource(PSTR(": bp->led button dp@ led dp! ;"));
     loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
-    loadSource(PSTR(": go bp->led .pot? ;"));
-    loadSource(PSTR("init // auto-run-last"));
+    loadSource(PSTR(": go bp->led ;"));
+    loadSource(PSTR("led output button input"));
+    loadSource(PSTR("auto-run-last"));
     // loadSource(PSTR(""));
 }
 
