@@ -1066,13 +1066,13 @@ void fISNUMBER() {     // opcode #67
 // OP_NUM2STR (#85)    : num>str ( n l -- a ) ... ;
 void fNUM2STR() {
     BYTE reqLen = (BYTE)pop();
-    CELL num = pop();
+    CELL val = pop();
+    int isNeg = ((val < 0) && (sys->BASE == 10));
+    ulong num = (isNeg) ? -val : val;
     BYTE len = 0;
-    int isNeg = (num < 0);
-    CELL pad = allocSpace(48);
-    CELL cp = pad + 47;
+    CELL cp = sys->HERE + 50;
     dict[cp--] = (BYTE)0;
-    num = (isNeg) ? -num : num;
+    reqLen = (reqLen < 49) ? reqLen : 48;
 
     do {
         CELL r = (num % sys->BASE) + '0';
@@ -1081,6 +1081,10 @@ void fNUM2STR() {
         len++;
         num /= sys->BASE;
     } while (num > 0);
+    if (isNeg) {
+      dict[cp--] = '-';
+      ++len;
+    }
 
     while (len < reqLen) {
         dict[cp--] = '0';
@@ -1089,7 +1093,6 @@ void fNUM2STR() {
     dict[cp] = len;
     push(cp + 1);
     push(len);
-    allocFree(pad);
 }
 
 /* -- NimbleText script:
@@ -1369,7 +1372,7 @@ void loadUserWords() {
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
-    loadSource(PSTR(": mc@ dup 1+ mw@ $FF and ;"));
+    loadSource(PSTR(": mc@ mw@ $FF and ;"));
     loadSource(PSTR(": m@  dup 1+ 1+ mw@ $10000 * swap mw@ or ;"));
     loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
     loadSource(PSTR(": m!  over $10000 / over 1+ 1+ mw! mw! ;"));
