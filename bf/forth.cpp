@@ -1112,7 +1112,7 @@ void loadBaseSystem() {
     loadSource(PSTR("// : tib    #8 @ ;      : >in   #12 ;"));
     loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
     loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
-    loadSource(PSTR(": -fl- last (h) ! last @ (l) ! ;"));
+    loadSource(PSTR(": -fl- last (h) ! last a@ (l) ! ;"));
     loadSource(PSTR(": base  #24 ;        : state #28 ;"));
     loadSource(PSTR(": sp0   #32 @ ;      // : rp0   #36 @ ;"));
     loadSource(PSTR(": (dsp) #40 ;        : dsp (dsp) @ ;"));
