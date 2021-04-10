@@ -1137,6 +1137,7 @@ void loadBaseSystem() {
     loadSource(PSTR(": between rot dup >r min max r> = ;"));
     loadSource(PSTR(": cr #13 emit #10 emit ;"));
     loadSource(PSTR(": space $20 emit ; inline"));
+    loadSource(PSTR(": tab #9 emit ; inline"));
     loadSource(PSTR(": count dup 1+ swap c@ ;"));
     loadSource(PSTR(": . 0 num>str space type ;"));
     loadSource(PSTR(": .2 2 num>str type ; : .4 4 num>str type ;"));
@@ -1145,7 +1146,7 @@ void loadBaseSystem() {
     loadSource(PSTR("// : [ 0 state ! ; immediate"));
     loadSource(PSTR("// : ] 1 state ! ;"));
     loadSource(PSTR(": .wordl dup .4 space dup >body .4 addr + dup c@ . 1+ space count type cr ;"));
-    loadSource(PSTR(": .word addr + 1+ count type space ;"));
+    loadSource(PSTR(": .word addr + 1+ count type tab ;"));
     loadSource(PSTR(": wordsl last begin dup .wordl a@ while- drop ;"));
     loadSource(PSTR(": words  last begin dup .word  a@ while- drop ;"));
 }

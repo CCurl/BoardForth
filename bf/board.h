@@ -1,7 +1,9 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
-// #define __DEV_BOARD__
+#ifndef _WIN32
+#define __DEV_BOARD__
+#endif
 
 #ifdef __DEV_BOARD__
     #include <Arduino.h>
