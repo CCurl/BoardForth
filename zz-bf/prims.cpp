@@ -1230,6 +1230,7 @@ void fPARSEWORD() {    // opcode #59
     printStringF("[%s]??", w);
 }
 void fPARSELINE() {    // opcode #60
+    // printString("x");
     sys->TOIN = pop();
     CELL buf = allocSpace(32);
     char *w = (char *)&dict[buf];
