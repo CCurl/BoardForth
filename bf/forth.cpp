@@ -1384,6 +1384,7 @@ void loadUserWords() {
     loadSource(PSTR(": bm tick swap begin 1- while- drop elapsed ;"));
     loadSource(PSTR(": low->high over over > if swap then ;"));
     loadSource(PSTR(": high->low over over < if swap then ;"));
+    // : dump+addr over . ':' space begin swap dup c@ space .2 1+ swap 1- while- ;
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
     loadSource(PSTR(": led 22 ; led output"));
     loadSource(PSTR(": led-on 1 led dp! ; : led-off 0 led dp! ;"));
