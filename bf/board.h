@@ -11,14 +11,14 @@
     void printSerial(const char *);
     void loadSource(const char *source);
     #define __NEEDS_ALIGN__
-    #define DICT_SZ (48*1024)
+    #define DICT_SZ (64*1024)
     #define STK_SZ 16
-    #define TIB_SZ 0x0064
+    #define TIB_SZ 0x0400
     #define ALLOC_SZ 16
 #else
     #define DICT_SZ (64*1024)
     #define STK_SZ 32
-    #define TIB_SZ 0x0064
+    #define TIB_SZ 0x0400
     #define ALLOC_SZ 32
     #define F(str) (char *)str
     #define PSTR(str) (char *)str

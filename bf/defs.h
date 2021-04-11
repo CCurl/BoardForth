@@ -80,9 +80,8 @@ extern CELL toIn;
 extern CELL allocAddrBase;
 extern CELL allocCurFree;
 extern CELL loopDepth;
-extern void dumpDict();
 
-
+void dumpDict();
 void vmInit();
 void push(CELL);
 CELL pop();
@@ -143,38 +142,8 @@ $once
 */
 
 // vvvvv - NimbleText generated - vvvvv
-#define OP_NOOP          0 // noop
-#define OP_CLIT          1 // cliteral
-#define OP_WLIT          2 // wliteral
-#define OP_LIT           3 // literal
-#define OP_CFETCH        4 // c@
-#define OP_WFETCH        5 // w@
-#define OP_AFETCH        6 // a@
-#define OP_FETCH         7 // @
-#define OP_CSTORE        8 // c!
-#define OP_WSTORE        9 // w!
-#define OP_ASTORE       10 // a!
-#define OP_STORE        11 // !
-#define OP_CCOMMA       12 // c,
-#define OP_WCOMMA       13 // w,
-#define OP_COMMA        14 // ,
-#define OP_ACOMMA       15 // a,
-#define OP_CALL         16 // call
-#define OP_RET          17 // exit
-#define OP_JMP          18 // -n-
-#define OP_JMPZ         19 // -n-
-#define OP_JMPNZ        20 // -n-
-#define OP_ONEMINUS     21 // 1-
-#define OP_ONEPLUS      22 // 1+
-#define OP_DUP          23 // dup
-#define OP_SWAP         24 // swap
-#define OP_DROP         25 // drop
-#define OP_OVER         26 // over
-#define OP_SQUOTE       27 // s"
-#define OP_SUB          28 // -
-#define OP_MULT         29 // *
-#define OP_SLMOD        30 // /mod
-#define OP_LSHIFT       31 // <<
+#define OP_NOOP         0 // noop
+
 #define OP_RSHIFT      ' ' // >>
 #define OP_AND         '!' // and
 #define OP_OR          '"' // or
@@ -230,10 +199,53 @@ $once
 #define OP_MCSTORE     'T' // mc!
 #define OP_NUM2STR     'U' // num>str
 #define OP_COM         'V' // com
-#define OP_BYE         'W' // bye
+#define OP_SQUOTE      'W' // s"
+#define OP_SUB         'X' // -
+#define OP_MULT        'Y' // *
+#define OP_SLMOD       'Z' // /mod
+#define OP_LSHIFT      '[' // <<
+
+#define UNUSED_92      '\\' // free
+#define UNUSED_93      ']' // free
+#define UNUSED_94      '^' // free
+#define UNUSED_95      '_' // free
+#define UNUSED_96      '`' // free
+
+#define OP_CLIT        'a' // cliteral
+#define OP_WLIT        'b' // wliteral
+#define OP_LIT         'c' // literal
+#define OP_CFETCH      'd' // c@
+#define OP_WFETCH      'e' // w@
+#define OP_AFETCH      'f' // a@
+#define OP_FETCH       'g' // @
+#define OP_CSTORE      'h' // c!
+#define OP_WSTORE      'i' // w!
+#define OP_ASTORE      'j' // a!
+#define OP_STORE       'k' // !
+#define OP_CCOMMA      'l' // c,
+#define OP_WCOMMA      'm' // w,
+#define OP_COMMA       'n' // ,
+#define OP_ACOMMA      'o' // a,
+#define OP_CALL        'p' // call
+#define OP_RET         'q' // exit
+#define OP_JMP         'r' // jmp
+#define OP_JMPZ        's' // jmpz
+#define OP_JMPNZ       't' // jmpnz
+#define OP_ONEMINUS    'u' // 1-
+#define OP_ONEPLUS     'v' // 1+
+#define OP_DUP         'w' // dup
+#define OP_SWAP        'x' // swap
+#define OP_DROP        'y' // drop
+#define OP_OVER        'z' // over
+
+#define UNUSED_123     '{' // free
+#define UNUSED_124     '|' // free
+#define UNUSED_125     '}' // free
+#define UNUSED_126     '~' // free
+
+#define OP_BYE        127 // bye
+
 // ^^^^^ - NimbleText generated - ^^^^^
-
-
 void fSTORE();           // OP_STORE
 void fEMIT();            // OP_EMIT
 void fTYPE();            // OP_TYPE

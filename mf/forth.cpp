@@ -26,8 +26,10 @@ CELL loopDepth;
 ALLOC_T allocTbl[ALLOC_SZ];
 int num_alloced = 0, numTIB = 0;
 ADDR allocAddrBase, allocCurFree;
+FP prims[256];
 
 void vmInit() {
+    init_handlers();
     HERE = &dict[0];
     LAST = 0;
     BASE = 10;
@@ -46,14 +48,14 @@ void run(ADDR start, CELL max_cycles) {
     // printStringF("\r\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
     while (1) {
         BYTE IR = *(PC++);
+        if (IR == OP_BYE) { return; }
         if (IR == OP_RET) {
             if (RSP < 1) { return; }
             PC = (ADDR)rpop();
-        } else if (IR <= OP_BYE) {
+        } else if (prims[IR]) {
             prims[IR]();
-            if (IR == OP_BYE) { return; }
         } else {
-            printStringF("-%04lx: unknown opcode: %d ($%02x)-", PC-1, IR, IR);
+            printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC-1);
         }
         if (max_cycles) {
             if (--max_cycles < 1) { return; }
@@ -227,99 +229,98 @@ $once
 // ^^^^^ - NimbleText generated - ^^^^^
 */
 
-// vvvvv - NimbleText generated - vvvvv
-FP prims[] = {
-    fNOOP,             // OP_NOOP (#0) ***NOOP NOOP***
-    fCLIT,             // OP_CLIT (#1) ***CLIT CLITERAL ( -- N8 )***
-    fWLIT,             // OP_WLIT (#2) ***WLIT WLITERAL ( -- N16 )***
-    fLIT,              // OP_LIT (#3) ***LIT LITERAL ( -- N )***
-    fCFETCH,           // OP_CFETCH (#4) ***CFETCH C@ (A -- N8)***
-    fWFETCH,           // OP_WFETCH (#5) ***WFETCH W@ (A -- N16)***
-    fAFETCH,           // OP_AFETCH (#6) ***AFETCH A@ (A -- N)***
-    fFETCH,            // OP_FETCH (#7) ***FETCH @ (A -- N8)***
-    fCSTORE,           // OP_CSTORE (#8) ***CSTORE C! ( N A -- )***
-    fWSTORE,           // OP_WSTORE (#9) ***WSTORE W! ( N A -- )***
-    fASTORE,           // OP_ASTORE (#10) ***ASTORE A! ( N A -- )***
-    fSTORE,            // OP_STORE (#11) ***STORE ! (  N A -- )***
-    fCCOMMA,           // OP_CCOMMA (#12) ***CCOMMA C, ( N -- )***
-    fWCOMMA,           // OP_WCOMMA (#13) ***WCOMMA W, ( N -- )***
-    fCOMMA,            // OP_COMMA (#14) ***COMMA , ( N -- )***
-    fACOMMA,           // OP_ACOMMA (#15) ***ACOMMA A, ( N -- )***
-    fCALL,             // OP_CALL (#16) ***CALL CALL ( -- )***
-    fRET,              // OP_RET (#17) ***RET EXIT ( -- )***
-    fJMP,              // OP_JMP (#18) ***JMP -N- ( -- ) ***
-    fJMPZ,             // OP_JMPZ (#19) ***JMPZ -N- ( N -- )***
-    fJMPNZ,            // OP_JMPNZ (#20) ***JMPNZ -N- ( N -- )***
-    fONEMINUS,         // OP_ONEMINUS (#21) ***ONEMINUS 1- ( N -- N-1 )***
-    fONEPLUS,          // OP_ONEPLUS (#22) ***ONEPLUS 1+ ( N -- N+1 )***
-    fDUP,              // OP_DUP (#23) ***DUP DUP ( N -- N N )***
-    fSWAP,             // OP_SWAP (#24) ***SWAP SWAP ( N1 N2 -- N2 N1 )***
-    fDROP,             // OP_DROP (#25) ***DROP DROP (N -- )***
-    fOVER,             // OP_OVER (#26) ***OVER OVER ( N1 N2 -- N1 N2 N1 )***
-    fADD,              // OP_ADD (#27) ***ADD + ( N1 N2 -- N3 )***
-    fSUB,              // OP_SUB (#28) ***SUB - ( N1 N2 -- N3 )***
-    fMULT,             // OP_MULT (#29) ***MULT * ( N1 N2 -- N3 )***
-    fSLMOD,            // OP_SLMOD (#30) ***SLMOD /MOD ( N1 N2 -- N3 N4 )***
-    fLSHIFT,           // OP_LSHIFT (#31) ***LSHIFT << ( N -- N*2 )***
-    fRSHIFT,           // OP_RSHIFT (#32) ***RSHIFT >> ( N -- N/2 )***
-    fAND,              // OP_AND (#33) ***AND AND  ( N1 N2 -- N3 )***
-    fOR,               // OP_OR (#34) ***OR OR ( N1 N2 -- N3 )***
-    fXOR,              // OP_XOR (#35) ***XOR XOR ( N1 N2 -- N3 )***
-    fNOT,              // OP_NOT (#36) ***NOT NOT ( n -- 0|1 )***
-    fDTOR,             // OP_DTOR (#37) ***DTOR >R ( N -- )***
-    fRFETCH,           // OP_RFETCH (#38) ***RFETCH R@ (-- N )***
-    fRTOD,             // OP_RTOD (#39) ***RTOD R> ( -- N )***
-    fEMIT,             // OP_EMIT (#40) ***EMIT EMIT (N -- )***
-    fTYPE,             // OP_TYPE (#41) ***TYPE type (a n -- )***
-    fDOTS,             // OP_DOTS (#42) ***DOTS .S ( -- )***
-    fDOTQUOTE,         // OP_DOTQUOTE (#43) ***DOTQUOTE .\" ( -- )***
-    fPAREN,            // OP_PAREN (#44) ***PAREN ( ( -- )***
-    fWDTFEED,          // OP_WDTFEED (#45) ***WDTFEED WDTFEED ( -- )***
-    fBREAK,            // OP_BREAK (#46) ***BREAK BRK ( -- )***
-    fCMOVE,            // OP_CMOVE (#47) ***CMOVE CMOVE ( a1 a2 u -- )***
-    fCMOVE2,           // OP_CMOVE2 (#48) ***CMOVE2 CMOVE> ( a1 a2 u -- )***
-    fFILL,             // OP_FILL (#49) ***FILL FILL ( a u n -- )***
-    fOPENBLOCK,        // OP_OPENBLOCK (#50) ***OPENBLOCK OPEN-BLOCK***
-    fFILECLOSE,        // OP_FILECLOSE (#51) ***FILECLOSE FILE-CLOSE***
-    fFILEREAD,         // OP_FILEREAD (#52) ***FILEREAD FILE-READ***
-    fLOAD,             // OP_LOAD (#53) ***LOAD LOAD***
-    fTHRU,             // OP_THRU (#54) ***THRU THRU***
-    fDO,               // OP_DO (#55) ***DO DO ( f t -- )***
-    fLOOP,             // OP_LOOP (#56) ***LOOP LOOP ( -- )***
-    fLOOPP,            // OP_LOOPP (#57) ***LOOPP LOOP+  ( n -- )***
-    fUNUSED7,          // OP_UNUSED7 (#58) ***UNUSED7 -n- ( -- )***
-    fPARSEWORD,        // OP_PARSEWORD (#59) ***PARSEWORD PARSE-WORD ( A -- )***
-    fPARSELINE,        // OP_PARSELINE (#60) ***PARSELINE PARSE-LINE (A -- )***
-    fGETXT,            // OP_GETXT (#61) ***GETXT >BODY ( A1 -- A2 )***
-    fALIGN2,           // OP_ALIGN2 (#62) ***ALIGN2 ALIGN2 ( N1 -- N2 )***
-    fALIGN4,           // OP_ALIGN4 (#63) ***ALIGN4 ALIGN4 ( N1 -- N2 )***
-    fCREATE,           // OP_CREATE (#64) ***CREATE CREATE ( A -- )***
-    fFIND,             // OP_FIND (#65) ***FIND FIND ( A1 -- (A1 1)|0 )***
-    fNEXTWORD,         // OP_NEXTWORD (#66) ***NEXTWORD NEXT-WORD ( A -- )***
-    fISNUMBER,         // OP_ISNUMBER (#67) ***ISNUMBER NUMBER? ( A -- (N 1)|0 )***
-    fNJMPZ,            // OP_NJMPZ (#68) ***NJMPZ -N- ( N -- N )***
-    fNJMPNZ,           // OP_NJMPNZ (#69) ***NJMPNZ -N- ( N -- N )***
-    fLESS,             // OP_LESS (#70) ***LESS < ( N1 N2 -- N3 )***
-    fEQUALS,           // OP_EQUALS (#71) ***EQUALS = ( N1 N2 -- N3 )***
-    fGREATER,          // OP_GREATER (#72) ***GREATER > ( N1 N2 -- N3 )***
-    fI,                // OP_I (#73) ***I I ( -- n )***
-    fJ,                // OP_J (#74) ***J J ( -- n )***
-    fINPUTPIN,         // OP_INPUTPIN (#75) ***INPUTPIN input ( n -- )***
-    fOUTPUTPIN,        // OP_OUTPUTPIN (#76) ***OUTPUTPIN output ( n -- )***
-    fDELAY,            // OP_DELAY (#77) ***DELAY MS ( n -- )***
-    fTICK,             // OP_TICK (#78) ***DELAY MS ( n -- )***
-    fAPINSTORE,        // OP_APINSTORE (#79) ***APINSTORE  ap! ( n1 n2 -- )***
-    fDPINSTORE,        // OP_DPINSTORE (#80) ***DPINSTORE dp! ( n1 n2 -- )***
-    fAPINFETCH,        // OP_APINFETCH (#81) ***APINFETCH ap@ ( n1 -- n2 )***
-    fDPINFETCH,        // OP_DPINFETCH (#82) ***DPINFETCH dp@ ( n1 -- n2 )***
-    fMWFETCH,          // OP_MWFETCH (#83) ***MWFETCH mw@ ( n1 -- n2 )***
-    fMCSTORE,          // OP_MCSTORE (#84) ***MCSTORE mc! ( n1 n2 -- )***
-    fNUM2STR,          // OP_NUM2STR (#85) ***NUM2STR num>str ( n l -- a )***
-    fCOM,              // OP_COM (#86) ***COM com ( n1 -- n2 )***
-    fBYE,              // OP_BYE (#87) ***BYE bye ( -- )***
-    0};
-// ^^^^^ - NimbleText generated - ^^^^^
-
+void init_handlers() {
+    for (int i = 0; i < 256; i++) {
+        prims[i] = 0;
+    }
+    prims[OP_NOOP] = fNOOP;
+    prims[OP_CLIT] = fCLIT;
+    prims[OP_WLIT] = fWLIT;
+    prims[OP_LIT] = fLIT;
+    prims[OP_CFETCH] = fCFETCH;
+    prims[OP_WFETCH] = fWFETCH;
+    prims[OP_AFETCH] = fAFETCH;
+    prims[OP_FETCH] = fFETCH;
+    prims[OP_CSTORE] = fCSTORE;
+    prims[OP_WSTORE] = fWSTORE;
+    prims[OP_ASTORE] = fASTORE;
+    prims[OP_STORE] = fSTORE;
+    prims[OP_CCOMMA] = fCCOMMA;
+    prims[OP_WCOMMA] = fWCOMMA;
+    prims[OP_COMMA] = fCOMMA;
+    prims[OP_ACOMMA] = fACOMMA;
+    prims[OP_CALL] = fCALL;
+    prims[OP_RET] = fRET;
+    prims[OP_JMP] = fJMP;
+    prims[OP_JMPZ] = fJMPZ;
+    prims[OP_JMPNZ] = fJMPNZ;
+    prims[OP_ONEMINUS] = fONEMINUS;
+    prims[OP_ONEPLUS] = fONEPLUS;
+    prims[OP_DUP] = fDUP;
+    prims[OP_SWAP] = fSWAP;
+    prims[OP_DROP] = fDROP;
+    prims[OP_OVER] = fOVER;
+    prims[OP_ADD] = fADD;
+    prims[OP_SUB] = fSUB;
+    prims[OP_MULT] = fMULT;
+    prims[OP_SLMOD] = fSLMOD;
+    prims[OP_LSHIFT] = fLSHIFT;
+    prims[OP_RSHIFT] = fRSHIFT;
+    prims[OP_AND] = fAND;
+    prims[OP_OR] = fOR;
+    prims[OP_XOR] = fXOR;
+    prims[OP_NOT] = fNOT;
+    prims[OP_DTOR] = fDTOR;
+    prims[OP_RFETCH] = fRFETCH;
+    prims[OP_RTOD] = fRTOD;
+    prims[OP_EMIT] = fEMIT;
+    prims[OP_TYPE] = fTYPE;
+    prims[OP_DOTS] = fDOTS;
+    prims[OP_SQUOTE] = fDOTQUOTE;
+    prims[OP_PAREN] = fPAREN;
+    prims[OP_WDTFEED] = fWDTFEED;
+    prims[OP_BREAK] = fBREAK;
+    prims[OP_CMOVE] = fCMOVE;
+    prims[OP_CMOVE2] = fCMOVE2;
+    prims[OP_FILL] = fFILL;
+    prims[OP_OPENBLOCK] = fOPENBLOCK;
+    prims[OP_FILECLOSE] = fFILECLOSE;
+    prims[OP_FILEREAD] = fFILEREAD;
+    prims[OP_LOAD] = fLOAD;
+    prims[OP_THRU] = fTHRU;
+    prims[OP_DO] = fDO;
+    prims[OP_LOOP] = fLOOP;
+    prims[OP_LOOPP] = fLOOPP;
+    prims[OP_PARSEWORD] = fPARSEWORD;
+    prims[OP_PARSELINE] = fPARSELINE;
+    prims[OP_GETXT] = fGETXT;
+    prims[OP_ALIGN2] = fALIGN2;
+    prims[OP_ALIGN4] = fALIGN4;
+    prims[OP_CREATE] = fCREATE;
+    prims[OP_FIND] = fFIND;
+    prims[OP_NEXTWORD] = fNEXTWORD;
+    prims[OP_ISNUMBER] = fISNUMBER;
+    prims[OP_NJMPZ] = fNJMPZ;
+    prims[OP_NJMPNZ] = fNJMPNZ;
+    prims[OP_LESS] = fLESS;
+    prims[OP_EQUALS] = fEQUALS;
+    prims[OP_GREATER] = fGREATER;
+    prims[OP_I] = fI;
+    prims[OP_J] = fJ;
+    prims[OP_INPUTPIN] = fINPUTPIN;
+    prims[OP_OUTPUTPIN] = fOUTPUTPIN;
+    prims[OP_DELAY] = fDELAY;
+    prims[OP_TICK] = fTICK;
+    prims[OP_APINSTORE] = fAPINSTORE;
+    prims[OP_DPINSTORE] = fDPINSTORE;
+    prims[OP_APINFETCH] = fAPINFETCH;
+    prims[OP_DPINFETCH] = fDPINFETCH;
+    prims[OP_MWFETCH] = fMWFETCH;
+    prims[OP_MCSTORE] = fMCSTORE;
+    prims[OP_NUM2STR] = fNUM2STR;
+    prims[OP_COM] = fCOM;
+    prims[OP_BYE] = fBYE;
+}
 
 void fNOOP() {         // opcode #0
 }
@@ -1476,7 +1477,7 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, PSTR("emit")) == 0) return OP_EMIT;       //  opcode #40
     if (strcmp_PF(w, PSTR("type")) == 0) return OP_TYPE;       //  opcode #41
     if (strcmp_PF(w, PSTR(".s")) == 0) return OP_DOTS;       //  opcode #42
-    if (strcmp_PF(w, PSTR(".\"")) == 0) return OP_DOTQUOTE;       //  opcode #43
+    if (strcmp_PF(w, PSTR("s\"")) == 0) return OP_SQUOTE;       //  opcode #43
     if (strcmp_PF(w, PSTR("(")) == 0) return OP_PAREN;       //  opcode #44
     if (strcmp_PF(w, PSTR("wdtfeed")) == 0) return OP_WDTFEED;       //  opcode #45
     if (strcmp_PF(w, PSTR("brk")) == 0) return OP_BREAK;       //  opcode #46
@@ -1491,7 +1492,6 @@ BYTE getOpcode(char *w) {
     if (strcmp_PF(w, PSTR("do")) == 0) return OP_DO;       //  opcode #55
     if (strcmp_PF(w, PSTR("loop")) == 0) return OP_LOOP;       //  opcode #56
     if (strcmp_PF(w, PSTR("loop+")) == 0) return OP_LOOPP;       //  opcode #57
-    if (strcmp_PF(w, PSTR("-n-")) == 0) return OP_UNUSED7;       //  opcode #58
     if (strcmp_PF(w, PSTR("parse-word")) == 0) return OP_PARSEWORD;       //  opcode #59
     if (strcmp_PF(w, PSTR("parse-line")) == 0) return OP_PARSELINE;       //  opcode #60
     if (strcmp_PF(w, PSTR(">body")) == 0) return OP_GETXT;       //  opcode #61

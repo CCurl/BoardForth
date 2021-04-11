@@ -1374,6 +1374,20 @@ void loadUserWords() {
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
+
+// 10 general purpose registers
+// variable regs 10 allot \
+// variable $r 0 $r ! \
+// : cur$r dup 0 10 between if $r ! else drop then ; \
+// : $r! $r @ regs + ! ; \
+// : $r@ $r @ regs + @ ; \
+// : $r@+ $r@ $r@ 1+ $r! ; \
+
+// dc: dump code
+// : d1 base @ $10 = if space .2 else . then ; \
+// : d16 0 #16 do dup here < if dup c@ d1 then 1+ loop ; \
+// : dc 0 begin cr dup .4 ':' emit d16 dup here < while drop ; \
+
     loadSource(PSTR(": mc@ mw@ $FF and ;"));
     loadSource(PSTR(": m@  dup 1+ 1+ mw@ $10000 * swap mw@ or ;"));
     loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
@@ -1381,26 +1395,27 @@ void loadUserWords() {
     loadSource(PSTR(": auto-run-last last >body 0 a! ;"));
     loadSource(PSTR(": auto-run-off 0 0 a! ;"));
 
+    loadSource(PSTR(": k 1000 * ; : mil k k ;"));
     loadSource(PSTR(": elapsed tick swap - 1000 /mod . . ;"));
     loadSource(PSTR(": bm tick swap begin 1- while- drop elapsed ;"));
     loadSource(PSTR(": low->high over over > if swap then ;"));
-    loadSource(PSTR(": high->low over over < if swap then ;"));
     // : dump+addr over . ':' space begin swap dup c@ space .2 1+ swap 1- while- ;
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": led 22 ; led output"));
-    loadSource(PSTR(": led-on 1 led dp! ; : led-off 0 led dp! ;"));
-    loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
-    loadSource(PSTR(": k 1000 * ; : mil k k ;"));
+    loadSource(PSTR(": blink 1 led dp! dup ms 0 led dp! dup ms ;"));
     loadSource(PSTR(": blinks 0 swap do blink loop ;"));
-    loadSource(PSTR("variable pot  3 pot ! "));
-    loadSource(PSTR("variable (but)  6 (but) ! "));
+    loadSource(PSTR("variable (led)"));
+    loadSource(PSTR(": led (led) @ ; "));
+    loadSource(PSTR("variable (pot)"));
+    loadSource(PSTR(": pot (pot) @ ; "));
+    loadSource(PSTR("variable (button) "));
+    loadSource(PSTR(": button (button) @ ; "));
     loadSource(PSTR("variable pot-lv variable sens 4 sens !"));
-    loadSource(PSTR(": button (but) @ ;"));
-    loadSource(PSTR(": pot@ pot @ ap@ ;"));
-    loadSource(PSTR(": bp->led button dp@ led dp! ;"));
-    loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
-    loadSource(PSTR(": go bp->led ;"));
-    loadSource(PSTR("led output button input"));
+    loadSource(PSTR(": pot-last pot ap@ ;"));
+    loadSource(PSTR(": button->led button dp@ led dp! ;"));
+    loadSource(PSTR(": .pot? pot-last dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
+    loadSource(PSTR(": go button->led ;"));
+    loadSource(PSTR(" 22 (led) ! 3 (pot) ! 6 (button) !"));
+    loadSource(PSTR("led output button input pot input"));
     loadSource(PSTR("auto-run-last"));
     // loadSource(PSTR(""));
 }

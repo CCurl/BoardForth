@@ -88,6 +88,7 @@ extern int numTIB;
 
 void dumpDict();
 void startUp();
+void init_handlers();
 void vmInit();
 void push(CELL);
 CELL pop();
@@ -135,94 +136,108 @@ $once
 */
 
 // vvvvv - NimbleText generated - vvvvv
-#define OP_NOOP          0     // NOOP
-#define OP_CLIT          1     // CLITERAL
-#define OP_WLIT          2     // WLITERAL
-#define OP_LIT           3     // LITERAL
-#define OP_CFETCH        4     // C@
-#define OP_WFETCH        5     // W@
-#define OP_AFETCH        6     // A@
-#define OP_FETCH         7     // @
-#define OP_CSTORE        8     // C!
-#define OP_WSTORE        9     // W!
-#define OP_ASTORE        10     // A!
-#define OP_STORE         11     // !
-#define OP_CCOMMA        12     // C,
-#define OP_WCOMMA        13     // W,
-#define OP_COMMA         14     // ,
-#define OP_ACOMMA        15     // A,
-#define OP_CALL          16     // CALL
-#define OP_RET           17     // EXIT
-#define OP_JMP           18     // -N-
-#define OP_JMPZ          19     // -N-
-#define OP_JMPNZ         20     // -N-
-#define OP_ONEMINUS      21     // 1-
-#define OP_ONEPLUS       22     // 1+
-#define OP_DUP           23     // DUP
-#define OP_SWAP          24     // SWAP
-#define OP_DROP          25     // DROP
-#define OP_OVER          26     // OVER
-#define OP_ADD           27     // +
-#define OP_SUB           28     // -
-#define OP_MULT          29     // *
-#define OP_SLMOD         30     // /MOD
-#define OP_LSHIFT        31     // <<
-#define OP_RSHIFT        32     // >>
-#define OP_AND           33     // AND
-#define OP_OR            34     // OR
-#define OP_XOR           35     // XOR
-#define OP_NOT           36     // NOT
-#define OP_DTOR          37     // >R
-#define OP_RFETCH        38     // R@
-#define OP_RTOD          39     // R>
-#define OP_EMIT          40     // EMIT
-#define OP_TYPE          41     // type
-#define OP_DOTS          42     // .S
-#define OP_DOTQUOTE      43     // .\"
-#define OP_PAREN         44     // (
-#define OP_WDTFEED       45     // WDTFEED
-#define OP_BREAK         46     // BRK
-#define OP_CMOVE         47     // CMOVE
-#define OP_CMOVE2        48     // CMOVE>
-#define OP_FILL          49     // FILL
-#define OP_OPENBLOCK     50     // OPEN-BLOCK
-#define OP_FILECLOSE     51     // FILE-CLOSE
-#define OP_FILEREAD      52     // FILE-READ
-#define OP_LOAD          53     // LOAD
-#define OP_THRU          54     // THRU
-#define OP_DO            55     // DO
-#define OP_LOOP          56     // LOOP
-#define OP_LOOPP         57     // LOOP+
-#define OP_UNUSED7       58     // -n-
-#define OP_PARSEWORD     59     // PARSE-WORD
-#define OP_PARSELINE     60     // PARSE-LINE
-#define OP_GETXT         61     // >BODY
-#define OP_ALIGN2        62     // ALIGN2
-#define OP_ALIGN4        63     // ALIGN4
-#define OP_CREATE        64     // CREATE
-#define OP_FIND          65     // FIND
-#define OP_NEXTWORD      66     // NEXT-WORD
-#define OP_ISNUMBER      67     // NUMBER?
-#define OP_NJMPZ         68     // -N-
-#define OP_NJMPNZ        69     // -N-
-#define OP_LESS          70     // <
-#define OP_EQUALS        71     // =
-#define OP_GREATER       72     // >
-#define OP_I             73     // I
-#define OP_J             74     // J
-#define OP_INPUTPIN      75     // input
-#define OP_OUTPUTPIN     76     // output
-#define OP_DELAY         77     // MS
-#define OP_TICK          78     // TICK
-#define OP_APINSTORE     79     // 
-#define OP_DPINSTORE     80     // dp!
-#define OP_APINFETCH     81     // ap@
-#define OP_DPINFETCH     82     // dp@
-#define OP_MWFETCH       83     // mw@
-#define OP_MCSTORE       84     // mc!
-#define OP_NUM2STR       85     // num>str
-#define OP_COM           86     // com
-#define OP_BYE           87     // BYE
+#define OP_NOOP         0 // noop
+
+#define OP_RSHIFT      ' ' // >>
+#define OP_AND         '!' // and
+#define OP_OR          '"' // or
+#define OP_XOR         '#' // xor
+#define OP_NOT         '$' // not
+#define OP_DTOR        '%' // >r
+#define OP_RFETCH      '&' // r@
+#define OP_RTOD        '\'' // r>
+#define OP_PAREN       '(' // (
+#define OP_TYPE        ')' // type
+#define OP_DOTS        '*' // .s
+#define OP_ADD         '+' // +
+#define OP_EMIT        ',' // emit
+#define OP_WDTFEED     '-' // wdtfeed
+#define OP_BREAK       '.' // brk
+#define OP_CMOVE       '/' // cmove
+#define OP_CMOVE2      '0' // cmove>
+#define OP_FILL        '1' // fill
+#define OP_OPENBLOCK   '2' // open-block
+#define OP_FILECLOSE   '3' // file-close
+#define OP_FILEREAD    '4' // file-read
+#define OP_LOAD        '5' // load
+#define OP_THRU        '6' // thru
+#define OP_DO          '7' // do
+#define OP_LOOP        '8' // loop
+#define OP_LOOPP       '9' // loop+
+#define OP_DEBUGGER    ':' // -n-
+#define OP_PARSEWORD   ';' // parse-word
+#define OP_LESS        '<' // parse-line
+#define OP_GETXT       '=' // >body
+#define OP_ALIGN2      '>' // align2
+#define OP_ALIGN4      '?' // align4
+#define OP_CREATE      '@' // create
+#define OP_FIND        'A' // find
+#define OP_NEXTWORD    'B' // next-word
+#define OP_ISNUMBER    'C' // number?
+#define OP_NJMPZ       'D' // -n-
+#define OP_NJMPNZ      'E' // -n-
+#define OP_PARSELINE   'F' // < 
+#define OP_EQUALS      'G' // =
+#define OP_GREATER     'H' // >
+#define OP_I           'I' // i
+#define OP_J           'J' // j
+#define OP_INPUTPIN    'K' // input
+#define OP_OUTPUTPIN   'L' // output
+#define OP_DELAY       'M' // delay
+#define OP_TICK        'N' // ms
+#define OP_APINSTORE   'O' // 
+#define OP_DPINSTORE   'P' // dp!
+#define OP_APINFETCH   'Q' // ap@
+#define OP_DPINFETCH   'R' // dp@
+#define OP_MWFETCH     'S' // mw@
+#define OP_MCSTORE     'T' // mc!
+#define OP_NUM2STR     'U' // num>str
+#define OP_COM         'V' // com
+#define OP_SQUOTE      'W' // s"
+#define OP_SUB         'X' // -
+#define OP_MULT        'Y' // *
+#define OP_SLMOD       'Z' // /mod
+#define OP_LSHIFT      '[' // <<
+
+#define UNUSED_92      '\\' // free
+#define UNUSED_93      ']' // free
+#define UNUSED_94      '^' // free
+#define UNUSED_95      '_' // free
+#define UNUSED_96      '`' // free
+
+#define OP_CLIT        'a' // cliteral
+#define OP_WLIT        'b' // wliteral
+#define OP_LIT         'c' // literal
+#define OP_CFETCH      'd' // c@
+#define OP_WFETCH      'e' // w@
+#define OP_AFETCH      'f' // a@
+#define OP_FETCH       'g' // @
+#define OP_CSTORE      'h' // c!
+#define OP_WSTORE      'i' // w!
+#define OP_ASTORE      'j' // a!
+#define OP_STORE       'k' // !
+#define OP_CCOMMA      'l' // c,
+#define OP_WCOMMA      'm' // w,
+#define OP_COMMA       'n' // ,
+#define OP_ACOMMA      'o' // a,
+#define OP_CALL        'p' // call
+#define OP_RET         'q' // exit
+#define OP_JMP         'r' // jmp
+#define OP_JMPZ        's' // jmpz
+#define OP_JMPNZ       't' // jmpnz
+#define OP_ONEMINUS    'u' // 1-
+#define OP_ONEPLUS     'v' // 1+
+#define OP_DUP         'w' // dup
+#define OP_SWAP        'x' // swap
+#define OP_DROP        'y' // drop
+#define OP_OVER        'z' // over
+
+#define UNUSED_123     '{' // free
+#define UNUSED_124     '|' // free
+#define UNUSED_125     '}' // free
+#define UNUSED_126     '~' // free
+
+#define OP_BYE        127 // bye
 // ------- NimbleText generated continues
 void fNOOP();            // OP_NOOP
 void fCLIT();            // OP_CLIT
