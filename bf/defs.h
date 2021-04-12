@@ -25,10 +25,10 @@ typedef unsigned char  BYTE;
 #define R rstk[sys->RSP]
 
 typedef struct {
-    ADDR prev;
-    BYTE flags;
-    BYTE len;
-    BYTE name[32]; // not really 32 ... but we need a number
+    ADDR XT;
+    BYTE dictionaryId;
+    BYTE flagsLen;
+    BYTE name[20];
 } DICT_T;
 
 typedef struct {
@@ -105,7 +105,6 @@ void ACOMMA(ADDR v);
 void parseLine(char *);
 void loadBaseSystem();
 BYTE getOpcode(char *w);
-void allocFreeAll();
 void printString(const char *str);
 void printStringF(const char *fmt, ...);
 void loadUserWords();

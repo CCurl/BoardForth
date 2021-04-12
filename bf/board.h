@@ -14,12 +14,12 @@
     #define DICT_SZ (64*1024)
     #define STK_SZ 32
     #define TIB_SZ 0x0400
-    #define ALLOC_SZ 16
+    #define WORDS_SZ 256
 #else
     #define DICT_SZ (64*1024)
     #define STK_SZ 32
     #define TIB_SZ 0x0400
-    #define ALLOC_SZ 32
+    #define WORDS_SZ 256
     #define F(str) (char *)str
     #define PSTR(str) (char *)str
     #define strcmp_PF(str1, str2) strcmp(str1, str2)

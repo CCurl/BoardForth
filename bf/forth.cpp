@@ -10,12 +10,14 @@ CELL *dstk;
 CELL *rstk;
 
 BYTE dict[DICT_SZ];
+DICT_T words[WORDS_SZ];
+int currentDictId = 0;
 SYSVARS_T* sys;
 CELL loopSTK[12];
 CELL loopDepth;
 
 void run(CELL PC, CELL max_cycles) {
-    CELL t1, t2, t3;
+    CELL t1, t2;
     BYTE IR, *a1;
     while (1) {
         if (max_cycles) {
@@ -262,8 +264,8 @@ void run(CELL PC, CELL max_cycles) {
             break;
         case OP_GETXT:     // >body (#61)
             {
-                DICT_T* dp = (DICT_T*)&dict[T];
-                T += ADDR_SZ + dp->len + 3;
+                DICT_T* dp = &words[T];
+                T = dp->XT;
             }
             break;
         case OP_ALIGN2:     // align2 (#62)
@@ -620,16 +622,16 @@ void fPARSEWORD() {    // opcode #59
     // printStringF("-pw[%s]-", w);
     push(wa); fFIND();
     if (pop()) {
-        DICT_T* dp = (DICT_T*)&dict[T];
+        DICT_T* dp = &words[pop()];
 
-        runOpcode(OP_GETXT);
-        CELL xt = pop();
+        // runOpcode(OP_GETXT);
+        CELL xt = dp->XT;
         if (compiling(w, 0)) {
-            if (dp->flags == 1) {
+            if ((dp->flagsLen & 0x20) == 1) {
                 // 1 => IMMEDIATE
                 run(xt, 0);
             }
-            else if (dp->flags == 2) {
+            else if (dp->flagsLen & 0x40) {
                 // 2 => INLINE
                 BYTE x = dict[xt];
                 while (x != OP_RET) {
@@ -875,36 +877,33 @@ void fPARSELINE() {    // opcode #60
 void fCREATE() {       // opcode #64
     CELL wa = pop();
     char* name = (char*)&dict[wa];
-#ifdef __NEEDS_ALIGN__
-    push(sys->HERE);
-    runOpcode(OP_ALIGN2);
-    sys->HERE = pop();
-#endif
     // printStringF("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
 
-    DICT_T* dp = (DICT_T*)&dict[sys->HERE];
-    dp->prev = (ADDR)sys->LAST;
-    dp->flags = 0;
-    dp->len = (BYTE)strlen(name);
+    if (WORDS_SZ <= sys->LAST) {
+        printStringF("-dict space overflow-");
+        return;
+    }
+    DICT_T* dp = &words[sys->LAST++];
+    dp->XT = (ADDR)sys->HERE;
+    dp->dictionaryId = currentDictId;
+    dp->flagsLen = (BYTE)strlen(name);
     strcpy((char*)dp->name, name);
-    sys->LAST = sys->HERE;
-    sys->HERE += ADDR_SZ + dp->len + 3;
     // printStringF(",XT:%d (%lx)-", sys->HERE, sys->HERE);
 }
 //// (a1 -- [a2 1] | 0)
 void fFIND() {         // opcode #65
     char* name = (char*)&dict[pop()];
     // printStringF("-lf:[%s]-", name);
-    CELL cl = sys->LAST;
-    while (cl) {
-        DICT_T* dp = (DICT_T*)&dict[cl];
+    CELL cl = sys->LAST-1;
+    while (0 <= cl) {
+        DICT_T* dp = &words[cl];
         if (strcmp(name, (char*)dp->name) == 0) {
             // printStringF("-FOUND! (%lx)-", cl);
             push(cl);
             push(1);
             return;
         }
-        cl = (CELL)dp->prev;
+        cl--;
     }
     push(0);
 }
@@ -985,7 +984,7 @@ $once
 
 // vvvvv - NimbleText generated - vvvvv
 void loadBaseSystem() {
-    loadSource(PSTR(": cell 4 ;           : addr 2 ;"));
+    loadSource(PSTR(": forth 0 ; : cell 4 ; : addr 2 ;"));
     loadSource(PSTR("// : tib    #8 @ ;      : >in   #12 ;"));
     loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
     loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
@@ -995,7 +994,7 @@ void loadBaseSystem() {
     loadSource(PSTR("// : (rsp) #44 ;        : rsp (rsp) @ ;"));
     loadSource(PSTR(": !sp 0 (dsp) ! ;    // : !rsp 0 (rsp) ! ;"));
     loadSource(PSTR("// : cells 4 * ;        // : cell+ 4 + ;"));
-    loadSource(PSTR(": inline    2 last addr + c! ;"));
+    loadSource(PSTR(": inline     ;"));
     loadSource(PSTR("// : immediate 1 last addr + c! ;"));
     loadSource(PSTR(": nip swap drop   ; inline"));
     loadSource(PSTR(": tuck swap over  ; inline"));
@@ -1021,7 +1020,7 @@ void loadBaseSystem() {
     loadSource(PSTR(": .2 2 num>str type ; : .4 4 num>str type ;"));
     loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
     loadSource(PSTR(": allot here + (h) ! ;"));
-    loadSource(PSTR(": -fl- last (h) ! last a@ (l) ! ;"));
+    loadSource(PSTR(": -fl- last  ! last a@ (l) ! ;"));
     loadSource(PSTR("// : [ 0 state ! ; immediate"));
     loadSource(PSTR("// : ] 1 state ! ;"));
     loadSource(PSTR(": .wordl dup .4 space dup >body .4 addr + dup c@ . 1+ space count type cr ;"));
@@ -1250,6 +1249,9 @@ void loadUserWords() {
     sprintf(buf, ": d-size #%lu ;", (ulong)DICT_SZ);
     printStringF("\r\n%s", buf);
     parseLine(buf);
+    sprintf(buf, ": dict #%lu ;", (ulong)&words[0]);
+    printStringF("\r\n%s", buf);
+    parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
 
@@ -1291,8 +1293,8 @@ void loadUserWords() {
     loadSource(PSTR(": go button->led .pot? ;"));
     loadSource(PSTR(" 22 (led) ! 3 (pot) ! 6 (button) ! 4 (sens) !"));
     loadSource(PSTR("led output pot input button input"));
-    loadSource(PSTR("auto-run-last"));
-    // loadSource(PSTR(""));
+    // loadSource(PSTR("auto-run-last"));
+    loadSource(PSTR(": mtype over + do i mc@ emit loop ;"));
 }
 
 void dumpDict() {
