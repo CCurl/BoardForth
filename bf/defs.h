@@ -33,7 +33,10 @@ typedef struct {
 
 typedef struct {
     CELL autoRun;
-    CELL RESERVED1;
+    BYTE currentDictId;
+    BYTE Reserved1;
+    BYTE Reserved2;
+    BYTE Reserved3;
     CELL TIB;
     CELL TOIN;
     CELL HERE;
@@ -51,6 +54,12 @@ typedef struct {
     BYTE available;
     WORD sz;
 } ALLOC_T;
+
+typedef struct {
+    char name[16];
+    byte opcode;
+    byte makeWord;
+} OPCODE_T;
 
 #define ADDR_AUTORUN    (CELL_SZ*0)
 #define ADDR_RES_1      (CELL_SZ*1)
@@ -113,10 +122,12 @@ void autoRun();
 CELL cellAt(CELL);
 CELL wordAt(CELL);
 CELL addrAt(CELL);
+void fDUMPCODE();
 void fDUMPDICT();
 void wordStore(CELL addr, CELL val);
 void cellStore(CELL addr, CELL val);
 void addrStore(CELL addr, CELL val);
+void genOpcodeWords();
 
 // ---------------------------------------------------------------------
 /* NimbleText script for below (https://nimbletext.com/Live)
