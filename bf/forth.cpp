@@ -13,9 +13,6 @@ BYTE dict[DICT_SZ];
 SYSVARS_T* sys;
 CELL loopSTK[12];
 CELL loopDepth;
-ALLOC_T allocTbl[ALLOC_SZ];
-int num_alloced = 0;
-CELL allocAddrBase = 0, allocCurFree = 0;
 
 void run(CELL PC, CELL max_cycles) {
     CELL t1, t2, t3;
@@ -176,7 +173,7 @@ void run(CELL PC, CELL max_cycles) {
         case OP_EMIT:     // emit (#40)
             fEMIT();
             break;
-        case OP_TYPE:     // type (#41)
+        case OP_TYPE:  // type (#41)
             fTYPE();
             break;
         case OP_DOTS:     // .s (#42)
@@ -196,35 +193,10 @@ void run(CELL PC, CELL max_cycles) {
             // N += T; pop();
             break;
         case OP_CMOVE:     // cmove (#47)
-            t3 = pop();
-            t2 = pop();
-            t1 = pop();
-            while (t3 > 0) {
-                dict[t2++] = dict[t1++];
-                t3--;
-            }
             break;
         case OP_CMOVE2:     // cmove> (#48)
-            t3 = pop();
-            t2 = pop();
-            t1 = pop();
-
-            t2 += (t3 - 1);
-            t1 += (t3 - 1);
-
-            while (t3 > 0) {
-                dict[t2--] = dict[t1--];
-                t3--;
-            }
             break;
         case OP_FILL:     // fill (#49)
-            t3 = pop();
-            t2 = pop();
-            t1 = pop();
-            while (t2 > 0) {
-                dict[t1++] = (BYTE)t3;
-                t2--;
-            }
             break;
         case OP_OPENBLOCK:     // open-block (#50)
             // N += T; pop();
@@ -278,22 +250,6 @@ void run(CELL PC, CELL max_cycles) {
             }
             break;
         case OP_LOOPP:     // loop+ (#57)
-            if (loopDepth > 0) {
-                int x = (loopDepth - 1) * 3;
-                CELL f = loopSTK[x];
-                CELL t = loopSTK[x + 1];
-                loopSTK[x + 2] += pop();
-                CELL i = loopSTK[x + 2];
-                // printStringF("-LOOP(%ld,%ld,%ld)-", f, t, i);
-                if ((f < i) && (i < t)) { push(1); return; }
-                if ((t < i) && (i < f)) { push(1); return; }
-                loopDepth -= 1;
-                push(0);
-            }
-            else {
-                printString("-LOOP:depthErr-");
-                push(0);
-            }
             break;
         case OP_DEBUGGER:     // -n- (#58)
             printString("-debugger-");
@@ -362,16 +318,7 @@ void run(CELL PC, CELL max_cycles) {
                 push(0);
             }
             break;
-        case OP_J:     // j (#74)
-            if (loopDepth > 1) {
-                t1 = (loopDepth - 2) * 3;
-                push(loopSTK[t1 + 2]);
-            }
-            else {
-                printString("-J:depthErr-");
-                push(0);
-            }
-
+        case OP_FREE_74:     // j (#74)
             break;
         case OP_INPUTPIN:     // input (#75)
             t1 = pop();
@@ -502,13 +449,9 @@ void vmInit() {
     sys->STATE = 0;
     sys->DSP = 0;
     sys->RSP = 0;
-    allocAddrBase = DICT_SZ;
-    allocCurFree = DICT_SZ;
-    sys->DSTACK = allocSpace(CELL_SZ * STK_SZ);
-    sys->RSTACK = allocSpace(CELL_SZ * STK_SZ);
-    sys->TIB = allocSpace(TIB_SZ);
-    allocAddrBase = allocCurFree;
-    allocFreeAll();
+    sys->TIB = DICT_SZ - TIB_SZ - CELL_SZ;
+    sys->DSTACK = sys->TIB -    (CELL_SZ * STK_SZ) - CELL_SZ;
+    sys->RSTACK = sys->DSTACK - (CELL_SZ * STK_SZ) - CELL_SZ;
     dstk = (CELL*)&dict[sys->DSTACK];
     rstk = (CELL*)&dict[sys->RSTACK];
     loopDepth = 0;
@@ -519,7 +462,7 @@ void printString(const char* str) {
 #ifdef __DEV_BOARD__
     printSerial(str);
 #else
-    printf("%s", str);
+    fputs(str, stdout);
 #endif
 }
 
@@ -537,8 +480,7 @@ CELL cellAt(CELL loc) {
 #ifdef __NEEDS_ALIGN__
     return (dict[loc + 3] << 24) | (dict[loc + 2] << 16) | (dict[loc + 1] << 8) | dict[loc];
 #else
-    CELL *x = (CELL *)&dict[loc];
-    return *x;
+    return *((CELL *)&dict[loc]);
 #endif
 }
 
@@ -546,8 +488,7 @@ CELL wordAt(CELL loc) {
 #ifdef __NEEDS_ALIGN__
     return (dict[loc + 1] << 8) | dict[loc];
 #else
-    WORD *x = (WORD *)&dict[loc];
-    return (CELL)(*x);
+    return *((WORD *)&dict[loc]);
 #endif
 }
 
@@ -570,73 +511,6 @@ void cellStore(CELL addr, CELL val) {
 void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
 }
-
-#pragma region allocation
-void allocDump() {
-    printStringF("\r\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
-    printString("\r\n-------------------------------");
-    for (int i = 0; i < num_alloced; i++) {
-        printStringF("\r\n%2d %04lx %4d %s", i, allocTbl[i].addr, (int)allocTbl[i].sz, (int)allocTbl[i].available ? "available" : "in-use");
-    }
-}
-
-int allocFind(CELL addr) {
-    for (int i = 0; i < num_alloced; i++) {
-        if (allocTbl[i].addr == addr) return i;
-    }
-    return -1;
-}
-
-void allocFree(CELL addr) {
-    // printStringF("-allocFree:%d-", (int)addr);
-    int x = allocFind(addr);
-    if (x >= 0) {
-        // printStringF("-found:%d-", (int)x);
-        allocTbl[x].available = 1;
-        if ((x + 1) == num_alloced) { --num_alloced; }
-        if (num_alloced == 0) { allocCurFree = allocAddrBase; }
-    }
-}
-
-void allocFreeAll() {
-    allocCurFree = allocAddrBase;
-    for (int i = 0; i < ALLOC_SZ; i++) allocTbl[i].available = 1;
-    num_alloced = 0;
-}
-
-int allocFindAvailable(WORD sz) {
-    // allocDump();
-    for (int i = 0; i < num_alloced; i++) {
-        if ((allocTbl[i].available) && (allocTbl[i].sz >= sz)) return i;
-    }
-    return -1;
-}
-
-CELL allocSpace(int sz) {
-    int x = allocFindAvailable(sz);
-    if (x >= 0) {
-        // printStringF("-alloc:reuse:%d-", x);
-        allocTbl[x].available = 0;
-        return allocTbl[x].addr;
-    }
-    // printStringF("-alloc:%d,%d-\r\n", (int)sz, (int)allocCurFree);
-    allocCurFree -= (sz);
-    if (allocCurFree <= sys->HERE) {
-        printString("-out of space!-");
-        allocCurFree += sz;
-        return 0;
-    }
-    if (num_alloced < ALLOC_SZ) {
-        allocTbl[num_alloced].addr = allocCurFree;
-        allocTbl[num_alloced].sz = sz;
-        allocTbl[num_alloced++].available = 0;
-    }
-    else {
-        printString("-allocTbl too small-");
-    }
-    return allocCurFree;
-}
-#pragma endregion
 
 void fDUMPDICT() {
     char x[20];
@@ -708,7 +582,10 @@ void fSWAP() {         // opcode #24
     CELL t = T; T = N; N = t;
 }
 void fEMIT() {
-    printStringF("%c", (char)pop());
+    char buf[2];
+    buf[0] = (BYTE)pop();
+    buf[1] = 0;
+    printString(buf);
 }
 void fTYPE() {
     CELL n = pop();
@@ -723,7 +600,7 @@ void fTYPE() {
 }
 void fDOTS() {
     if (sys->DSP) {
-        push('('); fEMIT();
+        printString("(");
         for (int i = 1; i <= sys->DSP; i++) {
             push(' '); fEMIT();
             push(dstk[i]);
@@ -731,11 +608,10 @@ void fDOTS() {
             fNUM2STR();
             fTYPE();
         }
-        push(' '); fEMIT();
-        push(')'); fEMIT();
+        printString(" )");
     }
     else {
-        printStringF("()");
+        printString("()");
     }
 }
 void fPARSEWORD() {    // opcode #59
@@ -980,7 +856,7 @@ void fPARSEWORD() {    // opcode #59
 }
 void fPARSELINE() {    // opcode #60
     sys->TOIN = pop();
-    CELL buf = allocSpace(32);
+    CELL buf = sys->HERE+24;
     char* w = (char*)&dict[buf];
     push(buf);
     fNEXTWORD();
@@ -990,10 +866,11 @@ void fPARSELINE() {    // opcode #60
         if (strcmp(w, "\\") == 0) { break; }
         push(buf);
         fPARSEWORD();
+        buf = sys->HERE+24;
+        w = (char*)&dict[buf];
         push(buf);
         fNEXTWORD();
     }
-    allocFree(buf);
 }
 void fCREATE() {       // opcode #64
     CELL wa = pop();
@@ -1112,7 +989,6 @@ void loadBaseSystem() {
     loadSource(PSTR("// : tib    #8 @ ;      : >in   #12 ;"));
     loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
     loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
-    loadSource(PSTR(": -fl- last (h) ! last a@ (l) ! ;"));
     loadSource(PSTR(": base  #24 ;        : state #28 ;"));
     loadSource(PSTR(": sp0   #32 @ ;      // : rp0   #36 @ ;"));
     loadSource(PSTR(": (dsp) #40 ;        : dsp (dsp) @ ;"));
@@ -1140,10 +1016,12 @@ void loadBaseSystem() {
     loadSource(PSTR(": space $20 emit ; inline"));
     loadSource(PSTR(": tab #9 emit ; inline"));
     loadSource(PSTR(": count dup 1+ swap c@ ;"));
+    loadSource(PSTR(": type if- over + do i c@ emit loop else drop drop then ;"));
     loadSource(PSTR(": . 0 num>str space type ;"));
     loadSource(PSTR(": .2 2 num>str type ; : .4 4 num>str type ;"));
     loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
     loadSource(PSTR(": allot here + (h) ! ;"));
+    loadSource(PSTR(": -fl- last (h) ! last a@ (l) ! ;"));
     loadSource(PSTR("// : [ 0 state ! ; immediate"));
     loadSource(PSTR("// : ] 1 state ! ;"));
     loadSource(PSTR(": .wordl dup .4 space dup >body .4 addr + dup c@ . 1+ space count type cr ;"));
@@ -1209,7 +1087,7 @@ BYTE getOpcode(char* w) {
     if (strcmp_PF(w, PSTR("r@")) == 0) return OP_RFETCH;       //  opcode #38
     if (strcmp_PF(w, PSTR("r>")) == 0) return OP_RTOD;       //  opcode #39
     if (strcmp_PF(w, PSTR("emit")) == 0) return OP_EMIT;       //  opcode #40
-    if (strcmp_PF(w, PSTR("type")) == 0) return OP_TYPE;       //  opcode #41
+    if (strcmp_PF(w, PSTR("type")) == 0) return OP_TYPE;       //  opcode #40
     if (strcmp_PF(w, PSTR(".s")) == 0) return OP_DOTS;       //  opcode #42
     if (strcmp_PF(w, PSTR("s\"")) == 0) return OP_SQUOTE;       //  opcode #43
     if (strcmp_PF(w, PSTR("(")) == 0) return OP_PAREN;       //  opcode #44
@@ -1242,7 +1120,7 @@ BYTE getOpcode(char* w) {
     if (strcmp_PF(w, PSTR("=")) == 0) return OP_EQUALS;       //  opcode #71
     if (strcmp_PF(w, PSTR(">")) == 0) return OP_GREATER;       //  opcode #72
     if (strcmp_PF(w, PSTR("i")) == 0) return OP_I;       //  opcode #73
-    if (strcmp_PF(w, PSTR("j")) == 0) return OP_J;       //  opcode #74
+    // if (strcmp_PF(w, PSTR("j")) == 0) return OP_FREE_74;       //  opcode #74
     if (strcmp_PF(w, PSTR("input")) == 0) return OP_INPUTPIN;       //  opcode #75
     if (strcmp_PF(w, PSTR("output")) == 0) return OP_OUTPUTPIN;       //  opcode #76
     if (strcmp_PF(w, PSTR("ms")) == 0) return OP_DELAY;       //  opcode #77
@@ -1348,7 +1226,7 @@ void is_binary(char* word) {
 
 CELL stringToDict(char* s, CELL to) {
     // printStringF("-sd.%d", (int)to);
-    if (to == 0) to = allocSpace((int)strlen(s) + 2);
+    if (to == 0) { to = sys->HERE + 64; }
     // printStringF(":%d-\r\n", (int)to);
     CELL x = to;
     while (*s) {
@@ -1367,10 +1245,10 @@ void parseLine(char* line) {
 void loadUserWords() {
     char* buf = (char*)&dict[sys->HERE + 256];
     sprintf(buf, ": d-start $%lx ;", (ulong)&dict[0]);
-    printStringF("%s\r\n", buf);
+    printStringF("\r\n%s", buf);
     parseLine(buf);
     sprintf(buf, ": d-size #%lu ;", (ulong)DICT_SZ);
-    printStringF("%s\r\n", buf);
+    printStringF("\r\n%s", buf);
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
@@ -1401,21 +1279,18 @@ void loadUserWords() {
     loadSource(PSTR(": low->high over over > if swap then ;"));
     // : dump+addr over . ':' space begin swap dup c@ space .2 1+ swap 1- while- ;
     loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": blink 1 led dp! dup ms 0 led dp! dup ms ;"));
-    loadSource(PSTR(": blinks 0 swap do blink loop ;"));
-    loadSource(PSTR("variable (led)"));
-    loadSource(PSTR(": led (led) @ ; "));
-    loadSource(PSTR("variable (pot)"));
-    loadSource(PSTR(": pot (pot) @ ; "));
-    loadSource(PSTR("variable (button) "));
-    loadSource(PSTR(": button (button) @ ; "));
-    loadSource(PSTR("variable pot-lv variable sens 4 sens !"));
-    loadSource(PSTR(": pot-last pot ap@ ;"));
+    loadSource(PSTR("variable (led)     : led (led) @ ; "));
+    loadSource(PSTR("variable (pot)     : pot (pot) @ ; "));
+    loadSource(PSTR("variable (button)  : button (button) @ ; "));
+    loadSource(PSTR("variable (pot-lv)  : pot-lv (pot-lv) @ ; "));
+    loadSource(PSTR("variable (pot-cv)  : pot-cv (pot-cv) @ ;"));
+    loadSource(PSTR("variable (sens)    : sens (sens) @ ;"));
+    loadSource(PSTR(": pot-val pot ap@ dup (pot-cv) ! ;"));
     loadSource(PSTR(": button->led button dp@ led dp! ;"));
-    loadSource(PSTR(": .pot? pot-last dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
-    loadSource(PSTR(": go button->led ;"));
-    loadSource(PSTR(" 22 (led) ! 3 (pot) ! 6 (button) !"));
-    loadSource(PSTR("led output button input pot input"));
+    loadSource(PSTR(": .pot? pot-val pot-lv - abs sens > if pot-cv dup . cr (pot-lv) ! then ;"));
+    loadSource(PSTR(": go button->led .pot? ;"));
+    loadSource(PSTR(" 22 (led) ! 3 (pot) ! 6 (button) ! 4 (sens) !"));
+    loadSource(PSTR("led output pot input button input"));
     loadSource(PSTR("auto-run-last"));
     // loadSource(PSTR(""));
 }

@@ -63,3 +63,6 @@ dkms.conf
 /bf/vm-dump.txt
 bf/bf.vcxproj.user
 vm-dump.txt
+/mf/Debug
+/mf/Release
+/mf/mf.vcxproj.user

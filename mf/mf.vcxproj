@@ -21,10 +21,10 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{5b825326-fd4f-4011-b4ab-ba365521c8ad}</ProjectGuid>
+    <ProjectGuid>{81919D16-B013-4980-9D71-DAC2252E7571}</ProjectGuid>
     <RootNamespace>ConsoleApplication1</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>bf</ProjectName>
+    <ProjectName>mf</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -163,7 +163,8 @@
     <Text Include="history.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="bf.ino" />
+    <None Include="make.bat" />
+    <None Include="mf.ino" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

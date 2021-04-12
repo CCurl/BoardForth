@@ -3,15 +3,10 @@
 // ---------------------------------------------------------------------
 #ifndef __DEFS_H__
     
-// #define __DEV_BOARD__
-
 #ifdef __DEV_BOARD__
     // #include <Arduino.h>
-    // #include <Keyboard.h>
-    #include "mbed.h"
     #define __HAS_KEYBOARD__
-    #define mySerial Serial
-    // #define mySerial SerialUSB
+    #define mySerial SerialUSB
     void printSerial(const char *);
     void loadSource(const char *source);
     #define DICT_SZ (24*1024)   // Boards with 32K SRAM
