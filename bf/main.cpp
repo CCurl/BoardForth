@@ -108,10 +108,10 @@ int main() {
     FILE *fp = fopen("vm-dump.txt", "wb");
     if (fp) {
         push((CELL)fp);
-        fDUMPDICT();
+        push((CELL)fp);
+        fDUMPCODE();
         fclose(fp);
     }
-    // allocDump();
     // printStringF("\r\n");
 }
 #endif // __DEV_BOARD__
