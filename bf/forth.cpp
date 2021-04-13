@@ -24,6 +24,73 @@ CELL reg[26];
 int curReg;
 CELL PC;
 
+typedef struct {
+    char name[16];
+    char codes[8];
+} s4_word_t;
+
+s4_word_t s4Words[] = {
+    {"dup", "#"},
+    {"drop", "\\"},
+    {"mod", "%"},
+    {"-",  "-"},
+    {"1-", "1-"},
+    {"+",  "+"},
+    {"1+", "1+"},
+    {"*",  "*"},
+    {"/",  "/"},
+    {"<",  "<"},
+    {"=",  "="},
+    {">",  ">"},
+    {"and",  "&"},
+    {"or",  "|"},
+    {"swap", "S"},
+    {"over", "O"},
+    {"c@", "c@"},
+    {"w@", "w@"},
+    {"@",  "@"},
+    {"c!", "c!"},
+    {"w!", "w!"},
+    {"!",  "!"},
+    {"emit", ","},
+    {"fopen", "FO"},
+    {"fclose", "FC"},
+    {"leave", ";"},
+    {"", ""}
+};
+
+int iHERE = 0;
+void s4CompileString(const char* str) {
+    while (*str) {
+        CCOMMA((*str++));
+    }
+}
+
+void s4RunString(const char* str) {
+
+}
+
+s4_word_t *s4Find(char* w) {
+    for (int i = 0; ; i++) {
+        s4_word_t* p = &s4Words[i];
+        if (p->name[0] == 0) { return 0; }
+        if (strcmp(p->name, w) == 0) {
+            return p;
+        }
+    }
+    return 0;
+}
+
+void s4PutAddress(CELL tgt, CELL val) {
+
+}
+
+int s4Parse(char* w) {
+    s4_word_t* p = s4Find(w);
+    if (p) { s4CompileString(p->codes); }
+    return (p) ? 1 : 0;
+}
+
 int doQuote(int pc, int isPush) {
     char buf[2]; buf[1] = 0;
     while ((dict[pc] != '"') && (pc < DICT_SZ)) {
@@ -31,47 +98,6 @@ int doQuote(int pc, int isPush) {
         printString(buf);
     }
     return ++pc;
-}
-
-typedef struct {
-    char name[16];
-    int count;
-    byte codes[4];
-} s4_word_t;
-
-s4_word_t s4Words[] = {
-    {"dup", 1, {'#'}},
-    {"%", 1, {'%'}},
-    {"-", 1, {'-'}},
-    {"--", 2, {'-', '-'}},
-    {"+", 1, {'+'}},
-    {"++", 2, {'+', '+'}},
-    {"swap", 1, {'S'}},
-    {"@", 2, {'@', '4'}},
-    {"c@", 2, {'@', '1'}},
-    {"w@", 2, {'@', '2'}},
-    {"emit", 1, {','}},
-    {"fopen", 2, {'F', 'O'}},
-    {"fclose", 2, {'F', 'C'}},
-    {"", 0, {0}}
-};
-
-int s4Parse(char* word) {
-
-}
-
-int s4Compile(char* w) {
-    for (int i = 0; ; i++) {
-        s4_word_t* p = &s4Words[i];
-        if (p->count == 0) { return 0; }
-        if (strcmp(p->name, w) == 0) {
-            for (int j = 0; j < p->count; j++) {
-                CCOMMA(p->codes[j]);
-            }
-            return 1;
-        }
-    }
-    return 0;
 }
 
 void run(CELL pc, CELL max_cycles) {
@@ -206,7 +232,7 @@ void run(CELL pc, CELL max_cycles) {
 void runOpcode(BYTE opcode) {
     CELL xt = sys->HERE + 17;
     dict[xt] = opcode;
-    dict[xt+1] = OP_RET;
+    dict[xt+1] = ';';
     run(xt, 0);
 }
 
@@ -429,8 +455,11 @@ void fDOTS() {
 }
 BYTE getOpcode(char *word) { return 0xFF; }
 void fPARSEWORD() {    // opcode #59
-    CELL wa = pop();
+    char s4[16];
+    CELL wa = pop(), t1;
     char* w = (char*)&dict[wa];
+    if (s4Parse(w)) { return; }
+
     // printStringF("-pw[%s]-", w);
     push(wa); fFIND();
     if (pop()) {
@@ -439,169 +468,67 @@ void fPARSEWORD() {    // opcode #59
 
         // runOpcode(OP_GETXT);
         CELL xt = dp->XT;
+        sprintf(s4, ":%04x", xt);
         if (compiling(w, 0)) {
-            if ((dp->flagsLen & 0x20) == 1) {
-                // 0x20 => IMMEDIATE
-                run(xt, 0);
-            }
-            else if (dp->flagsLen & 0x40) {
-                // 0x40 => INLINE
-                BYTE x = dict[xt];
-                int xtTo = words[dpi+1].XT-1;
-                for (int i = dp->XT; i < xtTo; i++) {
-                    CCOMMA(dict[i]);
-                }
-            }
-            else {
-                CCOMMA(OP_CALL);
-                ACOMMA((ADDR)xt);
-            }
+            s4CompileString(s4);
         }
-        else {
-            run(xt, 0);
-        }
+        else { s4RunString(s4); }
         return;
     }
 
     push(wa); fISNUMBER();
     if (pop()) {
+        t1 = pop();
+        sprintf(s4, "$%lx", t1);
         if (compiling(w, 0)) {
-            if ((0x0000 <= T) && (T < 0x0100)) {
-                CCOMMA(OP_CLIT);
-                fCCOMMA();
-            }
-            else if ((0x0100 <= T) && (T < 0x010000)) {
-                CCOMMA(OP_WLIT);
-                fWCOMMA();
-            }
-            else {
-                CCOMMA(OP_LIT);
-                fCOMMA();
-            }
+            s4CompileString(s4);
         }
+        else { s4RunString(s4); }
         return;
-    }
-
-    if (strcmp(w, "immediate") == 0) {
-        DICT_T* dp = &words[sys->LAST - 1];
-        dp->flagsLen |= 0x20;
-    }
-
-    if (strcmp(w, "inline") == 0) {
-        DICT_T* dp = &words[sys->LAST - 1];
-        dp->flagsLen |= 0x40;
     }
 
     if (strcmp(w, ";") == 0) {
         if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_RET);
+        s4CompileString(";");
         sys->STATE = 0;
         return;
     }
 
     if (strcmp(w, "if") == 0) {
         if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_JMPZ);
+        s4CompileString("(");
         push(sys->HERE);
-        ACOMMA(0);
-        return;
-    }
-
-    if (strcmp(w, "if-") == 0) {
-        if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_NJMPZ);
-        push(sys->HERE);
-        ACOMMA(0);
+        s4CompileString("0000");
         return;
     }
 
     if (strcmp(w, "else") == 0) {
         if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_JMP);
+        t1 = pop();
+        s4CompileString("JJ");
         push(sys->HERE);
-        fSWAP();
-        ACOMMA(0);
-        push(sys->HERE);
-        fSWAP();
-        fASTORE();
+        s4CompileString("0000)E(");
+        s4PutAddress(t1, sys->HERE);
         return;
     }
 
     if (strcmp(w, "then") == 0) {
         if (!compiling(w, 1)) { return; }
-        push(sys->HERE);
-        fSWAP();
-        fASTORE();
+        s4CompileString(")");
+        t1 = pop();
+        s4PutAddress(t1, sys->HERE);
         return;
     }
 
     if (strcmp(w, "begin") == 0) {
         if (!compiling(w, 1)) { return; }
-        push(sys->HERE);
-        return;
-    }
-
-    if (strcmp(w, "repeat") == 0) {
-        if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_JMP);
-        fACOMMA();
+        s4CompileString("[");
         return;
     }
 
     if (strcmp(w, "while") == 0) {
         if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_JMPNZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp(w, "until") == 0) {
-        if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_JMPZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp(w, "while-") == 0) {
-        if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_NJMPNZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp(w, "until-") == 0) {
-        if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_NJMPZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp(w, "do") == 0) {
-        if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_DO);
-        push(sys->HERE);
-        return;
-    }
-
-    if (strcmp(w, "leave") == 0) {
-        if (!compiling(w, 1)) { return; }
-        printString("WARNING: LEAVE not supported!");
-        return;
-    }
-
-    if (strcmp(w, "loop") == 0) {
-        if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_LOOP);
-        CCOMMA(OP_JMPNZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp(w, "loop+") == 0) {
-        if (!compiling(w, 1)) { return; }
-        CCOMMA(OP_LOOPP);
-        CCOMMA(OP_JMPNZ);
-        fACOMMA();
+        s4CompileString("]");
         return;
     }
 
@@ -617,32 +544,11 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    if (strcmp(w, "dictionary") == 0) {
-        if (!interpreting(w, 1)) { return; }
-        push(wa);
-        fNEXTWORD();
-        if (pop()) {
-            sys->currentDictId = ++lastDictionaryId;
-            push(wa);
-            fCREATE();
-            CCOMMA(OP_CLIT);
-            CCOMMA(sys->currentDictId);
-            CCOMMA(OP_RET);
-        }
-        return;
-    }
-
     if (strcmp(w, "variable") == 0) {
         if (!interpreting(w, 1)) { return; }
         push(wa);
         fNEXTWORD();
         if (pop()) {
-            push(wa);
-            fCREATE();
-            CCOMMA(OP_LIT);
-            COMMA(sys->HERE + CELL_SZ + 1);
-            CCOMMA(OP_RET);
-            COMMA(0);
         }
         return;
     }
@@ -652,44 +558,23 @@ void fPARSEWORD() {    // opcode #59
         push(wa);
         fNEXTWORD();
         if (pop()) {
-            push(wa);
-            fCREATE();
-            CCOMMA(OP_LIT);
-            fCOMMA();
-            CCOMMA(OP_RET);
         }
         return;
     }
 
-    if (strcmp(w, "s\"") == 0) {
+    if (strcmp(w, ".\"") == 0) {
         if (! compiling(w, 1)) { return; }
         BYTE c = nextChar();
         int len = 0;
-        CCOMMA(OP_SQUOTE);
-        CELL h = sys->HERE;
-        CCOMMA(0);
+        CCOMMA('"');
         while (c && (c != '"')) {
             CCOMMA(c);
             c = nextChar();
             ++len;
         }
-        CCOMMA(0);
-        dict[h] = len;
         return;
     }
 
-    BYTE op = 0xFF;  getOpcode(w);
-    if (op < 0xFF) {
-        if (compiling(w, 0)) {
-            CCOMMA(op);
-        } else {
-            CELL xt = sys->HERE + 0x20;
-            dict[xt] = op;
-            dict[xt + 1] = OP_RET;
-            run(xt, 0);
-        }
-        return;
-    }
     sys->STATE = 0;
     printStringF("[%s]??", w);
 }
@@ -830,12 +715,6 @@ void WCOMMA(WORD v) { push(v); fWCOMMA(); }
 void COMMA(CELL v) { push(v); fCOMMA(); }
 void ACOMMA(ADDR v) { push(v); fACOMMA(); }
 
-CELL getXT(CELL addr) {
-    push(addr);
-    runOpcode(OP_GETXT);
-    return pop();
-}
-
 BYTE nextChar() {
     if (dict[sys->TOIN]) return dict[sys->TOIN++];
     return 0;
@@ -934,7 +813,7 @@ void loadBaseSystem() {
     char buf[32];
     sprintf(buf, ": dict #%lu ;", (ulong)&words[0]);
     parseLine(buf);
-    loadSource(PSTR(": forth 0 ; : cell 4 ; : addr 2 ;"));
+    loadSource(PSTR(": cell 4 ; : addr 2 ;"));
     loadSource(PSTR("// : tib    #8 @ ;      : >in   #12 ;"));
     loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
     loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
@@ -948,26 +827,24 @@ void loadBaseSystem() {
     loadSource(PSTR("// : immediate 1 last addr + c! ;"));
     loadSource(PSTR(": nip swap drop   ; inline"));
     loadSource(PSTR(": tuck swap over  ; inline"));
-    loadSource(PSTR(": / /mod nip      ; inline"));
-    loadSource(PSTR(": mod /mod drop   ; inline"));
     loadSource(PSTR(": +! tuck @ + swap ! ;"));
-    loadSource(PSTR(": <> = not ; inline"));
-    loadSource(PSTR(": ?dup if- dup then ;"));
+    loadSource(PSTR(": <> = 0 = ; inline"));
+    loadSource(PSTR(": ?dup dup if dup then ;"));
     loadSource(PSTR(": abs dup 0 < if 0 swap - then ;"));
-    loadSource(PSTR(": execute >r ;"));
     loadSource(PSTR(": depth dsp 1- ;"));
     loadSource(PSTR("// : pick depth swap - 1- cells sp0 + @ ;"));
-    loadSource(PSTR(": rot >r swap r> swap ;"));
+    // loadSource(PSTR(": rot  swap r> swap ;"));
     loadSource(PSTR(": min over over < if drop else nip then ;"));
     loadSource(PSTR(": max over over > if drop else nip then ;"));
-    loadSource(PSTR(": between rot dup >r min max r> = ;"));
+    // loadSource(PSTR(": between rot dup >r min max r> = ;"));
     loadSource(PSTR(": cr #13 emit #10 emit ;"));
     loadSource(PSTR(": space $20 emit ; inline"));
     loadSource(PSTR(": tab #9 emit ; inline"));
     loadSource(PSTR(": count dup 1+ swap c@ ;"));
+    loadSource(PSTR(": mw@ @ ;"));
     loadSource(PSTR(": mc@ mw@ $ff and ;"));
-    loadSource(PSTR(": type  if- over + do i c@  emit loop else drop drop then ;"));
-    loadSource(PSTR(": mtype if- over + do i mc@ emit loop else drop drop then ;"));
+    loadSource(PSTR(": type dup 0 = if drop drop leave then begin c@  emit 1- while ;"));
+    loadSource(PSTR(": mtype dup 0 = if drop drop leave then begin mc@  emit 1- while ;"));
     loadSource(PSTR(": . 0 num>str space type ;"));
     loadSource(PSTR(": .2 2 num>str type ; : .4 4 num>str type ;"));
     loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
@@ -975,10 +852,10 @@ void loadBaseSystem() {
     loadSource(PSTR(": -fl- last  ! last a@ (l) ! ;"));
     loadSource(PSTR("// : [ 0 state ! ; immediate"));
     loadSource(PSTR("// : ] 1 state ! ;"));
-    loadSource(PSTR(": words 0 >r last begin"
-        " 1- dup 24 * dict + 3 + dup mc@ #31 and swap 1+ swap mtype"
-        " r> 1 + >r r@ 10 mod 0 = if cr else #9 emit then"
-        " while- drop r> drop ;"));
+    //loadSource(PSTR(": words 0 >r last begin"
+    //    " 1- dup 24 * dict + 3 + dup mc@ #31 and swap 1+ swap mtype"
+    //    " r> 1 + >r r@ 10 mod 0 = if cr else #9 emit then"
+    //    " while- drop r> drop ;"));
 }
 
 void loadUserWords() {
