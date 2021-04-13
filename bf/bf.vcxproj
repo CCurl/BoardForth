@@ -161,9 +161,11 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="history.txt" />
+    <Text Include="vm-dump.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="bf.ino" />
+    <None Include="make.bat" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

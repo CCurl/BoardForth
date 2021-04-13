@@ -49,17 +49,21 @@ typedef struct {
     CELL RSP;
 } SYSVARS_T;
 
-typedef struct {
-    CELL addr;
-    BYTE available;
-    WORD sz;
-} ALLOC_T;
+//typedef struct {
+//    CELL addr;
+//    BYTE available;
+//    WORD sz;
+//} ALLOC_T;
 
 typedef struct {
     char name[16];
     byte opcode;
     byte makeWord;
 } OPCODE_T;
+
+typedef struct {
+    CELL from, to, i;
+} LOOPINFO_T;
 
 #define ADDR_AUTORUN    (CELL_SZ*0)
 #define ADDR_RES_1      (CELL_SZ*1)
@@ -88,7 +92,7 @@ extern SYSVARS_T *sys;
 extern CELL toIn;
 extern CELL allocAddrBase;
 extern CELL allocCurFree;
-extern CELL loopDepth;
+extern int loopDepth;
 
 void dumpDict();
 void vmInit();
