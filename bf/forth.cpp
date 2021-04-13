@@ -24,6 +24,8 @@ CELL reg[26];
 int curReg;
 CELL PC;
 
+typedef unsigned short ushort;
+
 typedef struct {
     char name[16];
     char codes[8];
@@ -82,7 +84,8 @@ s4_word_t *s4Find(char* w) {
 }
 
 void s4PutAddress(CELL tgt, CELL val) {
-
+    dict[tgt+0] = (val & 0xFF);
+    dict[tgt + 1] = ((val >> 8) & (0xFF));
 }
 
 int s4Parse(char* w) {
@@ -498,7 +501,7 @@ void fPARSEWORD() {    // opcode #59
         if (!compiling(w, 1)) { return; }
         s4CompileString("(");
         push(sys->HERE);
-        s4CompileString("0000");
+        s4CompileString("00");
         return;
     }
 
@@ -507,7 +510,7 @@ void fPARSEWORD() {    // opcode #59
         t1 = pop();
         s4CompileString("JJ");
         push(sys->HERE);
-        s4CompileString("0000)E(");
+        s4CompileString("00)E(");
         s4PutAddress(t1, sys->HERE);
         return;
     }
