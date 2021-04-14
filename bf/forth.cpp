@@ -56,6 +56,7 @@ s4_word_t s4Words[] = {
     {"fopen", "FO"},
     {"fclose", "FC"},
     {"leave", ";"},
+    {"space", "B"},
     {"ap@", "AA@"},
     {"dp@", "AD@"},
     {"dp!", "AD!"},
@@ -130,15 +131,16 @@ void run(CELL pc, CELL max_cycles) {
         switch (IR) {
         case 0: pc = -1; break;                                  // 0
         case ' ': break;                                    // 32
-        // case '!': reg[curReg] = pop();  break;              // 33
+        case '!': t1 = pop(); t2 = pop();
+            cellStore(t1, t2);          break;              // 33
         case '"': pc = doQuote(pc, 0);  break;              // 34
         case '#': push(T);              break;              // 35
-        case '$': pc = s4NumberAt(pc); break;              // 36
+        case '$': pc = s4NumberAt(pc);  break;              // 36
         case '%': t1 = pop(); T %= t1;  break;              // 37
         case '&': t1 = pop(); T &= t1;  break;              // 38
-        // case '\'': push(dict[pc++]);    break;              // 39
-        //case '(': pc = doIf(pc);        break;              // 40
-        //case ')': /*maybe ELSE?*/       break;              // 41
+        case '\'': push(dict[pc++]);    break;              // 39
+        // case '(': pc = doIf(pc);        break;              // 40
+        // case ')': /*maybe ELSE?*/       break;              // 41
         case '*': t1 = pop(); T *= t1;  break;              // 42
         case '+': t1 = dict[pc];                            // 43
             if (t1 == '+') { ++pc;  ++T; }
@@ -150,17 +152,21 @@ void run(CELL pc, CELL max_cycles) {
             else { t1 = pop(); T -= t1; }
             break;
         case '.': printStringF("%ld", pop());      break;   // 46
+        case '1': t1 = dict[pc];                            // 45
+            if (t1 == '-') { ++pc; --T; }
+            if (t1 == '+') { ++pc; ++T; }
+            break;
         case '/': t1 = pop(); if (t1) { T /= t1; } break;   // 47-57
         //case '0': case '1': case '2': case '3': case '4':
         //case '5': case '6': case '7': case '8': case '9':
         //    pc = doNumber(pc - 1); break;
         case ':': rpush(pc + 4); pc = s4addrAt(pc); break;           // 58
         case ';': pc = rpop(); break;                       // 59
-        case '<': t1 = pop(); T = T < t1 ? -1 : 0;  break;  // 60
+        case '<': t1 = pop(); T = T < t1  ? -1 : 0; break;  // 60
         case '=': t1 = pop(); T = T == t1 ? -1 : 0; break;  // 61
-        case '>': t1 = pop(); T = T > t1 ? -1 : 0;  break;  // 62
+        case '>': t1 = pop(); T = T > t1  ? -1 : 0; break;  // 62
         // case '?': push(_getch());                   break;  // 63
-        case '@': T = dict[T];                break;  // 64
+        case '@': T = cellAt(T);                    break;  // 64
         case 'A': t1 = dict[pc++]; t2 = dict[pc++];
                  if ((t1 == 'A') && (t2 == '@')) { T = analogRead(T); }
             else if ((t1 == 'A') && (t2 == '!')) { int p = pop(), v = pop();  analogWrite(p, v); }
@@ -199,7 +205,13 @@ void run(CELL pc, CELL max_cycles) {
             //if (t1 == 'R') { dumpRegs(); }
             //if (t1 == 'S') { dumpStack(1); }
             break;
-        case 'J':  break;   /* *** FREE ***  */
+        case 'J': t1 = dict[pc++];
+            if (t1 == 'J') { pc = addrAt(pc);  }
+            if (t1 == 'Z') { if (pop() == 0) { pc = addrAt(pc); } else { pc += ADDR_SZ; } }
+            if (t1 == 'N') { if (pop())      { pc = addrAt(pc); } else { pc += ADDR_SZ; } }
+            if (t1 == 'z') { if (T == 0)     { pc = addrAt(pc); } else { pc += ADDR_SZ; } }
+            if (t1 == 'n') { if (T)          { pc = addrAt(pc); } else { pc += ADDR_SZ; } }
+            break;
         case 'K': T *= 1000; break;
         case 'L': break;   /* *** FREE ***  */
         case 'M': t1 = dict[pc++];
@@ -914,8 +926,8 @@ void loadUserWords() {
     // loadSource(PSTR(": d-code 0 here do i c@ dup .2 space dup 32 < if drop '.' then dup 126 > if drop '.' then emit space loop ;"));
 
     loadSource(PSTR(": k 1000 * ; : mil k k ;"));
-    loadSource(PSTR(": elapsed tick - dup 1000 / . 1000 mod . ;"));
-    loadSource(PSTR(": bm tick swap begin 1- while drop elapsed ;"));
+    loadSource(PSTR(": elapsed tick swap - dup 1000 / . space 1000 mod . ;"));
+    loadSource(PSTR(": bm tick swap begin 1- while elapsed ;"));
     // loadSource(PSTR(": low->high over over > if swap then ;"));
     // : dump+addr over . ':' space begin swap dup c@ space .2 1+ swap 1- while- ;
     // loadSource(PSTR(": dump low->high do i c@ . loop ;"));
