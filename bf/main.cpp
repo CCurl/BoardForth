@@ -95,6 +95,7 @@ void repl() {
         fgets(tib, TIB_SZ, stdin);
         rtrim(tib);
         if (strcmp(tib, "bye") == 0) return;
+        if (strcmp(tib, "ZZ") == 0) return;
         doHistory(tib);
         push(sys->TIB);
         fPARSELINE();

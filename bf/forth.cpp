@@ -28,25 +28,22 @@ typedef struct {
 } s4_word_t;
 
 s4_word_t s4Words[] = {
-     {"dup", "#"}
-    ,{"drop", "\\"}
-    ,{"mod", "%"}
-    ,{"negate", "$0-"}
+     {"mod", "%"}
+    ,{"negate", "$0S-"}
     ,{"-",  "-"}, {"+",  "+"} ,{"*",  "*"} ,{"/",  "/"}
     ,{"1-", "1-"} ,{"1+", "1+"}
-    ,{"<",  "<"} ,{"<=",  "<="} ,{"=",  "="} ,{">=",  ">="} ,{">",  ">"}
+    ,{"<",  "<"} ,{"<=",  "<="} ,{"=",  "="} ,{"<>",  "<>"} ,{">=",  ">="} ,{">",  ">"}
     ,{"and",  "&"} ,{"or",  "|"}
-    ,{"swap", "S"}
-    ,{"over", "O"}
-    ,{"c@", "c@"}
-    ,{"w@", "w@"}
-    ,{"@",  "@"}
+    ,{"dup", "#"} ,{"drop", "\\"}
+    ,{"swap", "S"} ,{"over", "O"}
+    ,{"nip", "S\\"} ,{"tuck", "SO"}
+    ,{"c@", "c@"} ,{"w@", "w@"} ,{"@",  "@"}
     ,{"c!", "c!"} ,{"w!", "w!"} ,{"!",  "!"}
     ,{"tick", "T"}
     ,{"fopen", "FO"} ,{"fclose", "FC"}
     ,{"leave", ";"}
     ,{"emit", ","}
-    ,{".",  ".$20,"}
+    ,{".",  ".$20,"}, {"(.)", "."}
     ,{"space", "$20,"} ,{"cr", "$d,$a,"} ,{"tab", "$9,"}
     ,{"ap@", "AA@"} ,{"ap@", "AA!"} ,{"dp@", "AD@"} ,{"dp!", "AD!"}
     ,{".si", "IA"} ,{".code", "IC"} ,{".words", "ID"} ,{".regs", "IR"} ,{".s", "IS"}
@@ -55,7 +52,7 @@ s4_word_t s4Words[] = {
     ,{"R!", "R!"} ,{"R@", "R@"} ,{"R-", "R-"} ,{"R+", "R+"}
     ,{"R@+", "R@R+"}, {"R+@","R@R+"}
     ,{"R@-", "R@R-"}, {"R-@","R@R-"}
-    ,{"M@", "M@"}, {"M!", "M!"}
+    ,{"mc@", "M@"}, {"mc!", "M!"}
     ,{"", ""}
 };
 
@@ -159,8 +156,9 @@ void run(CELL pc, CELL max_cycles) {
             break;
         case ':': rpush(pc + 4); pc = s4addrAt(pc); break;           // 58
         case ';': pc = rpop(); break;                       // 59
-        case '<': t1 = dict[pc]; 
-            t2 = pop(); if (t1 == '=') { T = (T <= t2) ? -1 : 0; ++pc;  }
+        case '<': t1 = dict[pc];  t2 = pop(); 
+            if (t1 == '=') { T = (T <= t2) ? -1 : 0; ++pc; }
+            else if (t1 == '>') { T = (T != t2) ? -1 : 0; ++pc; }
             else { T = (T < t2) ? -1 : 0; }
             break;  // 60
         case '=': t2 = pop(); T = (T == t2) ? -1 : 0; break;  // 61
@@ -217,7 +215,7 @@ void run(CELL pc, CELL max_cycles) {
             if (t1 == '@') { T = *((byte*)T); }
             if (t1 == '!') { *((byte*)T) = (N & 0xFF); }
             break;
-        case 'N': break;
+        case 'N': break;   /* *** FREE ***  */
         case 'O': push(N); break;
         case 'P': t1 = dict[pc++]; t2 = pop();
             if (t1 == 'I') { pinMode(t2, 1); }
@@ -239,19 +237,19 @@ void run(CELL pc, CELL max_cycles) {
         case 'V': break;   /* *** FREE ***  */
         // case 'W': delay(pop()); break;
         case 'X': t1 = dict[pc++]; if (t1 == 'X') { vmInit(); } break;
-        case 'Y': break;
-        // case 'Z': isBye = (dict[pc++] == 'Z'); break;
+        case 'Y': break;   /* *** FREE ***  */
+        case 'Z': break;   /* *** FREE ***  */
         case '[': rpush(pc); break;                   // 91
         case '\\': pop(); break;                            // 92
         case ']': if (T) { pc = R; }                        // 93
                 else { pop(); rpop(); }
                 break;
         case '^': t1 = pop(); T ^= t1;  break;              // 94
-        case '_': T = -T;      break;                       // 95
-        case '`': break;  /* *** FREE ***  */               // 96
-        // case '{': pc = doDefineFunction(pc); break;        // 123
+        case '_': break;   /* *** FREE ***  */              // 95
+        case '`': break;   /* *** FREE ***  */              // 96
+        case '{': break;   /* *** FREE ***  */              // 123
         case '|': t1 = pop(); T |= t1; break;               // 124
-        // case '}': pc = rpop(); break;                       // 125
+        case '}': break;   /* *** FREE ***  */              // 125
         case '~': T = ~T; break;                            // 126
         }
     }
@@ -393,7 +391,7 @@ void fDUMPCODE() {
     FILE* to = (FILE*)pop();
     to = to ? to : stdout;
 
-    if (to) {
+    if (to != stdout) {
         fprintf(to, "; WORDS: LAST=%d", sys->LAST);
         fprintf(to, "\r\n  #   XT   d  f  l word");
         fprintf(to, "\r\n---- ---- -- -- -- -----------------");
@@ -414,6 +412,10 @@ void fDUMPCODE() {
         BYTE b = dict[i];
         x[n++] = ((31 < b) && (b < 128)) ? b : '.';
         fprintf(to, " %02x", dict[i]);
+    }
+    for (int i = sys->HERE; i < DICT_SZ; i++) {
+        if (i % 16 == 0) { break; }
+        fprintf(to, "   ");
     }
     if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
 }
@@ -856,10 +858,7 @@ void loadBaseSystem() {
     loadSource(PSTR(": (rsp) #44 ;        : rsp (rsp) @ ;"));
     loadSource(PSTR(": !sp 0 (dsp) ! ;    // : !rsp 0 (rsp) ! ;"));
     loadSource(PSTR("// : cells 4 * ;        // : cell+ 4 + ;"));
-    loadSource(PSTR(": nip swap drop   ; "));
-    loadSource(PSTR(": tuck swap over  ; "));
     loadSource(PSTR(": +! tuck @ + swap ! ;"));
-    loadSource(PSTR(": <> = 0 = ; "));
     loadSource(PSTR(": ?dup dup if dup then ;"));
     loadSource(PSTR(": abs dup 0 < if negate then ;"));
     loadSource(PSTR(": depth dsp 1- ;"));
@@ -867,7 +866,8 @@ void loadBaseSystem() {
     loadSource(PSTR(": max over over > if drop else nip then ;"));
     // loadSource(PSTR(": between rot dup >r min max r> = ;"));
     loadSource(PSTR(": count dup 1+ swap c@ ;"));
-    loadSource(PSTR(": type dup 0 = if drop drop leave then begin c@  emit 1- while ;"));
+    loadSource(PSTR(": type begin swap dup c@ emit 1+ swap 1- while drop ;"));
+    loadSource(PSTR(": mtype begin swap dup mc@ emit 1+ swap 1- while drop ;"));
     loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
     loadSource(PSTR(": allot here + (h) ! ;"));
 }
