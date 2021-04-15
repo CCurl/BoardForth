@@ -392,7 +392,7 @@ void fDUMPCODE() {
     to = to ? to : stdout;
 
     if (to != stdout) {
-        fprintf(to, "; WORDS: LAST=%d", sys->LAST);
+        fprintf(to, "; WORDS: LAST=%ld", sys->LAST);
         fprintf(to, "\r\n  #   XT   d  f  l word");
         fprintf(to, "\r\n---- ---- -- -- -- -----------------");
         for (int i = sys->LAST - 1; 0 <= i; i--) {
@@ -518,7 +518,7 @@ void fPARSEWORD() {    // opcode #59
 
         // runOpcode(OP_GETXT);
         CELL xt = dp->XT;
-        sprintf(s4, ":%04x", xt);
+        sprintf(s4, ":%04x", (WORD)xt);
         if (compiling(w, 0)) {
             s4CompileString(s4);
         }
@@ -880,7 +880,7 @@ void loadUserWords() {
     parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
-
+/*
 // 10 general purpose registers
 // variable regs 10 allot \
 // variable $r 0 $r ! \
@@ -893,7 +893,7 @@ void loadUserWords() {
 // : d1 base @ $10 = if space .2 else . then ; \
 // : d16 0 #16 do dup here < if dup c@ d1 then 1+ loop ; \
 // : dc 0 begin cr dup .4 ':' emit d16 dup here < while drop ; \
-
+*/
     // loadSource(PSTR(": m@  dup 1+ 1+ mw@ $10000 * swap mw@ or ;"));
     // loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
     // loadSource(PSTR(": m!  over $10000 / over 1+ 1+ mw! mw! ;"));
@@ -931,7 +931,7 @@ void ok() {
 void dumpAll() { dumpCode(); dumpDict(); dumpRegs(); dumpStack(1); }
 void dumpCode() { push(0); fDUMPCODE(); }
 void dumpDict() { 
-    printStringF("\r\n; WORDS: LAST=%d", sys->LAST);
+    printStringF("\r\n; WORDS: LAST=%ld", sys->LAST);
     printStringF("\r\n  #   XT   d  f  l word");
     printStringF("\r\n---- ---- -- -- -- -----------------");
     for (int i = sys->LAST - 1; 0 <= i; i--) {
@@ -947,7 +947,7 @@ void dumpRegs() {
     }
 }
 void dumpStack(int hdr) {
-    if (hdr) { printStringF("\r\nStack: "); }
+    if (hdr) { printStringF("\r\nSTACK: "); }
     printString(" (");
     for (int i = 1; i <= sys->DSP; i++) {
         printStringF(" #%ld:$%lx", dstk[i], dstk[i]);
