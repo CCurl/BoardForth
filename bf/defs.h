@@ -34,7 +34,7 @@ typedef struct {
 typedef struct {
     CELL autoRun;
     BYTE currentDictId;
-    BYTE Reserved1;
+    BYTE S4Mode;
     BYTE Reserved2;
     BYTE Reserved3;
     CELL TIB;

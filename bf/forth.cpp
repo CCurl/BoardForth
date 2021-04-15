@@ -46,9 +46,12 @@ s4_word_t s4Words[] = {
     ,{".",  ".$20,"}, {"(.)", "."}
     ,{"space", "$20,"} ,{"cr", "$d,$a,"} ,{"tab", "$9,"}
     ,{"ap@", "AA@"} ,{"ap@", "AA!"} ,{"dp@", "AD@"} ,{"dp!", "AD!"}
-    ,{".si", "IA"} ,{".code", "IC"} ,{".words", "ID"} ,{".regs", "IR"} ,{".s", "IS"}
-    ,{"Ra", "Ra"} ,{"Rb", "Rb"} ,{"Rc", "Rc"} ,{"Rd", "Rd"} ,{"Re", "Re"}
-    ,{"Rf", "Rf"} ,{"Rg", "Rg"} ,{"Rh", "Rh"} ,{"Ri", "Ri"} ,{"Rj", "Rj"}
+    ,{".si", "IA"} ,{".ic", "IC"} ,{".iw", "ID"} ,{".ir", "IR"} ,{".s", "IS"}
+    ,{"Ra", "Ra"},{"Rb", "Rb"},{"Rc", "Rc"},{"Rd", "Rd"},{"Re", "Re"}
+    ,{"Rf", "Rf"},{"Rg", "Rg"},{"Rh", "Rh"},{"Ri", "Ri"},{"Rj", "Rj"}
+    ,{"Rk", "Rk"},{"Rl", "Rl"},{"Rm", "Rm"},{"Rn", "Rn"},{"Ro", "Ro"}
+    ,{"Rp", "Rp"},{"Rq", "Rq"},{"Rr", "Rr"},{"Rs", "Rs"},{"Rt", "Rt"}
+    ,{"Ru", "Ru"},{"Rv", "Rv"},{"Rw", "Rw"},{"Rx", "Rx"},{"Ry", "Ry"},{"Rz", "Rz"}
     ,{"R!", "R!"} ,{"R@", "R@"} ,{"R-", "R-"} ,{"R+", "R+"}
     ,{"R@+", "R@R+"}, {"R+@","R@R+"}
     ,{"R@-", "R@R-"}, {"R-@","R@R-"}
@@ -89,6 +92,27 @@ void s4PutAddress(CELL tgt, CELL val) {
 }
 
 int s4Parse(char* w) {
+    if (strcmp(w, "s4:") == 0) {
+        push(sys->STATE);
+        sys->STATE = 2;
+        return 1;
+    }
+
+    if (strcmp(w, ";s4") == 0) {
+        sys->STATE = pop();
+        return 1;
+    }
+
+    if (sys->STATE == 2) {
+        s4CompileString(w);
+        return 1;
+    }
+
+    if (reg[18] == 4) {
+        (sys->STATE) ? s4CompileString(w) : s4RunString(w);
+        return 1;
+    }
+
     s4_word_t* p = s4Find(w);
     if (p) {
         if (sys->STATE) {
