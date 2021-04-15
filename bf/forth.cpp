@@ -1,15 +1,26 @@
-#include "board.h"
-#ifndef __DEV_BOARD__
-#include <windows.h>
-int analogRead(int p) { return 0; }
-int analogWrite(int p, int v) { return 0; }
-int digitalRead(int p) { return 0; }
-int digitalWrite(int p, int v) { return 0; }
-void pinMode(int p, int m) {}
-long millis() { return GetTickCount(); }
+// forth.cpp
+
+#ifdef __DEV_BOARD__
+    #include "defs.h"
+    #define PM_INPUT INPUT
+#else __DEV_BOARD__
+    #include <windows.h>
+    #include "defs.h"
+    int analogRead(int p)          { printStringF("-analogRead(%d)-", p);         return 0; }
+    int analogWrite(int p, int v)  { printStringF("-analogWrite(%d,%d)-", p, v);  return 0; }
+    int digitalRead(int p)         { printStringF("-digitalRead(%d)-", p);        return 0; }
+    int digitalWrite(int p, int v) { printStringF("-digitalWrite(%d,%d)-", p, v); return 0; }
+    void pinMode(int p, int m)     { printStringF("-pinMode(%d,%d)-", p, m); }
+    long millis() { return GetTickCount(); }
+    void loadSource(const char* source);
+    typedef unsigned int uint;
+    typedef unsigned long ulong;
+    #define INPUT_PULLUP 1
+    #define INPUT_PULLDOWN 2
+    #define PM_INPUT 3
+    #define OUTPUT 4
 #endif
 
-#include "defs.h"
 #pragma warning(disable: 4996)
 
 CELL* dstk;
@@ -24,29 +35,27 @@ CELL PC;
 
 typedef struct {
     char name[16];
-    char codes[8];
+    char codes[12];
 } s4_word_t;
 
-s4_word_t s4Words[] = {
+s4_word_t s4Macros[] = {
      {"mod", "%"}
     ,{"negate", "$0S-"}
     ,{"-",  "-"}, {"+",  "+"} ,{"*",  "*"} ,{"/",  "/"}
     ,{"1-", "1-"} ,{"1+", "1+"}
     ,{"<",  "<"} ,{"<=",  "<="} ,{"=",  "="} ,{"<>",  "<>"} ,{">=",  ">="} ,{">",  ">"}
-    ,{"and",  "&"} ,{"or",  "|"}
-    ,{"dup", "#"} ,{"drop", "\\"}
-    ,{"swap", "S"} ,{"over", "O"}
-    ,{"nip", "S\\"} ,{"tuck", "SO"}
-    ,{"c@", "c@"} ,{"w@", "w@"} ,{"@",  "@"}
+    ,{"and",  "&"} ,{"or",  "|"} ,{"xor",  "^"} ,{"not",  "~"}
+    ,{"dup", "#"} ,{"drop", "\\"} ,{"swap", "S"} ,{"over", "O"} ,{"nip", "S\\"} ,{"tuck", "SO"}
+    ,{"c@", "C@"} ,{"w@", "w@"} ,{"@",  "@"}
     ,{"c!", "c!"} ,{"w!", "w!"} ,{"!",  "!"}
     ,{"tick", "T"}
-    ,{"fopen", "FO"} ,{"fclose", "FC"}
-    ,{"leave", ";"}
     ,{"emit", ","}
+    ,{"fopen", "FO"} ,{"fclose", "FC"}
+    ,{"leave", ";"}, {"words", "Id"}
     ,{".",  ".$20,"}, {"(.)", "."}
     ,{"space", "$20,"} ,{"cr", "$d,$a,"} ,{"tab", "$9,"}
     ,{"ap@", "AA@"} ,{"ap@", "AA!"} ,{"dp@", "AD@"} ,{"dp!", "AD!"}
-    ,{".si", "IA"} ,{".ic", "IC"} ,{".iw", "ID"} ,{".ir", "IR"} ,{".s", "IS"}
+    ,{".si", "IA"} ,{".ic", "IC"} ,{".iw", "ID"} ,{".ir", "IR"} ,{".s", "Is"}
     ,{"Ra", "Ra"},{"Rb", "Rb"},{"Rc", "Rc"},{"Rd", "Rd"},{"Re", "Re"}
     ,{"Rf", "Rf"},{"Rg", "Rg"},{"Rh", "Rh"},{"Ri", "Ri"},{"Rj", "Rj"}
     ,{"Rk", "Rk"},{"Rl", "Rl"},{"Rm", "Rm"},{"Rn", "Rn"},{"Ro", "Ro"}
@@ -56,6 +65,7 @@ s4_word_t s4Words[] = {
     ,{"R@+", "R@R+"}, {"R+@","R@R+"}
     ,{"R@-", "R@R-"}, {"R-@","R@R-"}
     ,{"mc@", "M@"}, {"mc!", "M!"}
+    ,{"s4", "$4RsR!"}
     ,{"", ""}
 };
 
@@ -75,9 +85,9 @@ void s4RunString(const char* str) {
     run(xt, 0);
 }
 
-s4_word_t* s4Find(char* w) {
+s4_word_t* s4FindMacro(char* w) {
     for (int i = 0; ; i++) {
-        s4_word_t* p = &s4Words[i];
+        s4_word_t* p = &s4Macros[i];
         if (p->name[0] == 0) { return 0; }
         if (strcmp(p->name, w) == 0) {
             return p;
@@ -92,6 +102,12 @@ void s4PutAddress(CELL tgt, CELL val) {
 }
 
 int s4Parse(char* w) {
+    if (reg[18] == 4) {
+        if (strcmp(w, "forth") == 0) { reg[18] = 0; }
+        else { (sys->STATE) ? s4CompileString(w) : s4RunString(w); }
+        return 1;
+    }
+
     if (strcmp(w, "s4:") == 0) {
         push(sys->STATE);
         sys->STATE = 2;
@@ -108,12 +124,7 @@ int s4Parse(char* w) {
         return 1;
     }
 
-    if (reg[18] == 4) {
-        (sys->STATE) ? s4CompileString(w) : s4RunString(w);
-        return 1;
-    }
-
-    s4_word_t* p = s4Find(w);
+    s4_word_t* p = s4FindMacro(w);
     if (p) {
         if (sys->STATE) {
             s4CompileString(p->codes);
@@ -121,8 +132,9 @@ int s4Parse(char* w) {
         else {
             s4RunString(p->codes);
         }
+        return 1;
     }
-    return (p) ? 1 : 0;
+    return 0;
 }
 
 int doQuote(int pc) {
@@ -148,7 +160,8 @@ void run(CELL pc, CELL max_cycles) {
         case 0: pc = -1; break;                                  // 0
         case ' ': break;                                    // 32
         case '!': t1 = pop(); t2 = pop();
-            cellStore(t1, t2);          break;              // 33
+            if (inAddrSpace(t1)) { cellStore(t1, t2); }
+            break;              // 33
         case '"': pc = doQuote(pc);     break;              // 34
         case '#': push(T);              break;              // 35
         case '$': pc = s4NumberAt(pc);  break;              // 36
@@ -198,15 +211,12 @@ void run(CELL pc, CELL max_cycles) {
             else if ((t1 == 'D') && (t2 == '@')) { T = digitalRead(T); }
             else if ((t1 == 'D') && (t2 == '!')) { int p = pop(), v = pop();  digitalWrite(p, v); }
             break;
-        case 'B': break;
+        case 'B': break;   /* *** FREE ***  */
         case 'C': t1 = dict[pc++];
-            if (t1 == '@') { if ((0 <= T) && (T < DICT_SZ)) { T = dict[T]; } }
-            if (t1 == '!') { t1 = pop(); t2 = pop(); if ((0 <= t1) && (t1 < DICT_SZ)) { dict[t1] = (byte)t2; } }
+            if (t1 == '@') { T = (inAddrSpace(T)) ? dict[T] : 0; }
+            if (t1 == '!') { t1 = pop(); t2 = pop(); if (inAddrSpace(t1)) { dict[t1] = (byte)t2; } }
             break;
-        case 'D': t1 = dict[pc++];
-            if (t1 == 'R') { T = digitalRead(T); }
-            if (t1 == 'W') { t2 = pop(); t1 = pop(); digitalWrite(t2, t1); }
-            break;
+        case 'D': break;   /* *** FREE ***  */
         case 'E': break;   /* *** FREE ***  */
         case 'F': t1 = dict[pc++];
             //if (t1 == 'O') { pc = doFileOpen(pc, "rb"); }
@@ -222,9 +232,11 @@ void run(CELL pc, CELL max_cycles) {
         case 'I': t1 = dict[pc++];
             if (t1 == 'A') { dumpAll(); }
             if (t1 == 'C') { dumpCode(); }
-            if (t1 == 'D') { dumpDict(); }
+            if (t1 == 'D') { dumpDict(1); }
+            if (t1 == 'd') { dumpDict(0); }
             if (t1 == 'R') { dumpRegs(); }
             if (t1 == 'S') { dumpStack(1); }
+            if (t1 == 's') { dumpStack(0); }
             break;
         case 'J': t1 = dict[pc++];
             if (t1 == 'J') { pc = addrAt(pc); }
@@ -242,10 +254,10 @@ void run(CELL pc, CELL max_cycles) {
         case 'N': break;   /* *** FREE ***  */
         case 'O': push(N); break;
         case 'P': t1 = dict[pc++]; t2 = pop();
-            if (t1 == 'I') { pinMode(t2, 1); }
-            if (t1 == 'U') { pinMode(t2, 2); }
-            if (t1 == 'D') { pinMode(t2, 3); }
-            if (t1 == 'O') { pinMode(t2, 4); }
+            if (t1 == 'I') { pinMode(t2, PM_INPUT); }
+            if (t1 == 'U') { pinMode(t2, INPUT_PULLUP); }
+            if (t1 == 'D') { pinMode(t2, INPUT_PULLDOWN); }
+            if (t1 == 'O') { pinMode(t2, OUTPUT); }
             break;
         case 'Q': break;   /* *** FREE ***  */
         case 'R': t1 = dict[pc++];
@@ -346,7 +358,12 @@ void printStringF(const char* fmt, ...) {
     printString(buf);
 }
 
+int inAddrSpace(CELL loc) {
+    return ((0 <= loc) && (loc < DICT_SZ)) ? 1 : 0;
+}
+
 CELL cellAt(CELL loc) {
+    if (!inAddrSpace(loc)) { return 0; }
 #ifdef __NEEDS_ALIGN__
     return (dict[loc + 3] << 24) | (dict[loc + 2] << 16) | (dict[loc + 1] << 8) | dict[loc];
 #else
@@ -355,6 +372,7 @@ CELL cellAt(CELL loc) {
 }
 
 CELL wordAt(CELL loc) {
+    if (!inAddrSpace(loc)) { return 0; }
 #ifdef __NEEDS_ALIGN__
     return (dict[loc + 1] << 8) | dict[loc];
 #else
@@ -426,7 +444,7 @@ void fDUMPCODE() {
                 (CELL)dp->XT, (int)dp->dictionaryId, (fl >> 6), (fl & 0x1F), dp->name);
         }
     }
-    fprintf(to, "\r\n\r\n; CODE: HERE=%04lx (%ld)", sys->HERE, sys->HERE);
+    fprintf(to, "\r\n\r\n; CODE: HERE=%04lx (%ld), FREE: %lu", sys->HERE, sys->HERE, (sys->RSTACK - sys->HERE));
     for (int i = 0; i < sys->HERE; i++) {
         if (i % 16 == 0) {
             if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
@@ -458,76 +476,6 @@ int interpreting(char* w, int errIfNot) {
     return (sys->STATE == 0) ? 1 : 0;
 }
 
-void fWSTORE() {       // opcode #9
-    CELL addr = pop();
-    CELL val = pop();
-    wordStore(addr, val);
-}
-void fASTORE() {       // opcode #10
-    (ADDR_SZ == 2) ? fWSTORE() : fSTORE();
-}
-void fSTORE() {        // opcode #11
-    CELL addr = pop();
-    CELL val = pop();
-    if ((0 <= addr) && ((addr + 4) < DICT_SZ)) {
-        cellStore(addr, val);
-        return;
-    }
-    printStringF("Invalid address: %ld ($%04lX)", addr);
-}
-void fCCOMMA() {       // opcode #12
-    dict[sys->HERE++] = (BYTE)pop();
-}
-void fWCOMMA() {       // opcode #13
-    WORD x = (WORD)pop();
-    wordStore(sys->HERE, x);
-    sys->HERE += WORD_SZ;
-}
-void fCOMMA() {        // opcode #14
-    CELL x = pop();
-    cellStore(sys->HERE, x);
-    sys->HERE += CELL_SZ;
-}
-void fACOMMA() {       // opcode #15
-    (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA();
-}
-void fSWAP() {         // opcode #24
-    CELL t = T; T = N; N = t;
-}
-void fEMIT() {
-    char buf[2];
-    buf[0] = (BYTE)pop();
-    buf[1] = 0;
-    printString(buf);
-}
-void fTYPE() {
-    CELL n = pop();
-    CELL a = pop();
-    // printStringF("-t:%d:%d-", n, a);
-    char x[2];
-    x[1] = 0;
-    for (int i = 0; i < n; i++) {
-        x[0] = dict[a++];
-        printString(x);
-    }
-}
-void fDOTS() {
-    if (sys->DSP) {
-        printString("(");
-        for (int i = 1; i <= sys->DSP; i++) {
-            push(' '); fEMIT();
-            push(dstk[i]);
-            push(0);
-            fNUM2STR();
-            fTYPE();
-        }
-        printString(" )");
-    }
-    else {
-        printString("()");
-    }
-}
-BYTE getOpcode(char* word) { return 0xFF; }
 void fPARSEWORD() {    // opcode #59
     char s4[16];
     CELL wa = pop(), t1;
@@ -772,10 +720,8 @@ void fNUM2STR() {
     push(len);
 }
 
-void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
-void WCOMMA(WORD v) { push(v); fWCOMMA(); }
-void COMMA(CELL v) { push(v); fCOMMA(); }
-void ACOMMA(ADDR v) { push(v); fACOMMA(); }
+void CCOMMA(BYTE v) { dict[sys->HERE++] = v; }
+
 
 BYTE nextChar() {
     if (dict[sys->TOIN]) return dict[sys->TOIN++];
@@ -947,14 +893,24 @@ void loadUserWords() {
 }
 
 void ok() {
-    printString(" ok. ");
-    fDOTS();
+    if (reg[18] == 4) { printString(" s4 "); }
+    else { printString(" ok "); }
+    dumpStack(0);
     printString("\r\n");
 }
 
-void dumpAll() { dumpCode(); dumpDict(); dumpRegs(); dumpStack(1); }
+void dumpAll() { dumpCode(); dumpDict(1); dumpRegs(); dumpStack(1); }
 void dumpCode() { push(0); fDUMPCODE(); }
-void dumpDict() { 
+void dumpDict(int hdr) { 
+    if (!hdr) {
+        int n = 0;
+        for (int i = sys->LAST - 1; 0 <= i; i--) {
+            DICT_T* dp = &words[i];
+            if (++n == 8) { n = 0; printString("\r\n"); }
+            printStringF("%s\t", dp->name);
+        }
+        return;
+    }
     printStringF("\r\n; WORDS: LAST=%ld", sys->LAST);
     printStringF("\r\n  #   XT   d  f  l word");
     printStringF("\r\n---- ---- -- -- -- -----------------");

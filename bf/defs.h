@@ -80,23 +80,12 @@ typedef struct {
 
 #define ADDR_HERE_BASE  (CELL_SZ*12)
 
-extern BYTE IR;
-extern CELL PC;
-extern int DSP, RSP;
-extern CELL HERE, LAST;
-extern CELL* dstk, * rstk;
-extern CELL BASE, STATE;
-extern FP prims[];
 extern BYTE dict[];
 extern SYSVARS_T* sys;
-extern CELL toIn;
-extern CELL allocAddrBase;
-extern CELL allocCurFree;
-extern int loopDepth;
 
 void dumpAll();
 void dumpCode();
-void dumpDict();
+void dumpDict(int);
 void dumpRegs();
 void dumpStack(int);
 void vmInit();
@@ -105,23 +94,14 @@ CELL pop();
 void rpush(CELL);
 CELL rpop();
 void run(CELL, CELL);
-CELL allocSpace(int);
-void allocFree(CELL);
 CELL stringToDict(char*, CELL);
-BYTE getOpcode(char*);
-CELL align2(CELL);
-CELL align4(CELL);
 BYTE nextChar();
 void is_hex(char*);
 void is_decimal(char*);
 void is_binary(char*);
 void CCOMMA(BYTE v);
-void WCOMMA(WORD v);
-void COMMA(CELL v);
-void ACOMMA(ADDR v);
 void parseLine(char*);
 void loadBaseSystem();
-BYTE getOpcode(char* w);
 void printString(const char* str);
 void printStringF(const char* fmt, ...);
 void loadUserWords();
@@ -130,18 +110,13 @@ void autoRun();
 CELL cellAt(CELL);
 CELL wordAt(CELL);
 CELL addrAt(CELL);
-void fDUMPCODE();
+int inAddrSpace(CELL);
 void wordStore(CELL addr, CELL val);
 void cellStore(CELL addr, CELL val);
 void addrStore(CELL addr, CELL val);
-void genOpcodeWords();
 CELL s4NumberAt(CELL);
 CELL s4addrAt(CELL);
 
-void fSTORE();           // OP_STORE
-void fEMIT();            // OP_EMIT
-void fTYPE();            // OP_TYPE
-void fDOTS();            // OP_DOTS
 void fPARSEWORD();       // OP_PARSEWORD
 void fPARSELINE();       // OP_PARSELINE
 void fCREATE();          // OP_CREATE
@@ -149,5 +124,6 @@ void fFIND();            // OP_FIND
 void fNEXTWORD();        // OP_NEXTWORD
 void fISNUMBER();        // OP_ISNUMBER
 void fNUM2STR();         // OP_NUM2STR
+void fDUMPCODE();
 
 #endif // __DEFS_H__
