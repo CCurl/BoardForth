@@ -14,13 +14,13 @@
     void loadSource(const char* source);
     typedef unsigned int uint;
     typedef unsigned long ulong;
-    #define INPUT_PULLUP 1
-    #define INPUT_PULLDOWN 2
-    #define PM_INPUT 3
+    #define PM_INPUT 1
+    #define INPUT_PULLUP 2
+    #define INPUT_PULLDOWN 3
     #define OUTPUT 4
+    #pragma warning(disable: 4996)
 #endif
 
-#pragma warning(disable: 4996)
 
 CELL* dstk;
 CELL* rstk;
@@ -34,7 +34,7 @@ CELL PC;
 
 typedef struct {
     char name[16];
-    char codes[12];
+    char codes[16];
 } s4_word_t;
 
 s4_word_t s4Macros[] = {
@@ -53,19 +53,19 @@ s4_word_t s4Macros[] = {
     ,{"leave", ";"}, {"words", "Id"}
     ,{".",  ".$20,"}, {"(.)", "."}
     ,{"space", "$20,"} ,{"cr", "$d,$a,"} ,{"tab", "$9,"}
-    ,{"ap@", "}A@"} ,{"ap!", "}A!"} ,{"dp@", "}D@"} ,{"dp!", "}D!"}
     ,{".si", "IA"} ,{".ic", "IC"} ,{".iw", "ID"} ,{".ir", "IR"} ,{".s", "Is"}
-    ,{"Ra", "Ra"},{"Rb", "Rb"},{"Rc", "Rc"},{"Rd", "Rd"},{"Re", "Re"}
-    ,{"Rf", "Rf"},{"Rg", "Rg"},{"Rh", "Rh"},{"Ri", "Ri"},{"Rj", "Rj"}
-    ,{"Rk", "Rk"},{"Rl", "Rl"},{"Rm", "Rm"},{"Rn", "Rn"},{"Ro", "Ro"}
-    ,{"Rp", "Rp"},{"Rq", "Rq"},{"Rr", "Rr"},{"Rs", "Rs"},{"Rt", "Rt"}
-    ,{"Ru", "Ru"},{"Rv", "Rv"},{"Rw", "Rw"},{"Rx", "Rx"},{"Ry", "Ry"},{"Rz", "Rz"}
-    ,{"R!", "R!"} ,{"R@", "R@"} ,{"R-", "R-"} ,{"R+", "R+"}
-    ,{"R@+", "R@R+"}, {"R+@","R@R+"}
-    ,{"R@-", "R@R-"}, {"R-@","R@R-"}
+    ,{"rA", "rA"},{"rB", "rB"},{"rC", "rC"},{"rD", "rD"},{"rE", "rE"}
+    ,{"rF", "rF"},{"rG", "rG"},{"rH", "rH"},{"rI", "rI"},{"rJ", "rJ"}
+    ,{"rK", "rK"},{"rL", "rL"},{"rM", "rM"},{"rN", "rN"},{"rO", "rO"}
+    ,{"rP", "rP"},{"rQ", "rQ"},{"rR", "rR"},{"rS", "rS"},{"rT", "rT"}
+    ,{"rU", "rU"},{"rV", "rV"},{"rW", "rW"},{"rX", "rX"},{"rY", "rY"},{"rZ", "rZ"}
+    ,{"r!", "r!"} ,{"r@", "r@"} ,{"r-", "r-"} ,{"r+", "r+"}
+    ,{"r@+", "r@r+"}, {"r+@","r@r+"}
+    ,{"r@-", "r@r-"}, {"r-@","r@r-"}
     ,{"mc@", "M@"}, {"mc!", "M!"}
-    ,{"input", "PI"} ,{"output", "PO"} ,{"pullup", "PU"} ,{"pulldown", "PD"}
-    ,{"s4", "$4RsR!"}
+    ,{"pin-input", "POI"} ,{"pin-output", "POO"} ,{"pin-pullup", "POU"} ,{"pin-pulldown", "POD"}
+    ,{"pin-a@", "PRA"} ,{"pin-d@", "PRD"} ,{"pin-a!", "PWA"} ,{"pin-d!", "PWD"}
+    ,{"s4", "$4rSr!"}
     ,{"", ""}
 };
 
@@ -146,18 +146,37 @@ int doQuote(int pc) {
     return pc+1;
 }
 
+int doPins(int pc) {
+    BYTE op = dict[pc++]; 
+    BYTE arg = dict[pc++];
+    CELL pin = pop();
+    if (op == 'O') { 
+        if (arg == 'I') { pinMode(pin, PM_INPUT); }
+        if (arg == 'U') { pinMode(pin, INPUT_PULLUP); }
+        if (arg == 'D') { pinMode(pin, INPUT_PULLDOWN); }
+        if (arg == 'O') { pinMode(pin, OUTPUT); }
+    } else if (op == 'R') {
+        if (arg == 'A') { push(analogRead(pin)); }
+        if (arg == 'D') { push(digitalRead(pin)); }
+    }
+    else if (op == 'W') {
+        CELL val = pop();
+        if (arg == 'A') { analogWrite(pin, val); }
+        if (arg == 'D') { digitalWrite(pin, val); }
+    }
+    return pc;
+}
+
 void run(CELL pc, CELL max_cycles) {
     CELL t1, t2;
     BYTE IR; //  , * a1;
     while (1) {
-        if (max_cycles) {
-            if (--max_cycles < 1) { return; }
-        }
+        if (max_cycles && (--max_cycles < 1)) { return; }
         if ((pc < 0) || (DICT_SZ <= pc)) { return; }
         IR = dict[pc++];
         // printStringF("\r\n-PC-%d/%lx:IR-%d/%x-", PC-1, PC-1, (int)IR, (unsigned int)IR); fDOTS();
         switch (IR) {
-        case 0: pc = -1; break;                                  // 0
+        case 0: pc = -1; break;                             // 0
         case ' ': break;                                    // 32
         case '!': t1 = pop(); t2 = pop();
             if (inAddrSpace(t1)) { cellStore(t1, t2); }
@@ -182,30 +201,29 @@ void run(CELL pc, CELL max_cycles) {
             if (t1 == '-') { ++pc; --T; }
             else { t1 = pop(); T -= t1; }
             break;
-        case '.': printStringF("%ld", pop());      break;   // 46
-        case '/': t1 = pop(); if (t1) { T /= t1; } break;   // 47
-        //case '0': case '1': case '2': case '3': case '4': // 47-57
+        case '.': printStringF("%ld", pop());      break;     // 46
+        case '/': t1 = pop(); T = (t1) ? T / t1 : -1; break;  // 47
+        //case '0': case '1': case '2': case '3': case '4':   // 48-57
         //case '5': case '6': case '7': case '8': case '9':
-        //    pc = doNumber(pc - 1); break;
-        case '1': t1 = dict[pc];                            // 49
+        case '1': t1 = dict[pc];                              // 49
             if (t1 == '-') { ++pc; --T; }
             if (t1 == '+') { ++pc; ++T; }
             break;
-        case ':': rpush(pc + 4); pc = s4addrAt(pc); break;           // 58
+        case ':': rpush(pc + 4); pc = s4addrAt(pc); break;  // 58
         case ';': pc = rpop(); break;                       // 59
-        case '<': t1 = dict[pc];  t2 = pop(); 
+        case '<': t1 = dict[pc];  t2 = pop();               // 60
             if (t1 == '=') { T = (T <= t2) ? -1 : 0; ++pc; }
             else if (t1 == '>') { T = (T != t2) ? -1 : 0; ++pc; }
             else { T = (T < t2) ? -1 : 0; }
-            break;  // 60
+            break;
         case '=': t2 = pop(); T = (T == t2) ? -1 : 0; break;  // 61
-        case '>': t1 = dict[pc]; t2 = pop(); 
+        case '>': t1 = dict[pc]; t2 = pop();                  // 62
             if (t1 == '=') { T = (T >= t2) ? -1 : 0; ++pc; }
             else { T = (T > t2) ? -1 : 0; }
-            break;  // 62
-        // case '?': push(_getch());                   break;  // 63
+            break;
+     // case '?': push(_getch());                   break;  // 63
         case '@': T = cellAt(T);                    break;  // 64
-        case 'A': break;   /* *** FREE ***  */              // 125
+        case 'A': break;   /* *** FREE ***  */
         case 'B': break;   /* *** FREE ***  */
         case 'C': t1 = dict[pc++];
             if (t1 == '@') { T = (inAddrSpace(T)) ? dict[T] : 0; }
@@ -248,20 +266,10 @@ void run(CELL pc, CELL max_cycles) {
             break;
         case 'N': break;   /* *** FREE ***  */
         case 'O': push(N); break;
-        case 'P': t1 = dict[pc++]; t2 = pop();
-            if (t1 == 'I') { pinMode(t2, PM_INPUT); }
-            if (t1 == 'U') { pinMode(t2, INPUT_PULLUP); }
-            if (t1 == 'D') { pinMode(t2, INPUT_PULLDOWN); }
-            if (t1 == 'O') { pinMode(t2, OUTPUT); }
+        case 'P': pc = doPins(pc);
             break;
         case 'Q': break;   /* *** FREE ***  */
-        case 'R': t1 = dict[pc++];
-            if (('a' <= t1) && (t1 <= 'z')) { curReg = t1 - 'a'; }
-            if (t1 == '@') { push(reg[curReg]); }
-            if (t1 == '!') { reg[curReg] = pop(); }
-            if (t1 == '+') { ++reg[curReg]; }
-            if (t1 == '-') { --reg[curReg]; }
-            break;
+        case 'R': break;   /* *** FREE ***  */
         case 'S': t1 = T; T = N; N = t1;   break;
         case 'T': push(millis()); break;
         case 'U': break;   /* *** FREE ***  */
@@ -278,24 +286,20 @@ void run(CELL pc, CELL max_cycles) {
         case '^': t1 = pop(); T ^= t1;  break;              // 94
         case '_': break;   /* *** FREE ***  */              // 95
         case '`': break;   /* *** FREE ***  */              // 96
+        // case 'a..z': break;   /* *** FREE ***  */              // 97-122
+        case 'r': t1 = dict[pc++];                          // 95
+            if (('A' <= t1) && (t1 <= 'Z')) { curReg = t1 - 'A'; }
+            if (t1 == '@') { push(reg[curReg]); }
+            if (t1 == '!') { reg[curReg] = pop(); }
+            if (t1 == '+') { ++reg[curReg]; }
+            if (t1 == '-') { --reg[curReg]; }
+            break;
         case '{': break;   /* *** FREE ***  */              // 123
         case '|': t1 = pop(); T |= t1; break;               // 124
-        case '}': t1 = dict[pc++]; t2 = dict[pc++];
-            if ((t1 == 'A') && (t2 == '@')) { T = analogRead(T); }
-            else if ((t1 == 'A') && (t2 == '!')) { int p = pop(), v = pop();  analogWrite(p, v); }
-            else if ((t1 == 'D') && (t2 == '@')) { T = digitalRead(T); }
-            else if ((t1 == 'D') && (t2 == '!')) { int p = pop(), v = pop();  digitalWrite(p, v); }
-            break;
+        case '}': break;   /* *** FREE ***  */              // 125
         case '~': T = ~T; break;                            // 126
         }
     }
-}
-
-void runOpcode(BYTE opcode) {
-    CELL xt = sys->HERE + 17;
-    dict[xt] = opcode;
-    dict[xt + 1] = ';';
-    run(xt, 0);
 }
 
 void autoRun() {
@@ -387,7 +391,7 @@ int s4Digit(BYTE c) {
     return -1;
 }
 
-CELL s4NumberAt(CELL loc) {         // opcode #16
+CELL s4NumberAt(CELL loc) {
     int d = s4Digit(dict[loc]);
     CELL r = 0;
     while (0 <= d) {
@@ -399,7 +403,7 @@ CELL s4NumberAt(CELL loc) {         // opcode #16
     return loc;
 }
 
-CELL s4addrAt(CELL loc) {         // opcode #16
+CELL s4addrAt(CELL loc) {
     CELL r = (s4Digit(dict[loc]) << 12);
     r |= (s4Digit(dict[loc + 1]) << 8);
     r |= (s4Digit(dict[loc + 2]) << 4);
@@ -407,7 +411,7 @@ CELL s4addrAt(CELL loc) {         // opcode #16
     return r;
 }
 
-CELL addrAt(CELL loc) {         // opcode #16
+CELL addrAt(CELL loc) {
     return (ADDR_SZ == 2) ? wordAt(loc) : cellAt(loc);
 }
 
@@ -452,8 +456,6 @@ void fPARSEWORD() {    // opcode #59
     if (pop()) {
         int dpi = pop();
         DICT_T* dp = &words[dpi];
-
-        // runOpcode(OP_GETXT);
         CELL xt = dp->XT;
         sprintf(s4, ":%04x", (WORD)xt);
         if (compiling(w, 0)) {
@@ -466,7 +468,7 @@ void fPARSEWORD() {    // opcode #59
     push(wa); fISNUMBER();
     if (pop()) {
         t1 = pop();
-        sprintf(s4, "$%lx", t1);
+        sprintf(s4, "$%lx ", t1);
         if (compiling(w, 0)) {
             s4CompileString(s4);
         }
@@ -572,6 +574,11 @@ void fPARSEWORD() {    // opcode #59
 }
 void fPARSELINE() {    // opcode #60
     sys->TOIN = pop();
+    if (reg[18] == 4) {
+        char* l = (char*)&dict[sys->TOIN];
+        s4Parse(l);
+        return;
+    }
     CELL buf = sys->HERE + 24;
     char* w = (char*)&dict[buf];
     push(buf);
@@ -594,7 +601,7 @@ void fCREATE() {       // opcode #64
     // printStringF("-define [%s] at %d (%lx)", name, sys->HERE, sys->HERE);
 
     if (WORDS_SZ <= sys->LAST) {
-        printStringF("-dict space overflow-");
+        printStringF("-dictionary overflow-");
         return;
     }
     DICT_T* dp = &words[sys->LAST++];
@@ -653,40 +660,7 @@ void fISNUMBER() {     // opcode #67
     if (sys->BASE == 2) { is_binary(w);  return; }
     push(0);
 }
-// OP_NUM2STR (#85)    : num>str ( n l -- a ) ... ;
-void fNUM2STR() {
-    BYTE reqLen = (BYTE)pop();
-    CELL val = pop();
-    int isNeg = ((val < 0) && (sys->BASE == 10));
-    ulong num = (isNeg) ? -val : val;
-    BYTE len = 0;
-    CELL cp = sys->HERE + 50;
-    dict[cp--] = (BYTE)0;
-    reqLen = (reqLen < 49) ? reqLen : 48;
-
-    do {
-        CELL r = (num % sys->BASE) + '0';
-        if ('9' < r) { r += 7; }
-        dict[cp--] = (BYTE)r;
-        len++;
-        num /= sys->BASE;
-    } while (num > 0);
-    if (isNeg) {
-        dict[cp--] = '-';
-        ++len;
-    }
-
-    while (len < reqLen) {
-        dict[cp--] = '0';
-        ++len;
-    }
-    dict[cp] = len;
-    push(cp + 1);
-    push(len);
-}
-
 void CCOMMA(BYTE v) { dict[sys->HERE++] = v; }
-
 
 BYTE nextChar() {
     if (dict[sys->TOIN]) return dict[sys->TOIN++];
@@ -761,28 +735,21 @@ void is_binary(char* word) {
     push(1);
 }
 
-CELL stringToDict(char* s, CELL to) {
-    // printStringF("-sd.%d", (int)to);
-    if (to == 0) { to = sys->HERE + 64; }
-    // printStringF(":%d-\r\n", (int)to);
-    CELL x = to;
-    while (*s) {
-        dict[x++] = *(s++);
+void parseLine(char* line) {
+    CELL x = sys->TIB;
+    while (*line) {
+        dict[x++] = *(line++);
     }
     dict[x] = 0;
-    return to;
-}
-
-void parseLine(char* line) {
-    stringToDict(line, sys->TIB);
     push(sys->TIB);
     fPARSELINE();
 }
 
 void loadBaseSystem() {
     char buf[32];
-    sprintf(buf, ": code $%lx ;", (ulong)&dict[0]); parseLine(buf);
-    sprintf(buf, ": dict $%lx ;", (ulong)&words[0]); parseLine(buf);
+    sprintf(buf, ": code %lu ;", (ulong)&dict[0]);  parseLine(buf);
+    sprintf(buf, ": dict %lu ;", (ulong)&words[0]); parseLine(buf);
+    sprintf(buf, ": code-sz %lu ;", (UCELL)DICT_SZ); parseLine(buf);
     loadSource(PSTR(": cell 4 ; : addr 2 ;"));
     loadSource(PSTR(": tib    #8 @ ;      : >in   #12 ;"));
     loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
@@ -809,21 +776,9 @@ void loadBaseSystem() {
 
 void loadUserWords() {
     char* buf = (char*)&dict[sys->HERE + 256];
-    sprintf(buf, ": code $%lx ;", (UCELL)&dict[0]);
-    parseLine(buf);
-    sprintf(buf, ": code-sz %lu ;", (UCELL)DICT_SZ);
-    parseLine(buf);
     // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
     // parseLine(buf);
 /*
-// 10 general purpose registers
-// variable regs 10 allot \
-// variable $r 0 $r ! \
-// : cur$r dup 0 10 between if $r ! else drop then ; \
-// : $r! $r @ regs + ! ; \
-// : $r@ $r @ regs + @ ; \
-// : $r@+ $r@ $r@ 1+ $r! ; \
-
 // dc: dump code
 // : d1 base @ $10 = if space .2 else . then ; \
 // : d16 0 #16 do dup here < if dup c@ d1 then 1+ loop ; \
@@ -911,8 +866,9 @@ void dumpDict(int hdr) {
 }
 
 void dumpRegs() {
+    printStringF("\r\n; REGISTERS:"); 
     for (int i = 0; i < 26; i++) {
-        printStringF("%s%c: %ld", ((i%8) == 0) ? "\r\n" : "\t", ('a'+i), reg[i]);
+        printStringF("%sr%c: %ld", ((i%8) == 0) ? "\r\n" : "\t", ('A'+i), reg[i]);
     }
 }
 
