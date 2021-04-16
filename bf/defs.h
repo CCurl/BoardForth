@@ -49,12 +49,6 @@ typedef struct {
     CELL RSP;
 } SYSVARS_T;
 
-//typedef struct {
-//    CELL addr;
-//    BYTE available;
-//    WORD sz;
-//} ALLOC_T;
-
 #define ADDR_AUTORUN    (CELL_SZ*0)
 #define ADDR_RES_1      (CELL_SZ*1)
 #define ADDR_TIB        (CELL_SZ*2)

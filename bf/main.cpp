@@ -88,7 +88,7 @@ void rtrim(char* str) {
 
 void writeDict(FILE *to) {
     to = to ? to : stdout;
-    fprintf(to, "; WORDS: LAST=%ld", sys->LAST);
+    fprintf(to, "\r\n\r\n; WORDS: LAST=%ld", sys->LAST);
     fprintf(to, "\r\n  #   XT   d  f  l word");
     fprintf(to, "\r\n---- ---- -- -- -- -----------------");
     for (int i = sys->LAST - 1; 0 <= i; i--) {
@@ -102,7 +102,7 @@ void writeDict(FILE *to) {
 void writeCode(FILE *to) {
     char x[32];
     int n = 0;
-    fprintf(to, "\r\n; CODE: HERE=%04lx (%ld), FREE: %lu", sys->HERE, sys->HERE, (sys->RSTACK - sys->HERE));
+    fprintf(to, "; CODE: HERE=%04lx (%ld), FREE: %lu", sys->HERE, sys->HERE, (sys->RSTACK - sys->HERE));
     for (int i = 0; i < sys->HERE; i++) {
         if (i % 16 == 0) {
             if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
@@ -140,6 +140,7 @@ int main() {
     FILE *fp = fopen("vm-dump.txt", "wb");
     if (fp) {
         writeCode(fp);
+        writeDict(fp);
         fclose(fp);
     }
     // printStringF("\r\n");
