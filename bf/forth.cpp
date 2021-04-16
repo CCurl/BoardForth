@@ -45,15 +45,15 @@ s4_word_t s4Macros[] = {
     ,{"<",  "<"} ,{"<=",  "<="} ,{"=",  "="} ,{"<>",  "<>"} ,{">=",  ">="} ,{">",  ">"}
     ,{"and",  "&"} ,{"or",  "|"} ,{"xor",  "^"} ,{"not",  "~"}
     ,{"dup", "#"} ,{"drop", "\\"} ,{"swap", "S"} ,{"over", "O"} ,{"nip", "S\\"} ,{"tuck", "SO"}
-    ,{"c@", "C@"} ,{"w@", "w@"} ,{"@",  "@"}
-    ,{"c!", "c!"} ,{"w!", "w!"} ,{"!",  "!"}
+    ,{"c@", " C@"} ,{"w@", "w@"} ,{"@",  "@"}
+    ,{"c!", " C!"} ,{"w!", "W!"} ,{"!",  "!"}
     ,{"tick", "T"}
     ,{"emit", ","}
     ,{"fopen", "FO"} ,{"fclose", "FC"}
     ,{"leave", ";"}, {"words", "Id"}
     ,{".",  ".$20,"}, {"(.)", "."}
     ,{"space", "$20,"} ,{"cr", "$d,$a,"} ,{"tab", "$9,"}
-    ,{"ap@", "AA@"} ,{"ap@", "AA!"} ,{"dp@", "AD@"} ,{"dp!", "AD!"}
+    ,{"ap@", "}A@"} ,{"ap!", "}A!"} ,{"dp@", "}D@"} ,{"dp!", "}D!"}
     ,{".si", "IA"} ,{".ic", "IC"} ,{".iw", "ID"} ,{".ir", "IR"} ,{".s", "Is"}
     ,{"Ra", "Ra"},{"Rb", "Rb"},{"Rc", "Rc"},{"Rd", "Rd"},{"Re", "Re"}
     ,{"Rf", "Rf"},{"Rg", "Rg"},{"Rh", "Rh"},{"Ri", "Ri"},{"Rj", "Rj"}
@@ -205,12 +205,7 @@ void run(CELL pc, CELL max_cycles) {
             break;  // 62
         // case '?': push(_getch());                   break;  // 63
         case '@': T = cellAt(T);                    break;  // 64
-        case 'A': t1 = dict[pc++]; t2 = dict[pc++];
-            if ((t1 == 'A') && (t2 == '@')) { T = analogRead(T); }
-            else if ((t1 == 'A') && (t2 == '!')) { int p = pop(), v = pop();  analogWrite(p, v); }
-            else if ((t1 == 'D') && (t2 == '@')) { T = digitalRead(T); }
-            else if ((t1 == 'D') && (t2 == '!')) { int p = pop(), v = pop();  digitalWrite(p, v); }
-            break;
+        case 'A': break;   /* *** FREE ***  */              // 125
         case 'B': break;   /* *** FREE ***  */
         case 'C': t1 = dict[pc++];
             if (t1 == '@') { T = (inAddrSpace(T)) ? dict[T] : 0; }
@@ -285,7 +280,12 @@ void run(CELL pc, CELL max_cycles) {
         case '`': break;   /* *** FREE ***  */              // 96
         case '{': break;   /* *** FREE ***  */              // 123
         case '|': t1 = pop(); T |= t1; break;               // 124
-        case '}': break;   /* *** FREE ***  */              // 125
+        case '}': t1 = dict[pc++]; t2 = dict[pc++];
+            if ((t1 == 'A') && (t2 == '@')) { T = analogRead(T); }
+            else if ((t1 == 'A') && (t2 == '!')) { int p = pop(), v = pop();  analogWrite(p, v); }
+            else if ((t1 == 'D') && (t2 == '@')) { T = digitalRead(T); }
+            else if ((t1 == 'D') && (t2 == '!')) { int p = pop(), v = pop();  digitalWrite(p, v); }
+            break;
         case '~': T = ~T; break;                            // 126
         }
     }
