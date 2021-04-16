@@ -1,11 +1,10 @@
 // forth.cpp
 
+#include "defs.h"
+
 #ifdef __DEV_BOARD__
-    #include "defs.h"
     #define PM_INPUT INPUT
-#else __DEV_BOARD__
-    #include <windows.h>
-    #include "defs.h"
+#else
     int analogRead(int p)          { printStringF("-analogRead(%d)-", p);         return 0; }
     int analogWrite(int p, int v)  { printStringF("-analogWrite(%d,%d)-", p, v);  return 0; }
     int digitalRead(int p)         { printStringF("-digitalRead(%d)-", p);        return 0; }
@@ -65,6 +64,7 @@ s4_word_t s4Macros[] = {
     ,{"R@+", "R@R+"}, {"R+@","R@R+"}
     ,{"R@-", "R@R-"}, {"R-@","R@R-"}
     ,{"mc@", "M@"}, {"mc!", "M!"}
+    ,{"input", "PI"} ,{"output", "PO"} ,{"pullup", "PU"} ,{"pulldown", "PD"}
     ,{"s4", "$4RsR!"}
     ,{"", ""}
 };
@@ -425,41 +425,6 @@ void cellStore(CELL addr, CELL val) {
 
 void addrStore(CELL addr, CELL val) {
     (ADDR_SZ == 2) ? wordStore(addr, val) : cellStore(addr, val);
-}
-
-void fDUMPCODE() {
-    char x[32];
-    int n = 0;
-    FILE* to = (FILE*)pop();
-    to = to ? to : stdout;
-
-    if (to != stdout) {
-        fprintf(to, "; WORDS: LAST=%ld", sys->LAST);
-        fprintf(to, "\r\n  #   XT   d  f  l word");
-        fprintf(to, "\r\n---- ---- -- -- -- -----------------");
-        for (int i = sys->LAST - 1; 0 <= i; i--) {
-            DICT_T* dp = &words[i];
-            int fl = dp->flagsLen;
-            fprintf(to, "\r\n%4d %04lx %2d %2d %2d %s", i,
-                (CELL)dp->XT, (int)dp->dictionaryId, (fl >> 6), (fl & 0x1F), dp->name);
-        }
-    }
-    fprintf(to, "\r\n\r\n; CODE: HERE=%04lx (%ld), FREE: %lu", sys->HERE, sys->HERE, (sys->RSTACK - sys->HERE));
-    for (int i = 0; i < sys->HERE; i++) {
-        if (i % 16 == 0) {
-            if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
-            fprintf(to, "\r\n%04x:", i);
-            n = 0;
-        }
-        BYTE b = dict[i];
-        x[n++] = ((31 < b) && (b < 128)) ? b : '.';
-        fprintf(to, " %02x", dict[i]);
-    }
-    for (int i = sys->HERE; i < DICT_SZ; i++) {
-        if (i % 16 == 0) { break; }
-        fprintf(to, "   ");
-    }
-    if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
 }
 
 int compiling(char* w, int errIfNot) {
@@ -900,7 +865,30 @@ void ok() {
 }
 
 void dumpAll() { dumpCode(); dumpDict(1); dumpRegs(); dumpStack(1); }
-void dumpCode() { push(0); fDUMPCODE(); }
+
+void dumpCode() {
+    char x[32];
+    int n = 0;
+    int c = 15;
+
+    printStringF("\r\n; CODE: HERE=%04lx (%ld), FREE: %lu", sys->HERE, sys->HERE, (sys->RSTACK - sys->HERE));
+    for (int i = 0; i < sys->HERE; i++) {
+        if (++c == 16) {
+            if (n) { x[n] = 0; printStringF(" ; %s", x); }
+            printStringF("\r\n%04x:", i);
+            n = 0;
+            c = 0;
+        }
+        BYTE b = dict[i];
+        x[n++] = ((31 < b) && (b < 128)) ? b : '.';
+        printStringF(" %02x", dict[i]);
+    }
+    for (int i = c; i < 15; i++) {
+        printStringF("   ");
+    }
+    if (n) { x[n] = 0; printStringF(" ; %s", x); }
+}
+
 void dumpDict(int hdr) { 
     if (!hdr) {
         int n = 0;
@@ -921,11 +909,13 @@ void dumpDict(int hdr) {
             (CELL)dp->XT, (int)dp->dictionaryId, (fl >> 6), (fl & 0x1F), dp->name);
     }
 }
+
 void dumpRegs() {
     for (int i = 0; i < 26; i++) {
         printStringF("%s%c: %ld", ((i%8) == 0) ? "\r\n" : "\t", ('a'+i), reg[i]);
     }
 }
+
 void dumpStack(int hdr) {
     if (hdr) { printStringF("\r\nSTACK: "); }
     printString(" (");

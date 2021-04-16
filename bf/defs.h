@@ -55,16 +55,6 @@ typedef struct {
 //    WORD sz;
 //} ALLOC_T;
 
-typedef struct {
-    char name[16];
-    byte opcode;
-    byte makeWord;
-} OPCODE_T;
-
-typedef struct {
-    CELL from, to, i;
-} LOOPINFO_T;
-
 #define ADDR_AUTORUN    (CELL_SZ*0)
 #define ADDR_RES_1      (CELL_SZ*1)
 #define ADDR_TIB        (CELL_SZ*2)
@@ -81,6 +71,7 @@ typedef struct {
 #define ADDR_HERE_BASE  (CELL_SZ*12)
 
 extern BYTE dict[];
+extern DICT_T words[];
 extern SYSVARS_T* sys;
 
 void dumpAll();

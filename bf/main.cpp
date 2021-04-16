@@ -1,7 +1,4 @@
-#include "board.h"
-#ifndef __DEV_BOARD__
-#include <windows.h>
-#endif
+// main.cpp
 
 #include "defs.h"
 #pragma warning(disable: 4996)
@@ -89,6 +86,40 @@ void rtrim(char* str) {
     while ((l > 0) && (str[l - 1] < 33)) str[--l] = 0;
 }
 
+void writeDict(FILE *to) {
+    to = to ? to : stdout;
+    fprintf(to, "; WORDS: LAST=%ld", sys->LAST);
+    fprintf(to, "\r\n  #   XT   d  f  l word");
+    fprintf(to, "\r\n---- ---- -- -- -- -----------------");
+    for (int i = sys->LAST - 1; 0 <= i; i--) {
+        DICT_T* dp = &words[i];
+        int fl = dp->flagsLen;
+        fprintf(to, "\r\n%4d %04lx %2d %2d %2d %s", i,
+            (CELL)dp->XT, (int)dp->dictionaryId, (fl >> 6), (fl & 0x1F), dp->name);
+    }
+}
+
+void writeCode(FILE *to) {
+    char x[32];
+    int n = 0;
+    fprintf(to, "\r\n; CODE: HERE=%04lx (%ld), FREE: %lu", sys->HERE, sys->HERE, (sys->RSTACK - sys->HERE));
+    for (int i = 0; i < sys->HERE; i++) {
+        if (i % 16 == 0) {
+            if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
+            fprintf(to, "\r\n%04x:", i);
+            n = 0;
+        }
+        BYTE b = dict[i];
+        x[n++] = ((31 < b) && (b < 128)) ? b : '.';
+        fprintf(to, " %02x", dict[i]);
+    }
+    for (int i = sys->HERE; i < DICT_SZ; i++) {
+        if (i % 16 == 0) { break; }
+        fprintf(to, "   ");
+    }
+    if (n) { x[n] = 0; fprintf(to, " ; %s", x); }
+}
+
 void repl() {
     char* tib = (char*)&dict[sys->TIB];
     while (1) {
@@ -108,9 +139,7 @@ int main() {
     repl();
     FILE *fp = fopen("vm-dump.txt", "wb");
     if (fp) {
-        push((CELL)fp);
-        push((CELL)fp);
-        fDUMPCODE();
+        writeCode(fp);
         fclose(fp);
     }
     // printStringF("\r\n");
