@@ -99,6 +99,9 @@ int inAddrSpace(CELL);
 void wordStore(CELL addr, CELL val);
 void cellStore(CELL addr, CELL val);
 void addrStore(CELL addr, CELL val);
+CELL doNumber(CELL);
+int isNumber(char *);
+CELL s4Number(CELL, int);
 CELL s4NumberAt(CELL);
 CELL s4addrAt(CELL);
 

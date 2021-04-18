@@ -11,16 +11,16 @@
     void printSerial(const char *);
     void loadSource(const char *source);
     #define __NEEDS_ALIGN__
-    #define DICT_SZ (16*1024)
+    #define DICT_SZ (64*1024)
     #define STK_SZ 32
-    #define TIB_SZ 0x0100
-    #define WORDS_SZ 256
+    #define TIB_SZ 0x0400
+    #define WORDS_SZ 0x200
 #else
     #include <windows.h>
     #define DICT_SZ (64*1024)
     #define STK_SZ 32
     #define TIB_SZ 0x0400
-    #define WORDS_SZ 256
+    #define WORDS_SZ 0x200
     #define F(str) (char *)str
     #define PSTR(str) (char *)str
 #endif

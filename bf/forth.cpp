@@ -39,20 +39,20 @@ typedef struct {
 
 s4_word_t s4Macros[] = {
      {"mod", "%"}
-    ,{"negate", "$0S-"}
+    ,{"negate", "n0-S-"}
     ,{"-",  "-"}, {"+",  "+"} ,{"*",  "*"} ,{"/",  "/"}
     ,{"1-", "1-"} ,{"1+", "1+"}
     ,{"<",  "<"} ,{"<=",  "<="} ,{"=",  "="} ,{"<>",  "<>"} ,{">=",  ">="} ,{">",  ">"}
     ,{"and",  "&"} ,{"or",  "|"} ,{"xor",  "^"} ,{"not",  "~"}
     ,{"dup", "#"} ,{"drop", "\\"} ,{"swap", "S"} ,{"over", "O"} ,{"nip", "S\\"} ,{"tuck", "SO"}
-    ,{"c@", " C@"} ,{"w@", "w@"} ,{"@",  "@"}
+    ,{"c@", "C@"} ,{"w@", "w@"} ,{"@",  "@"}
     ,{"c!", " C!"} ,{"w!", "W!"} ,{"!",  "!"}
     ,{"tick", "T"}
     ,{"emit", ","}
     ,{"fopen", "FO"} ,{"fclose", "FC"}
     ,{"leave", ";"}, {"words", "Id"}
-    ,{".",  ".$20,"}, {"(.)", "."}
-    ,{"space", "$20,"} ,{"cr", "$d,$a,"} ,{"tab", "$9,"}
+    ,{".",  ".h20,"}, {"(.)", "."}
+    ,{"space", "n32,"} ,{"cr", "hD,hA,"} ,{"tab", "n9,"}
     ,{".si", "IA"} ,{".ic", "IC"} ,{".iw", "ID"} ,{".ir", "IR"} ,{".s", "Is"}
     ,{"rA", "rA"},{"rB", "rB"},{"rC", "rC"},{"rD", "rD"},{"rE", "rE"}
     ,{"rF", "rF"},{"rG", "rG"},{"rH", "rH"},{"rI", "rI"},{"rJ", "rJ"}
@@ -65,7 +65,7 @@ s4_word_t s4Macros[] = {
     ,{"mc@", "M@"}, {"mc!", "M!"}
     ,{"pin-input", "POI"} ,{"pin-output", "POO"} ,{"pin-pullup", "POU"} ,{"pin-pulldown", "POD"}
     ,{"pin-a@", "PRA"} ,{"pin-d@", "PRD"} ,{"pin-a!", "PWA"} ,{"pin-d!", "PWD"}
-    ,{"s4", "$4rSr!"}
+    ,{"s4", "n4rSr!"}
     ,{"", ""}
 };
 
@@ -169,35 +169,36 @@ int doPins(int pc) {
 
 void run(CELL pc, CELL max_cycles) {
     CELL t1, t2;
-    BYTE IR; //  , * a1;
+    char b[2];
+    b[1] = 0;
     while (1) {
         if (max_cycles && (--max_cycles < 1)) { return; }
         if ((pc < 0) || (DICT_SZ <= pc)) { return; }
-        IR = dict[pc++];
+        b[0] = dict[pc++];
         // printStringF("\r\n-PC-%d/%lx:IR-%d/%x-", PC-1, PC-1, (int)IR, (unsigned int)IR); fDOTS();
-        switch (IR) {
+        switch (b[0]) {
         case 0: pc = -1; break;                             // 0
         case ' ': break;                                    // 32
-        case '!': t1 = pop(); t2 = pop();
+        case '!': t1 = pop(); t2 = pop();                   // 33
             if (inAddrSpace(t1)) { cellStore(t1, t2); }
-            break;              // 33
+            break;
         case '"': pc = doQuote(pc);     break;              // 34
         case '#': push(T);              break;              // 35
-        case '$': pc = s4NumberAt(pc);  break;              // 36
+        case '$': break;   /* *** FREE ***  */              // 36
         case '%': t1 = pop(); T %= t1;  break;              // 37
         case '&': t1 = pop(); T &= t1;  break;              // 38
         case '\'': push(dict[pc++]);    break;              // 39
-        case '(': if (pop() == 0) { pc = addrAt(pc); }
+        case '(': if (pop() == 0) { pc = addrAt(pc); }      // 40
                 else { pc += ADDR_SZ; }
-            break;              // 40
-        // case ')': /*maybe ELSE?*/       break;              // 41
+            break;
+        case ')': break; /* *** FREE *** */                 // 41
         case '*': t1 = pop(); T *= t1;  break;              // 42
         case '+': t1 = dict[pc];                            // 43
             if (t1 == '+') { ++pc;  ++T; }
             else { t1 = pop(); T += t1; }
             break;
-        case ',': printStringF("%c", (char)pop());  break;  // 44
-        case '-': t1 = dict[pc];                            // 45
+        case ',': b[0] = pop()&0xFF; printString(b); break;  // 44
+        case '-': t1 = dict[pc];                             // 45
             if (t1 == '-') { ++pc; --T; }
             else { t1 = pop(); T -= t1; }
             break;
@@ -216,8 +217,8 @@ void run(CELL pc, CELL max_cycles) {
             else if (t1 == '>') { T = (T != t2) ? -1 : 0; ++pc; }
             else { T = (T < t2) ? -1 : 0; }
             break;
-        case '=': t2 = pop(); T = (T == t2) ? -1 : 0; break;  // 61
-        case '>': t1 = dict[pc]; t2 = pop();                  // 62
+        case '=': t2 = pop(); T = (T == t2) ? -1 : 0; break; // 61
+        case '>': t1 = dict[pc]; t2 = pop();                 // 62
             if (t1 == '=') { T = (T >= t2) ? -1 : 0; ++pc; }
             else { T = (T > t2) ? -1 : 0; }
             break;
@@ -264,7 +265,7 @@ void run(CELL pc, CELL max_cycles) {
             if (t1 == '@') { T = *((byte*)T); }
             if (t1 == '!') { *((byte*)T) = (N & 0xFF); }
             break;
-        case 'N': break;   /* *** FREE ***  */
+        case 'N': pc = doNumber(pc); break;
         case 'O': push(N); break;
         case 'P': pc = doPins(pc);
             break;
@@ -278,7 +279,7 @@ void run(CELL pc, CELL max_cycles) {
         case 'X': t1 = dict[pc++]; if (t1 == 'X') { vmInit(); } break;
         case 'Y': break;   /* *** FREE ***  */
         case 'Z': break;   /* *** FREE ***  */
-        case '[': rpush(pc); break;                   // 91
+        case '[': rpush(pc); break;                         // 91
         case '\\': pop(); break;                            // 92
         case ']': if (T) { pc = R; }                        // 93
                 else { pop(); rpop(); }
@@ -286,8 +287,10 @@ void run(CELL pc, CELL max_cycles) {
         case '^': t1 = pop(); T ^= t1;  break;              // 94
         case '_': break;   /* *** FREE ***  */              // 95
         case '`': break;   /* *** FREE ***  */              // 96
-        // case 'a..z': break;   /* *** FREE ***  */              // 97-122
-        case 'r': t1 = dict[pc++];                          // 95
+        // case 'a..z': break;   /* *** FREE ***  */        // 97-122
+        case 'h': pc = s4Number(pc, 16); break;
+        case 'n': pc = s4Number(pc, 10); break;
+        case 'r': t1 = dict[pc++];                          // 114
             if (('A' <= t1) && (t1 <= 'Z')) { curReg = t1 - 'A'; }
             if (t1 == '@') { push(reg[curReg]); }
             if (t1 == '!') { reg[curReg] = pop(); }
@@ -303,7 +306,7 @@ void run(CELL pc, CELL max_cycles) {
 }
 
 void autoRun() {
-    CELL addr = addrAt(0);
+    CELL addr = addrAt(0);  
     if (addr) {
         run(addr, 0);
     }
@@ -391,8 +394,33 @@ int s4Digit(BYTE c) {
     return -1;
 }
 
-CELL s4NumberAt(CELL loc) {
+CELL doNumber(CELL pc) {
+    BYTE n = dict[pc++];
+    push(dict[pc++]);
+    if (n > '1') {
+        T |= (dict[pc++] << 8);
+    }
+    if (n > '2') {
+        T |= (dict[pc++] << 16);
+        T |= (dict[pc++] << 24);
+    }
+    return pc;
+}
+
+CELL hexNumberAt(CELL loc) {
     int d = s4Digit(dict[loc]);
+    CELL r = 0;
+    while (0 <= d) {
+        r = (r << 4) + d;
+        ++loc;
+        d = s4Digit(dict[loc]);
+    }
+    push(r);
+    return loc;
+}
+
+CELL numberAt(CELL loc) {
+    int d = isdigit(dict[loc]);
     CELL r = 0;
     while (0 <= d) {
         r = (r << 4) + d;
@@ -465,14 +493,25 @@ void fPARSEWORD() {    // opcode #59
         return;
     }
 
-    push(wa); fISNUMBER();
-    if (pop()) {
-        t1 = pop();
-        sprintf(s4, "$%lx ", t1);
+    if (isNumber(w)) {
         if (compiling(w, 0)) {
-            s4CompileString(s4);
+            t1 = pop();
+            CCOMMA('N');
+            if ((0 <= t1) && (t1 <= 0xFF)) {
+                CCOMMA('1');
+                CCOMMA((BYTE)t1);
+            } else if ((0x0100 <= t1) && (t1 <= 0xFFFF)) {
+                CCOMMA('2');
+                CCOMMA(t1 & 0xff);
+                CCOMMA((t1 >> 8) & 0xFF);
+            } else {
+                CCOMMA('4');
+                CCOMMA(t1 & 0xFF);
+                CCOMMA((t1 >> 8) & 0xFF);
+                CCOMMA((t1 >> 16) & 0xFF);
+                CCOMMA((t1 >> 24) & 0xFF);
+            }
         }
-        else { s4RunString(s4); }
         return;
     }
 
@@ -496,7 +535,7 @@ void fPARSEWORD() {    // opcode #59
         t1 = pop();
         s4CompileString("JJ");
         push(sys->HERE);
-        s4CompileString("00)E(");
+        s4CompileString("00");
         s4PutAddress(t1, sys->HERE);
         return;
     }
@@ -641,98 +680,55 @@ void fNEXTWORD() {     // opcode #66
     dict[to] = 0;
     push(len);
 }
-void fISNUMBER() {     // opcode #67
-    CELL wa = pop();
-    char* w = (char*)&dict[wa];
-
-    if ((*w == '\'') && (*(w + 2) == '\'') && (*(w + 3) == 0)) {
-        push(*(w + 1));
-        push(1);
-        return;
+int isDigit(char c, int base) {
+    char min = '0', max = min + base - 1;
+    max = (base == 2) ? '1' : max;
+    if ((min <= c) && (c <= max)) { return c - '0'; }
+    if (base == 16) {
+        if (('a' <= c) && (c <= 'f')) { return c - 'a' + 10; }
+        if (('A' <= c) && (c <= 'F')) { return c - 'A' + 10; }
+    }
+    return -1;
+}
+int isNumber(char *w) {
+    if ((*w == '\'') && (*(w+2) == '\'') && (*(w+3) == 0)) {
+        push(*(w+1));
+        return 1;
     }
 
-    if (*w == '#') { is_decimal(w + 1); return; }
-    if (*w == '$') { is_hex(w + 1);     return; }
-    if (*w == '%') { is_binary(w + 1);  return; }
+    int base = sys->BASE;
+    CELL num = 0, isNeg = 0;
 
-    if (sys->BASE == 10) { is_decimal(w); return; }
-    if (sys->BASE == 16) { is_hex(w);     return; }
-    if (sys->BASE == 2) { is_binary(w);  return; }
+    if (*w == '#') { w++; base = 10; }
+    if (*w == '$') { w++; base = 16; }
+    if (*w == '%') { w++; base =  2; }
+    if ((*w == '-') && (base == 10)) { w++; isNeg = 1; }
+
+    while (*w) {
+        int n = isDigit(*w, base);
+        if (n < 0) { return 0; }
+        num = (num * base) + n;
+        ++w;
+    }
+
+    if (isNeg) { num = -num; }
+    push(num);
+    return 1;
+}
+CELL s4Number(CELL pc, int base) {
+    int c = isDigit(dict[pc], base);
     push(0);
+    while (0 <= c) {
+        T = (T*base) + c;
+        c = isDigit(dict[++pc], base);
+    }
+    return pc;
 }
 void CCOMMA(BYTE v) { dict[sys->HERE++] = v; }
 
 BYTE nextChar() {
     if (dict[sys->TOIN]) return dict[sys->TOIN++];
     return 0;
-}
-
-void is_hex(char* word) {
-    CELL num = 0;
-    if (*word == (char)0) { push(0); return; }
-    while (*word) {
-        char c = *(word++);
-        if ((c >= '0') && (c <= '9')) {
-            num = (num << 4) + (c - '0');
-            continue;
-        }
-        if ((c >= 'A') && (c <= 'F')) {
-            num = (num << 4) + ((c + 10) - 'A');
-            continue;
-        }
-        if ((c >= 'a') && (c <= 'f')) {
-            num = (num << 4) + ((c + 10) - 'a');
-            continue;
-        }
-        push(0);
-        return;
-    }
-    push((CELL)num);
-    push(1);
-}
-
-void is_decimal(char* word) {
-    long num = 0;
-    int is_neg = 0;
-    if (*word == '-') {
-        word++;
-        is_neg = 1;
-    }
-    if (*word == (char)0) { push(0); return; }
-    while (*word) {
-        char c = *(word++);
-        if ((c >= '0') && (c <= '9')) {
-            num *= 10;
-            num += (c - '0');
-        }
-        else {
-            push(0);
-            return;
-        }
-    }
-
-    num = is_neg ? -num : num;
-    push((CELL)num);
-    push(1);
-}
-
-void is_binary(char* word) {
-    CELL num = 0;
-    if (*word == (char)0) { push(0); return; }
-    while (*word) {
-        char c = *(word++);
-        if ((c >= '0') && (c <= '1')) {
-            num *= 2;
-            num += (c - '0');
-        }
-        else {
-            push(0);
-            return;
-        }
-    }
-
-    push((CELL)num);
-    push(1);
 }
 
 void parseLine(char* line) {
