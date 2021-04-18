@@ -202,7 +202,7 @@ void run(CELL pc, CELL max_cycles) {
             if (t1 == '-') { ++pc; --T; }
             else { t1 = pop(); T -= t1; }
             break;
-        case '.': printStringF("%ld", pop());      break;     // 46
+        case '.': t1 = pop(); doNumOut(t1, sys->BASE); break; // 46
         case '/': t1 = pop(); T = (t1) ? T / t1 : -1; break;  // 47
         //case '0': case '1': case '2': case '3': case '4':   // 48-57
         //case '5': case '6': case '7': case '8': case '9':
@@ -392,6 +392,22 @@ int s4Digit(BYTE c) {
     if (('A' <= c) && (c <= 'F')) return (c + 10) - 'A';
     if (('a' <= c) && (c <= 'f')) return (c + 10) - 'a';
     return -1;
+}
+
+void doNumOut(CELL num, int base) {
+    if (num == 0) { printString("0"); return; }
+    int isNeg = ((base == 10) && (num < 0)) ? 1 : 0;
+    if (isNeg) { num = -num; }
+    char buf[36], *cp = buf+35;
+    *(cp) = 0;
+    while (num) {
+        int r = num % base;
+        if ((10 < base) && (9 < r)) { r += 7; }
+        *(--cp) = r + '0';
+        num = num / base;
+    }
+    if (isNeg) { *(--cp); }
+    printString(cp);
 }
 
 CELL doNumber(CELL pc) {
@@ -741,72 +757,6 @@ void parseLine(char* line) {
     fPARSELINE();
 }
 
-void loadBaseSystem() {
-    char buf[32];
-    sprintf(buf, ": code %lu ;", (ulong)&dict[0]);  parseLine(buf);
-    sprintf(buf, ": dict %lu ;", (ulong)&words[0]); parseLine(buf);
-    sprintf(buf, ": code-sz %lu ;", (UCELL)DICT_SZ); parseLine(buf);
-    loadSource(PSTR(": cell 4 ; : addr 2 ;"));
-    loadSource(PSTR(": tib    #8 @ ;      : >in   #12 ;"));
-    loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
-    loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
-    loadSource(PSTR(": base  #24 ;        : state #28 ;"));
-    loadSource(PSTR(": sp0   #32 @ ;      // : rp0   #36 @ ;"));
-    loadSource(PSTR(": (dsp) #40 ;        : dsp (dsp) @ ;"));
-    loadSource(PSTR(": (rsp) #44 ;        : rsp (rsp) @ ;"));
-    loadSource(PSTR(": !sp 0 (dsp) ! ;    // : !rsp 0 (rsp) ! ;"));
-    loadSource(PSTR("// : cells 4 * ;        // : cell+ 4 + ;"));
-    loadSource(PSTR(": +! tuck @ + swap ! ;"));
-    loadSource(PSTR(": ?dup dup if dup then ;"));
-    loadSource(PSTR(": abs dup 0 < if negate then ;"));
-    loadSource(PSTR(": depth dsp 1- ;"));
-    loadSource(PSTR(": min over over < if drop else nip then ;"));
-    loadSource(PSTR(": max over over > if drop else nip then ;"));
-    // loadSource(PSTR(": between rot dup >r min max r> = ;"));
-    loadSource(PSTR(": count dup 1+ swap c@ ;"));
-    loadSource(PSTR(": type begin swap dup c@ emit 1+ swap 1- while drop ;"));
-    loadSource(PSTR(": mtype begin swap dup mc@ emit 1+ swap 1- while drop ;"));
-    loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
-    loadSource(PSTR(": allot here + (h) ! ;"));
-}
-
-void loadUserWords() {
-    char* buf = (char*)&dict[sys->HERE + 256];
-    // sprintf(buf, ": dpin-base #%ld ; : apin-base #%ld ;", (long)0, (long)A0);
-    // parseLine(buf);
-/*
-// dc: dump code
-// : d1 base @ $10 = if space .2 else . then ; \
-// : d16 0 #16 do dup here < if dup c@ d1 then 1+ loop ; \
-// : dc 0 begin cr dup .4 ':' emit d16 dup here < while drop ; \
-*/
-    // loadSource(PSTR(": m@  dup 1+ 1+ mw@ $10000 * swap mw@ or ;"));
-    // loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
-    // loadSource(PSTR(": m!  over $10000 / over 1+ 1+ mw! mw! ;"));
-    // loadSource(PSTR(": auto-run-last last >body 0 ! ;"));
-    // loadSource(PSTR(": auto-run-off 0 0 ! ;"));
-    // loadSource(PSTR(": d-code 0 here do i c@ dup .2 space dup 32 < if drop '.' then dup 126 > if drop '.' then emit space loop ;"));
-
-    loadSource(PSTR(": k 1000 * ; : mil k k ;"));
-    loadSource(PSTR(": elapsed tick swap - dup 1000 / . 1000 mod . ;"));
-    loadSource(PSTR(": bm tick swap begin 1- while elapsed ;"));
-    // loadSource(PSTR(": low->high over over > if swap then ;"));
-    // : dump+addr over . ':' space begin swap dup c@ space .2 1+ swap 1- while- ;
-    // loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    // loadSource(PSTR("variable (led)     : led (led) @ ; "));
-    // loadSource(PSTR("variable (pot)     : pot (pot) @ ; "));
-    // loadSource(PSTR("variable (button)  : button (button) @ ; "));
-    // loadSource(PSTR("variable (pot-lv)  : pot-lv (pot-lv) @ ; "));
-    // loadSource(PSTR("variable (pot-cv)  : pot-cv (pot-cv) @ ;"));
-    // loadSource(PSTR("variable (sens)    : sens (sens) @ ;"));
-    // loadSource(PSTR(": pot-val pot ap@ dup (pot-cv) ! ;"));
-    // loadSource(PSTR(": button->led button dp@ led dp! ;"));
-    // loadSource(PSTR(": .pot? pot-val pot-lv - abs sens > if pot-cv dup . cr (pot-lv) ! then ;"));
-    // loadSource(PSTR(": go button->led .pot? ;"));
-    // loadSource(PSTR(" 22 (led) ! 3 (pot) ! 6 (button) ! 4 (sens) !"));
-    // loadSource(PSTR("led output pot input button input"));
-    // loadSource(PSTR("auto-run-last"));
-}
 
 void ok() {
     if (reg[18] == 4) { printString(" s4 "); }
@@ -875,4 +825,68 @@ void dumpStack(int hdr) {
         printStringF(" #%ld:$%lx", dstk[i], dstk[i]);
     }
     printString(" )");
+}
+
+void loadBaseSystem() {
+    char buf[32];
+    sprintf(buf, ": code %lu ;", (ulong)&dict[0]);  parseLine(buf);
+    sprintf(buf, ": dict %lu ;", (ulong)&words[0]); parseLine(buf);
+    sprintf(buf, ": code-sz %lu ;", (UCELL)DICT_SZ); parseLine(buf);
+    loadSource(PSTR(": cell 4 ; : addr 2 ;"));
+    loadSource(PSTR(": tib    #8 @ ;      : >in   #12 ;"));
+    loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
+    loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
+    loadSource(PSTR(": base  #24 ;        : state #28 ;"));
+    loadSource(PSTR(": sp0   #32 @ ;      // : rp0   #36 @ ;"));
+    loadSource(PSTR(": (dsp) #40 ;        : dsp (dsp) @ ;"));
+    loadSource(PSTR(": (rsp) #44 ;        : rsp (rsp) @ ;"));
+    loadSource(PSTR(": !sp 0 (dsp) ! ;    // : !rsp 0 (rsp) ! ;"));
+    loadSource(PSTR("// : cells 4 * ;        // : cell+ 4 + ;"));
+    loadSource(PSTR(": +! tuck @ + swap ! ;"));
+    loadSource(PSTR(": ?dup dup if dup then ;"));
+    loadSource(PSTR(": abs dup 0 < if negate then ;"));
+    loadSource(PSTR(": depth dsp 1- ;"));
+    loadSource(PSTR(": min over over < if drop else nip then ;"));
+    loadSource(PSTR(": max over over > if drop else nip then ;"));
+    // loadSource(PSTR(": between rot dup >r min max r> = ;"));
+    loadSource(PSTR(": count dup 1+ swap c@ ;"));
+    loadSource(PSTR(": type begin swap dup c@ emit 1+ swap 1- while drop ;"));
+    loadSource(PSTR(": mtype begin swap dup mc@ emit 1+ swap 1- while drop ;"));
+    loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
+    loadSource(PSTR(": allot here + (h) ! ;"));
+}
+
+void loadUserWords() {
+    /*
+    // dc: dump code
+    // : d1 base @ $10 = if space .2 else . then ; \
+    // : d16 0 #16 do dup here < if dup c@ d1 then 1+ loop ; \
+    // : dc 0 begin cr dup .4 ':' emit d16 dup here < while drop ; \
+    */
+    // loadSource(PSTR(": m@  dup 1+ 1+ mw@ $10000 * swap mw@ or ;"));
+    // loadSource(PSTR(": mw! over   $100 / over 1+ mc! mc! ;"));
+    // loadSource(PSTR(": m!  over $10000 / over 1+ 1+ mw! mw! ;"));
+    // loadSource(PSTR(": auto-run-last last >body 0 ! ;"));
+    // loadSource(PSTR(": auto-run-off 0 0 ! ;"));
+    // loadSource(PSTR(": d-code 0 here do i c@ dup .2 space dup 32 < if drop '.' then dup 126 > if drop '.' then emit space loop ;"));
+
+    loadSource(PSTR(": k 1000 * ; : mil k k ;"));
+    loadSource(PSTR(": elapsed tick swap - dup 1000 / . 1000 mod . ;"));
+    loadSource(PSTR(": bm tick swap begin 1- while elapsed ;"));
+    // loadSource(PSTR(": low->high over over > if swap then ;"));
+    // : dump+addr over . ':' space begin swap dup c@ space .2 1+ swap 1- while- ;
+    // loadSource(PSTR(": dump low->high do i c@ . loop ;"));
+    // loadSource(PSTR("variable (led)     : led (led) @ ; "));
+    // loadSource(PSTR("variable (pot)     : pot (pot) @ ; "));
+    // loadSource(PSTR("variable (button)  : button (button) @ ; "));
+    // loadSource(PSTR("variable (pot-lv)  : pot-lv (pot-lv) @ ; "));
+    // loadSource(PSTR("variable (pot-cv)  : pot-cv (pot-cv) @ ;"));
+    // loadSource(PSTR("variable (sens)    : sens (sens) @ ;"));
+    // loadSource(PSTR(": pot-val pot ap@ dup (pot-cv) ! ;"));
+    // loadSource(PSTR(": button->led button dp@ led dp! ;"));
+    // loadSource(PSTR(": .pot? pot-val pot-lv - abs sens > if pot-cv dup . cr (pot-lv) ! then ;"));
+    // loadSource(PSTR(": go button->led .pot? ;"));
+    // loadSource(PSTR(" 22 (led) ! 3 (pot) ! 6 (button) ! 4 (sens) !"));
+    // loadSource(PSTR("led output pot input button input"));
+    // loadSource(PSTR("auto-run-last"));
 }

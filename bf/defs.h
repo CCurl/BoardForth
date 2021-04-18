@@ -101,6 +101,7 @@ void cellStore(CELL addr, CELL val);
 void addrStore(CELL addr, CELL val);
 CELL doNumber(CELL);
 int isNumber(char *);
+void doNumOut(CELL, int);
 CELL s4Number(CELL, int);
 CELL s4NumberAt(CELL);
 CELL s4addrAt(CELL);
