@@ -4,10 +4,6 @@
 #pragma warning(disable: 4996)
 
 void sysInit() {
-    printString("BoardForth v0.0.1 - Chris Curl\r\n");
-    printString("Source: https://github.com/CCurl/BoardForth \r\n");
-    printStringF("Dictionary size is: %d ($%04x) bytes.\r\n", (int)DICT_SZ, (int)DICT_SZ);
-    printStringF("Hello.");
     vmInit();
     loadBaseSystem();
     loadUserWords();

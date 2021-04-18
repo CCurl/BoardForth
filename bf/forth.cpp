@@ -889,4 +889,12 @@ void loadUserWords() {
     // loadSource(PSTR(" 22 (led) ! 3 (pot) ! 6 (button) ! 4 (sens) !"));
     // loadSource(PSTR("led output pot input button input"));
     // loadSource(PSTR("auto-run-last"));
+    char* buf = (char *) &dict[sys->HERE + 10];
+    loadSource("s4");
+    loadSource("\"BoardForth v0.0.1 - Chris Curl\"");
+    loadSource("n13,n10,\"Source: https://github.com/CCurl/BoardForth\"");
+    sprintf(buf, "n13,n10,\"Dictionary size is: %d ($%04x) bytes.\"n13,n10,", (int)DICT_SZ, (int)DICT_SZ);
+    loadSource(buf);
+    loadSource("\"Hello.\"");
+    loadSource("forth");
 }
