@@ -60,11 +60,11 @@ s4_word_t s4Macros[] = {
     ,{"rP", "rP"},{"rQ", "rQ"},{"rR", "rR"},{"rS", "rS"},{"rT", "rT"}
     ,{"rU", "rU"},{"rV", "rV"},{"rW", "rW"},{"rX", "rX"},{"rY", "rY"},{"rZ", "rZ"}
     ,{"r!", "r!"} ,{"r@", "r@"} ,{"r-", "r-"} ,{"r+", "r+"}
-    ,{"r@+", "r@r+"}, {"r+@","r@r+"}
-    ,{"r@-", "r@r-"}, {"r-@","r@r-"}
+    ,{"r@+", "r@r+"}, {"r+@","r+@r@"}
+    ,{"r@-", "r@r-"}, {"r-@","r-r@"}
     ,{"mc@", "M@"}, {"mc!", "M!"}
     ,{"pin-input", "POI"} ,{"pin-output", "POO"} ,{"pin-pullup", "POU"} ,{"pin-pulldown", "POD"}
-    ,{"pin-a@", "PRA"} ,{"pin-d@", "PRD"} ,{"pin-a!", "PWA"} ,{"pin-d!", "PWD"}
+    ,{"dp-read", "PRD"} ,{"dp-write", "PWD"} ,{"ap-read", "PRA"} ,{"ap-write", "PWA"}
     ,{"s4", "n4rSr!"}
     ,{"", ""}
 };
@@ -518,14 +518,10 @@ void fPARSEWORD() {    // opcode #59
                 CCOMMA((BYTE)t1);
             } else if ((0x0100 <= t1) && (t1 <= 0xFFFF)) {
                 CCOMMA('2');
-                CCOMMA(t1 & 0xff);
-                CCOMMA((t1 >> 8) & 0xFF);
+                WCOMMA((WORD)t1);
             } else {
                 CCOMMA('4');
-                CCOMMA(t1 & 0xFF);
-                CCOMMA((t1 >> 8) & 0xFF);
-                CCOMMA((t1 >> 16) & 0xFF);
-                CCOMMA((t1 >> 24) & 0xFF);
+                COMMA(t1);
             }
         }
         return;
@@ -595,6 +591,10 @@ void fPARSEWORD() {    // opcode #59
         if (pop()) {
             push(wa);
             fCREATE();
+            s4CompileString("N2");
+            WCOMMA((WORD)sys->HERE+3);
+            CCOMMA(';');
+            COMMA(0);
         }
         return;
     }
@@ -606,6 +606,9 @@ void fPARSEWORD() {    // opcode #59
         if (pop()) {
             push(wa);
             fCREATE();
+            s4CompileString("N4");
+            COMMA(pop());
+            CCOMMA(';');
         }
         return;
     }
@@ -740,7 +743,20 @@ CELL s4Number(CELL pc, int base) {
     }
     return pc;
 }
-void CCOMMA(BYTE v) { dict[sys->HERE++] = v; }
+
+void CCOMMA(BYTE v) {
+    dict[sys->HERE++] = v; 
+}
+void WCOMMA(WORD v) {
+    dict[sys->HERE++] = v & 0xFF; v = v >> 8;
+    dict[sys->HERE++] = v & 0xFF;
+}
+void COMMA(CELL v) {
+    dict[sys->HERE++] = v & 0xFF; v = v >> 8;
+    dict[sys->HERE++] = v & 0xFF; v = v >> 8;
+    dict[sys->HERE++] = v & 0xFF; v = v >> 8;
+    dict[sys->HERE++] = v & 0xFF;
+}
 
 BYTE nextChar() {
     if (dict[sys->TOIN]) return dict[sys->TOIN++];

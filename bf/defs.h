@@ -85,6 +85,8 @@ void is_hex(char*);
 void is_decimal(char*);
 void is_binary(char*);
 void CCOMMA(BYTE v);
+void WCOMMA(WORD v);
+void COMMA(CELL v);
 void parseLine(char*);
 void loadBaseSystem();
 void printString(const char* str);
