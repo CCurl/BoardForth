@@ -42,20 +42,21 @@ s4_word_t s4Macros[] = {
      {"CELL", "#4"} ,{"CELLS", "#4*"} ,{"WORD", "#2"} ,{"WORDS", "#2*"}
     ,{"mod", "%"} ,{"negate", "n0-S-"}
     ,{"-", "-"}, {"+", "+"} ,{"*", "*"} ,{"/", "/"}
-    ,{"1-", "1-"} ,{"1+", "1+"}
+    ,{"1-", "1-"} ,{"1+", "1+"}, {"8<<", "H<"}, {"8>>", "H>"}
     ,{"<", "<"} ,{"<=", "<="} ,{"=", "="} ,{"<>", "<>"} ,{">=", ">="} ,{">", ">"}
     ,{"and", "&"} ,{"or", "|"} ,{"xor", "^"} ,{"not", "~"}
     ,{"dup", "D"} ,{"drop", "\\"} ,{"swap", "S"} ,{"over", "O"} ,{"nip", "S\\"} ,{"tuck", "SO"}
-    ,{"c@", "C@"} ,{"@", "@"}
-    ,{"c!", "C!"} ,{"!", "!"}
+    ,{"c@", "C@"} ,{"@", "@"} ,{"c!", "C!"} ,{"!", "!"}
     ,{"tick", "T"}
     ,{"emit", ","}
-    ,{"fopen", "FO"} ,{"fclose", "FC"}
+    ,{"file-open", "FO"} ,{"file-close", "FC"} ,{"file-new", "FO"}
+    ,{"file-read", "FR"} ,{"file-write", "FW"}
     ,{"leave", ";"}, {"words", "Id"}
     ,{".", ".$20,"}, {"(.)", "."}
     ,{"space", "$20,"} ,{"cr", "$d,$a,"} ,{"tab", "#9,"}
     ,{".si", "IA"} ,{".ic", "IC"} ,{".iw", "ID"} ,{".ir", "IR"} ,{".s", "Is"}
     ,{"mc@", "M@"}, {"mc!", "M!"}
+    ,{">r", "R<"}, {"r>", "R>"}, {"r@", "R@"}
     ,{"pin-input", "POI"} ,{"pin-output", "POO"} ,{"pin-pullup", "POU"} ,{"pin-pulldown", "POD"}
     ,{"dp-read", "PRD"} ,{"dp-write", "PWD"} ,{"ap-read", "PRA"} ,{"ap-write", "PWA"}
     ,{"", ""}
@@ -230,7 +231,10 @@ void run(CELL pc, CELL max_cycles) {
             //if (t1 == 'T') { push(-1); }
             break;
         case 'G': break;   /* *** FREE ***  */
-        case 'H': T = (T << 8); break;
+        case 'H': t1 = dict[pc++]; 
+            if (t1 == '<') { T = (T << 8); }
+            if (t1 == '>') { T = (T >> 8); }
+            break;
         case 'I': t1 = dict[pc++];
             if (t1 == 'A') { dumpAll(); }
             if (t1 == 'C') { dumpCode(); }
@@ -258,7 +262,11 @@ void run(CELL pc, CELL max_cycles) {
         case 'P': pc = doPins(pc);
             break;
         case 'Q': break;   /* *** FREE ***  */
-        case 'R': break;   /* *** FREE ***  */
+        case 'R': t1 = dict[pc++];
+            if (t1 == '<') { rpush(pop()); }
+            if (t1 == '>') { push(rpop()); }
+            if (t1 == '@') { push(R); }
+            break;
         case 'S': t1 = T; T = N; N = t1;   break;
         case 'T': push(millis()); break;
         case 'U': break;   /* *** FREE ***  */

@@ -160,8 +160,10 @@
     <ClInclude Include="defs.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="bf-reference.txt" />
     <Text Include="history.txt" />
     <Text Include="vm-dump.txt" />
+    <Text Include="vm-reference.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="bf.ino" />
