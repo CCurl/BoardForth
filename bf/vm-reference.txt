@@ -41,7 +41,7 @@ NULL: stop running
 'FR':    file read (1 char)
 'FW':    file read (1 char)
 'G':  unused
-'H':  unused
+'H':  hundred: TOS = TOS * $100 (left shift 8)
 'IA': INFO: all
 'IC': INFO: code
 'ID': INFO: dictionary (long)
@@ -56,7 +56,8 @@ NULL: stop running
 'Jn': jump if TOS != 0 (no pop())
 'K':  TOS = TOS * 1000
 'L':  unused
-'M':  unused
+'M@': fetch from address (absolute, 8-bit)
+'M!': store to address   (absolute, 8-bit)
 'N1': number to stack (8-bit)
 'N2': number to stack (16-bit)
 'N4': number to stack (32-bit)
