@@ -230,7 +230,7 @@ void run(CELL pc, CELL max_cycles) {
             //if (t1 == 'T') { push(-1); }
             break;
         case 'G': break;   /* *** FREE ***  */
-        case 'H': break;   /* *** FREE ***  */
+        case 'H': T = (T << 8); break;
         case 'I': t1 = dict[pc++];
             if (t1 == 'A') { dumpAll(); }
             if (t1 == 'C') { dumpCode(); }
