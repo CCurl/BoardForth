@@ -53,3 +53,16 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+/bf/.vs/bf/v16
+/bf/Debug
+/bf/Release
+/zz-bf/.vs/bf/v16
+/bf/bf.user
+/bf/.vs
+/bf/f-dump.txt
+/bf/vm-dump.txt
+bf/bf.vcxproj.user
+vm-dump.txt
+/mf/Debug
+/mf/Release
+/mf/mf.vcxproj.user

@@ -1,5 +1,5 @@
 # BoardForth
-A token-threaded implementation of a Machine-Forth like VM for development boards, written in C.
+A Forth VM for development boards and the PC, written in C.
 
 It supports automatically running a user-defined word during the loop() phase of the arduino interface.
 
@@ -30,11 +30,11 @@ To deploy the VM to the development board:
 Notes:
 
     - This is a work in progress. I welcome collaboration.
-    - This is not an ANSI standard Forth. It is a subset of Forth83.
+    - This is not an ANSI standard Forth.
     - However, one could build an ANSI standard Forth using it if so desired.
-    - The data and return stack sizes are defaulted to 32 CELLS (32-bit). That can be easily changed in defs.h
+    - The data and return stack sizes are defaulted to 32 CELLS (32-bit). That can be easily changed in board.h
     - Addresses are 16-bit values, allowing for up to 64k of dictionary space. That is an awful lot of code.
-    - To add a primitive:
+    - To add an opcode (primitive):
         - Add a '#define XXX nnn // kkk' to the list in defs.h.
         - Create a function 'void fXXX() { ... }'  (usually in prims.cpp).
         - Put that function 'fXXX' into the big array of function pointers statement in prims.cpp.
@@ -44,28 +44,39 @@ Notes:
         - Deploy the VM as above.
         - Open up Serial Monitor.
         - Interactively code as usual, including defining new words as appropriate.
-        - When I know what I want to keep, I update the LoadUserWords() with amy new code.
+        - When I know what I want to keep, I update the LoadUserWords() with any new code.
         - If there is anything from the interactive session I want to use, I copy it from the SerialMonitor.
         - Rebuild and upload the project to the board, and the new functionality is now "built-in".
-    - I/O ports are simply addresses outside of the range of address for the dictionary.
 
-To control the internal LED (pin #13), do this:
+To control a LED connected to pin A4, you can do this:
 
-    - 13 output-pin
-    - : led 13 dPin# ;     \ defines a LED at pin #13
-    - : led-on 0 led ! ;
-    - : led-off 1 led ! ;
-    - led-on               \ the LED turns on
-    - led-off              \ the LED turns off
+    - : led 4 ; led output    \ name the LED at pin A4 and makes it an OUTPUT pin
+    - : led-on 1 led dp! ;
+    - : led-off 0 led dp! ;
+    - led-on                  \ the LED turns on
+    - led-off                 \ the LED turns off
 
-To read pin #36, do this:
+The standard 'blink' example program:
 
-    - 36 input-pin
-    - : myPin 36 dPin# ;     \ defines a pin at #36
-    - myPin @ .
+    - : i-led #13 ; i-led output       \ the internal LED is usually pin #13
+    - variable speed 500 speed !
+    - : blink 1 i-led dp! speed @ ms 0 i-led dp! speed @ ms ;
+    - auto-run-last                    \ the LED starts blining with a 500 ms interval
+    - auto-run-off                     \ the LED stops blining
 
-To turn on the LED depending on the value of whether another pin:
+To read a switch connected to pin D36, do this:
 
-    - : main myPin @ led ! ;      \ this turns the LED on or off depending on pin 36
-    - auto-run-last               \ now you can switch pin 36 on and off and the LED changes
-    - auto-run-off                \ the LED is no longer changed when pin 36 changes
+    - : sw 36 ; sw input
+    - sw dp@ .
+
+To read a potentiometer connected to pin A8, do this:
+
+    - : pot 8 ;
+    - pot input
+    - pot ap@ .
+
+To turn on the LED depending on the value of the above switch:
+
+    - : sw->led sw dp@ led dp! ;       \ this will turn the LED on or off depending on the switch at pin 36
+    - last >body auto-run              \ now when you flip the switch, the LED turns on or off
+    - 0 auto-run                       \ the LED no longer changes when the switch is flipped
