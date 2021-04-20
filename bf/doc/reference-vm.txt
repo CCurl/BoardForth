@@ -44,11 +44,11 @@ Registers: (x: a..z)
 
 Math:
 -----------------------
-'%':  modulo
-'*':  multiply
 '+':  add
 '-':  subtract
+'*':  multiply
 '/':  divide
+'%':  modulo
 
 
 Logical:
@@ -56,6 +56,7 @@ Logical:
 '<':  less than
 '<=': less than or equal to
 '=':  equal to
+'<>': not equal to
 '>=': greater than or equal to
 '>':  greater than
 
