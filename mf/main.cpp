@@ -2,7 +2,10 @@
 // main.c
 // ---------------------------------------------------------------------
 
+#include "board.h"
 #include "defs.h"
+
+#pragma warning(disable:4996)
 
 void parseLine(char *);
 int isBYE = 0;
@@ -62,8 +65,8 @@ void doHistory(char *l) {
 
 void loop() {
     ok();
-    gets(TIB);
-    if (strcmp(TIB, "bye") == 0) {
+    fgets(TIB, TIB_SZ, stdin);
+    if (strcmp(TIB, "bye\n") == 0) {
         isBYE = 1;
         return;
     }

@@ -2,7 +2,10 @@
 // forth.c
 // ---------------------------------------------------------------------
 
+#include "board.h"
 #include "defs.h"
+
+#pragma warning(disable:4996)
 
 int digitalRead(int pin) {return 0;}
 int analogRead(int pin) {return 0;}
@@ -538,7 +541,7 @@ void fFILL() {
     CELL num = pop();
     ADDR to = (ADDR)pop();
     while (num > 0) {
-        *(to++) = val;
+        *(to++) = (BYTE)val;
         num--;
     }
 }
