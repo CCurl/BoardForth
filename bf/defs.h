@@ -19,6 +19,7 @@ typedef unsigned char  BYTE;
 #define CELL_SZ (4)
 #define WORD_SZ (2)
 #define ADDR_SZ (2)
+#define BLOCK_SZ (1024)
 
 #define T dstk[sys->DSP]
 #define N dstk[sys->DSP-1]
@@ -97,6 +98,8 @@ int inAddrSpace(CELL);
 void wordStore(CELL addr, CELL val);
 void cellStore(CELL addr, CELL val);
 void addrStore(CELL addr, CELL val);
+void doBlockRead();
+void doBlockLoad();
 CELL doNumber(CELL);
 int isNumber(char *);
 void doNumOut(CELL, int);

@@ -168,7 +168,7 @@
   <ItemGroup>
     <None Include="bf.ino" />
     <None Include="make.bat" />
-    <None Include="pins.4th" />
+    <None Include="block-01.4th" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
