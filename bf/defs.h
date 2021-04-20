@@ -20,6 +20,7 @@ typedef unsigned char  BYTE;
 #define WORD_SZ (2)
 #define ADDR_SZ (2)
 #define BLOCK_SZ (1024)
+#define BLOCK_BASE (40*0x0400)
 
 #define T dstk[sys->DSP]
 #define N dstk[sys->DSP-1]
@@ -84,7 +85,7 @@ BYTE nextChar();
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
 void COMMA(CELL v);
-void parseLine(char*);
+void parseLine(const char*);
 void loadBaseSystem();
 void printString(const char* str);
 void printStringF(const char* fmt, ...);

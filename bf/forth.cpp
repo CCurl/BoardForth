@@ -320,7 +320,11 @@ void rpush(CELL v) {
     R = v;
 }
 CELL rpop() {
-    sys->RSP = (sys->RSP > 0) ? sys->RSP - 1 : 0;
+    if (sys->RSP < 1) {
+        sys->RSP = 0;
+        return -1;
+    }
+    sys->RSP--;
     return rstk[sys->RSP + 1];
 }
 
@@ -395,7 +399,7 @@ void doBlockRead() {
         push(0);
         return;
     }
-    CELL addr = (48 + blk) * BLOCK_SZ;
+    CELL addr = BLOCK_BASE + (blk * BLOCK_SZ);
     char* buf = (char*)&dict[addr];
     for (int i = 0; i < BLOCK_SZ; i++) {
         buf[i] = 0;
@@ -408,16 +412,17 @@ void doBlockRead() {
         push(addr);
         return;
     } 
+    printString("block-file not found.");
     push(0);
 }
 
 void doBlockLoad() {
     CELL blk = pop();
-    if ((blk < 1) || (15 < blk)) {
-        printString("block# must be 1-15");
+    if ((blk < 0) || (15 < blk)) {
+        printString("block# must be 0-15");
         return;
     }
-    CELL addr = (48 + blk) * BLOCK_SZ;
+    CELL addr = BLOCK_BASE + (blk * BLOCK_SZ);
     char* buf = (char *)&dict[addr];
     push(addr);
     fPARSELINE();
@@ -435,7 +440,7 @@ void doNumOut(CELL num, int base) {
         *(--cp) = r + '0';
         num = num / base;
     }
-    if (isNeg) { *(--cp); }
+    if (isNeg) { *(--cp) = '-'; }
     printString(cp);
 }
 
@@ -662,22 +667,23 @@ void fPARSEWORD() {    // opcode #59
 void fPARSELINE() {    // opcode #60
     sys->TOIN = pop();
     if (isS4Mode) {
-        char* l = (char*)&dict[sys->TOIN];
-        while (*l && (*l < 33)) { ++l; }
-        if (*l) s4Parse(l);
+        char *w = (char*)&dict[sys->TOIN];
+        s4Parse(w);
         return;
     }
-    CELL buf = sys->HERE + 24;
+    CELL buf = sys->HERE + 48;
     char* w = (char*)&dict[buf];
     push(buf);
     fNEXTWORD();
     while (pop()) {
         // printStringF("-pw:%s-", w);
-        if (strcmp(w, "//") == 0) { break; }
-        if (strcmp(w, "\\") == 0) { break; }
+        if (!isS4Mode) {
+            if (strcmp(w, "//") == 0) { break; }
+            if (strcmp(w, "\\") == 0) { break; }
+        }
         push(buf);
         fPARSEWORD();
-        buf = sys->HERE + 24;
+        buf = sys->HERE + 48;
         w = (char*)&dict[buf];
         push(buf);
         fNEXTWORD();
@@ -793,7 +799,7 @@ BYTE nextChar() {
     return 0;
 }
 
-void parseLine(char* line) {
+void parseLine(const char* line) {
     CELL x = sys->TIB;
     while (*line) {
         dict[x++] = *(line++);
@@ -875,31 +881,38 @@ void dumpStack(int hdr) {
 
 void loadBaseSystem() {
     char buf[32];
-    sprintf(buf, ": code %lu ;", (ulong)&dict[0]);  parseLine(buf);
-    sprintf(buf, ": dict %lu ;", (ulong)&words[0]); parseLine(buf);
-    sprintf(buf, ": code-sz %lu ;", (UCELL)DICT_SZ); parseLine(buf);
-    loadSource(PSTR(": cell 4 ; : addr 2 ;"));
-    loadSource(PSTR(": tib    #8 @ ;      : >in   #12 ;"));
-    loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
-    loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
-    loadSource(PSTR(": base  #24 ;        : state #28 ;"));
-    loadSource(PSTR(": sp0   #32 @ ;      // : rp0   #36 @ ;"));
-    loadSource(PSTR(": (dsp) #40 ;        : dsp (dsp) @ ;"));
-    loadSource(PSTR(": (rsp) #44 ;        : rsp (rsp) @ ;"));
-    loadSource(PSTR(": !sp 0 (dsp) ! ;    // : !rsp 0 (rsp) ! ;"));
-    loadSource(PSTR("// : cells 4 * ;        // : cell+ 4 + ;"));
-    loadSource(PSTR(": +! tuck @ + swap ! ;"));
-    loadSource(PSTR(": ?dup dup if dup then ;"));
-    loadSource(PSTR(": abs dup 0 < if negate then ;"));
-    loadSource(PSTR(": depth dsp 1- ;"));
-    loadSource(PSTR(": min over over < if drop else nip then ;"));
-    loadSource(PSTR(": max over over > if drop else nip then ;"));
-    // loadSource(PSTR(": between rot dup >r min max r> = ;"));
-    loadSource(PSTR(": count dup 1+ swap c@ ;"));
-    loadSource(PSTR(": type begin swap dup c@ emit 1+ swap 1- while drop ;"));
-    loadSource(PSTR(": mtype begin swap dup mc@ emit 1+ swap 1- while drop ;"));
-    loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
-    loadSource(PSTR(": allot here + (h) ! ;"));
+    sprintf(buf, ": code #%lu ;", (ulong)&dict[0]);  parseLine(buf);
+    sprintf(buf, ": dict #%lu ;", (ulong)&words[0]); parseLine(buf);
+    sprintf(buf, ": code-sz #%lu ;", (UCELL)DICT_SZ); parseLine(buf);
+    parseLine(": block-read s4 FR forth ;");
+    parseLine(": block-load s4 FL forth ;");
+    parseLine(": block-dump s4 #40+$400*a!$400[a@+C@,1-] forth ;");
+    parseLine(": load dup block-read if block-load leave then drop ;");
+
+    // parseLine("0 load");
+
+    //loadSource(PSTR(": cell 4 ; : addr 2 ;"));
+    //loadSource(PSTR(": tib    #8 @ ;      : >in   #12 ;"));
+    //loadSource(PSTR(": (h) #16 ;          : here (h) @ ;"));
+    //loadSource(PSTR(": (l) #20 ;          : last (l) @ ;"));
+    //loadSource(PSTR(": base  #24 ;        : state #28 ;"));
+    //loadSource(PSTR(": sp0   #32 @ ;      // : rp0   #36 @ ;"));
+    //loadSource(PSTR(": (dsp) #40 ;        : dsp (dsp) @ ;"));
+    //loadSource(PSTR(": (rsp) #44 ;        : rsp (rsp) @ ;"));
+    //loadSource(PSTR(": !sp 0 (dsp) ! ;    // : !rsp 0 (rsp) ! ;"));
+    //loadSource(PSTR("// : cells 4 * ;        // : cell+ 4 + ;"));
+    //loadSource(PSTR(": +! tuck @ + swap ! ;"));
+    //loadSource(PSTR(": ?dup dup if dup then ;"));
+    //loadSource(PSTR(": abs dup 0 < if negate then ;"));
+    //loadSource(PSTR(": depth dsp 1- ;"));
+    //loadSource(PSTR(": min over over < if drop else nip then ;"));
+    //loadSource(PSTR(": max over over > if drop else nip then ;"));
+    //// loadSource(PSTR(": between rot dup >r min max r> = ;"));
+    //loadSource(PSTR(": count dup 1+ swap c@ ;"));
+    //loadSource(PSTR(": type begin swap dup c@ emit 1+ swap 1- while drop ;"));
+    //loadSource(PSTR(": mtype begin swap dup mc@ emit 1+ swap 1- while drop ;"));
+    //loadSource(PSTR(": hex $10 base ! ; : decimal #10 base ! ; : binary 2 base ! ;"));
+    //loadSource(PSTR(": allot here + (h) ! ;"));
 }
 
 void loadUserWords() {
@@ -916,9 +929,9 @@ void loadUserWords() {
     // loadSource(PSTR(": auto-run-off 0 0 ! ;"));
     // loadSource(PSTR(": d-code 0 here do i c@ dup .2 space dup 32 < if drop '.' then dup 126 > if drop '.' then emit space loop ;"));
 
-    loadSource(PSTR(": k 1000 * ; : mil k k ;"));
-    loadSource(PSTR(": elapsed tick swap - dup 1000 / . 1000 mod . ;"));
-    loadSource(PSTR(": bm tick swap begin 1- while elapsed ;"));
+    //loadSource(PSTR(": k 1000 * ; : mil k k ;"));
+    //loadSource(PSTR(": elapsed tick swap - dup 1000 / . 1000 mod . ;"));
+    //loadSource(PSTR(": bm tick swap begin 1- while elapsed ;"));
     // loadSource(PSTR(": low->high over over > if swap then ;"));
     // : dump+addr over . ':' space begin swap dup c@ space .2 1+ swap 1- while- ;
     // loadSource(PSTR(": dump low->high do i c@ . loop ;"));
@@ -933,9 +946,7 @@ void loadUserWords() {
     // loadSource(PSTR(": .pot? pot-val pot-lv - abs sens > if pot-cv dup . cr (pot-lv) ! then ;"));
     // loadSource(PSTR(": go button->led .pot? ;"));
     // loadSource(PSTR(" 22 (led) ! 3 (pot) ! 6 (button) ! 4 (sens) !"));
-    // loadSource(PSTR("led output pot input button input"));
-    // loadSource(PSTR("auto-run-last"));
-    char* buf = (char *) &dict[sys->HERE + 10];
+    char* buf = (char *) &dict[sys->HERE + 48];
     loadSource("s4");
     loadSource("\"BoardForth v0.0.1 - Chris Curl\"");
     loadSource("$d,$a,\"Source: https://github.com/CCurl/BoardForth\"");

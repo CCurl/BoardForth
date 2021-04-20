@@ -167,6 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="bf.ino" />
+    <None Include="block-00.4th" />
     <None Include="make.bat" />
     <None Include="block-01.4th" />
   </ItemGroup>
