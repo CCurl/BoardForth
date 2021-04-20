@@ -1,68 +1,104 @@
-VM operations
+VM instruction set
 
-NULL: stop running
-' ':  no-op
-'!':  store (code area: 32-bit)
-'"':  output string
+Stack operations:
+------------------------
 '#':  number to stack (base 10)
 '$':  number to stack (base 16)
-'%':  modulo
-'&':  and
 ''':  ascii val to stack
-'(':  if
-')':  unused
-'*':  multiply
-'+':  add
-',':  output TOS as char
-'-':  subtract
-'.':  output TOS as number (in current base)
-'/':  divide
+'D':  duplicate TOS
+'S':  swap
+'O':  over
+'\':  drop
 '1+': increment TOS
 '1-': decrement TOS 
-':':  call
-';':  return
+'R<': TOS to return stack
+'R@': fetch RTOS
+'R>': RTOS to data stack
+'K':  TOS = TOS * 1000
+'H<': TOS = TOS * $100 (left shift 8)
+'H>': TOS = TOS / $100 (right shift 8)
+'N1': number to stack (8-bit)
+'N2': number to stack (16-bit)
+'N4': number to stack (32-bit)
+
+
+Memory:
+---------------------------------------------
+'!':  store to code area: 32-bit
+'@':  fetch from code area: 32-bit
+'C!': store to code area: 8-bit
+'C@': fetch from code area: 8-bit
+'M!': store to absolute address, 8-bit
+'M@': fetch from absolute address, 8-bit
+
+
+Math:
+-----------------------
+'%':  modulo
+'*':  multiply
+'+':  add
+'-':  subtract
+'/':  divide
+
+
+Logical:
+-----------------------
 '<':  less than
 '<=': less than or equal to
 '=':  equal to
 '>=': greater than or equal to
 '>':  greater than
-'?':  unused
-'@':  fetch (code area: 32-bit)
-'A':  unused
-'B':  unused
-'C!': store (code area: 8-bit)
-'C@': fetch (code area: 8-bit)
-'D':  duplicate TOS
-'E':  unused
-'Fx':  file operations
+
+
+Bit-wise:
+----------------------------
+'&':  and
+'|':  or
+'^':  xor
+'~':  ones-complement
+
+
+Flow control:
+-----------------------------
+'(':  if
+':':  call
+';':  return
+'JJ': jump - unconditional
+'JZ': jump if TOS == 0 (consumes TOS)
+'JN': jump if TOS != 0 (consumes TOS)
+'Jz': jump if TOS == 0 (does not consume TOS)
+'Jn': jump if TOS != 0 (does not consume TOS)
+'[':  begin loop (PC to return stack)
+']':  if TOS != 0 { jump to RTOS } else { pop(), rpop() }
+
+
+Registers:
+--------------------------------------------
+'x':  set current register (x: a..z)
+'x!':   store to register
+'x@':   fetch from register
+'x@+':  fetch from register, then increment
+'x@-':  fetch from register, then decrement
+
+
+Block file operations:
+---------------------------------------------
 'FO':    file-open  (block)
 'FN':    file-new   (block)
 'FC':    file-close (block)
 'FR':    file read (1 char)
 'FW':    file read (1 char)
-'G':  unused
-'H':  hundred: TOS = TOS * $100 (left shift 8)
-'IA': INFO: all
-'IC': INFO: code
-'ID': INFO: dictionary (long)
-'Id': INFO: dictionary (short)
-'IR': INFO: registers
-'IS': INFO: stack (long)
-'Is': INFO: stack (short)
-'JJ': jump - unconditional
-'JZ': jump if TOS = 0  (with pop())
-'JN': jump if TOS != 0 (with pop())
-'Jz': jump if TOS = 0  (no pop())
-'Jn': jump if TOS != 0 (no pop())
-'K':  TOS = TOS * 1000
-'L':  unused
-'M@': fetch from address (absolute, 8-bit)
-'M!': store to address   (absolute, 8-bit)
-'N1': number to stack (8-bit)
-'N2': number to stack (16-bit)
-'N4': number to stack (32-bit)
-'O':  over
-'Px':  ARDUINO: pin operations
+
+
+Output:
+-----------------------------------------------
+'"':  output string
+',':  output TOS as char
+'.':  output TOS as number (in current base)
+
+
+ARDUINO: pin operations:
+---------------------------------------------
 'POO:    pin-open: OUTPUT
 'POI:    pin-open: INPUT
 'POU:    pin-open: INPUT_PULLUP
@@ -71,28 +107,40 @@ NULL: stop running
 'PRA':   pin-read-analog: analogRead()
 'PWD':   pin-write-digital: digitalWrite()
 'PWA':   pin-write-analog: analogWrite()
+
+
+Other:
+----------------------------------
+' ':  no-op
+NULL: exit run loop
+addr: exit run loop if addr is not in code space
+'IA': INFO: all
+'IC': INFO: code
+'ID': INFO: dictionary (long)
+'Id': INFO: dictionary (short)
+'IR': INFO: registers
+'IS': INFO: stack (long)
+'Is': INFO: stack (short)
+'T':  time (GetTickCount(), millis())
+'W':  wait (Sleep(), delay())
+
+
+Unused:
+----------------------
+')':  unused
+'?':  unused
+'A':  unused
+'B':  unused
+'E':  unused
+'G':  unused
+'L':  unused
 'Q':  unused
-'R':  unused
-'S':  swap
-'T':  time (GetTickCount())
 'U':  unused
 'V':  unused
-'W':  wait (sleep())
 'X':  unused
 'Y':  unused
 'Z':  unused
-'[':  begin loop
-'\':  drop
-']':  exit loop if TOS = 0
-'^':  xor
 '_':  unused
 '`':  unused
-'x':  set current register (x: a..z)
-'x!':   store to register
-'x@':   fetch from register
-'x@+':  fetch from register, then increment
-'x@-':  fetch from register, then decrement
 '{':  unused
-'|':  or
 '}':  unused
-'~':  ones-complement
