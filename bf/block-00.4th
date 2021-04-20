@@ -19,4 +19,7 @@
 : fill s4 R<Sa!R>S[Oa@+C!1-]\ forth ;
 : w@ dup c@ swap 1+ c@ 8<< + ;
 : w! over 8>> over 1+ c! c! ;
-s4 "here-1" forth
+
+: k 1000 * ; : mil k dup * ;
+: elapsed tick swap - dup 1000 / . 1000 mod . ;
+: bm tick swap begin 1- while elapsed ;
