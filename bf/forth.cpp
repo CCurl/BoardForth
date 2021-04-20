@@ -153,6 +153,8 @@ CELL doReg(CELL pc, BYTE ir) {
     CELL t1 = dict[pc];
     CELL t2 = dict[pc + 1];
     if (t1 == '!') { ++pc; reg[curReg] = pop(); }
+    if (t1 == '+') { ++pc; ++reg[curReg]; }
+    if (t1 == '-') { ++pc; --reg[curReg]; }
     if (t1 == '@') {
         ++pc; push(reg[curReg]);
         if (t2 == '+') { ++pc; ++reg[curReg]; }
