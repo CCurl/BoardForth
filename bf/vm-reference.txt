@@ -32,6 +32,16 @@ Memory:
 'M@': fetch from absolute address, 8-bit
 
 
+Registers: (x: a..z)
+--------------------------------------------
+'x!':  store TOS to register
+'x@':  fetch from register
+'x@+': fetch from register, then increment
+'x@-': fetch from register, then decrement
+'x+':  increment register
+'x-':  decrement register
+
+
 Math:
 -----------------------
 '%':  modulo
@@ -70,15 +80,6 @@ Flow control:
 'Jn': jump if TOS != 0 (does not consume TOS)
 '[':  begin loop (PC to return stack)
 ']':  if TOS != 0 { jump to RTOS } else { pop(), rpop() }
-
-
-Registers:
---------------------------------------------
-'x':  set current register (x: a..z)
-'x!':   store to register
-'x@':   fetch from register
-'x@+':  fetch from register, then increment
-'x@-':  fetch from register, then decrement
 
 
 Block file operations:
