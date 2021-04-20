@@ -1,7 +1,3 @@
-: k 1000 * ; : mil k dup * ;
-: elapsed tick swap - dup 1000 / . 1000 mod . ;
-: bm tick swap begin 1- while elapsed ;
-
 #50 constant #pins
 
 variable dpin-vals
