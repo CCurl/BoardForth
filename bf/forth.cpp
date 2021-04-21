@@ -256,7 +256,7 @@ void run(CELL pc, CELL max_cycles) {
             if (t1 == 'n') { if (T) { pc = addrAt(pc); } else { pc += ADDR_SZ; } }
             break;
         case 'K': T *= 1000; break;
-        case 'L': push(cellAt(pc)); pc += CELL_SZ;   /* *** FREE ***  */
+        case 'L': push(cellAt(pc)); pc += CELL_SZ; break;
         case 'M': t1 = dict[pc++];
             if (t1 == '@') { T = *((byte*)T); }
             if (t1 == '!') { *((byte*)T) = (N & 0xFF); }
