@@ -17,10 +17,10 @@
 : decimal #10 base ! ;
 : binary 2 base ! ;
 : allot here + (h) ! ;
-: fill s4 R<Sa!R>S[Oa@+C!1-]\ forth ;
+: fill s4: R<Sa!R>S[Oa@+C!1-]\ forth: ;
 : w@ dup c@ swap 1+ c@ 8<< + ;
 : w! over 8>> over 1+ c! c! ;
-: k s4 K forth ; 
-: mil s4 KK forth ;
+: k s4: K forth: ; 
+: mil s4: KK forth: ;
 : elapsed tick swap - dup 1000 / . 1000 mod . ;
 : bm tick swap begin 1- while elapsed ;

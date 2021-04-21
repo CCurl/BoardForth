@@ -92,7 +92,7 @@ void s4PutAddress(CELL tgt, CELL val) {
 
 int s4Parse(char* w) {
     if (isS4Mode) {
-        if (strcmp(w, "forth") == 0) {
+        if (strcmp(w, "forth:") == 0) {
             isS4Mode = 0;
             return 1;
         }
@@ -100,7 +100,7 @@ int s4Parse(char* w) {
         return 1;
     }
 
-    if (strcmp(w, "s4") == 0){
+    if (strcmp(w, "s4:") == 0){
         isS4Mode = 1;
         return 1;
     }
@@ -387,13 +387,6 @@ CELL wordAt(CELL loc) {
 #endif
 }
 
-int s4Digit(BYTE c) {
-    if (('0' <= c) && (c <= '9')) return c - '0';
-    if (('A' <= c) && (c <= 'F')) return (c + 10) - 'A';
-    if (('a' <= c) && (c <= 'f')) return (c + 10) - 'a';
-    return -1;
-}
-
 int blkNumCheck(int blk) {
     if ((blk < 0) || (15 < blk)) {
         printString("block# must be 0-15");
@@ -456,51 +449,6 @@ void doNumOut(CELL num, int base) {
     }
     if (isNeg) { *(--cp) = '-'; }
     printString(cp);
-}
-
-CELL doNumber(CELL pc) {
-    BYTE n = dict[pc++];
-    push(dict[pc++]);
-    if (n > '1') {
-        T |= (dict[pc++] << 8);
-    }
-    if (n > '2') {
-        T |= (dict[pc++] << 16);
-        T |= (dict[pc++] << 24);
-    }
-    return pc;
-}
-
-CELL hexNumberAt(CELL loc) {
-    int d = s4Digit(dict[loc]);
-    CELL r = 0;
-    while (0 <= d) {
-        r = (r << 4) + d;
-        ++loc;
-        d = s4Digit(dict[loc]);
-    }
-    push(r);
-    return loc;
-}
-
-CELL numberAt(CELL loc) {
-    int d = isdigit(dict[loc]);
-    CELL r = 0;
-    while (0 <= d) {
-        r = (r << 4) + d;
-        ++loc;
-        d = s4Digit(dict[loc]);
-    }
-    push(r);
-    return loc;
-}
-
-CELL s4addrAt(CELL loc) {
-    CELL r = (s4Digit(dict[loc]) << 12);
-    r |= (s4Digit(dict[loc + 1]) << 8);
-    r |= (s4Digit(dict[loc + 2]) << 4);
-    r |= s4Digit(dict[loc + 3]);
-    return r;
 }
 
 CELL addrAt(CELL loc) {
@@ -916,18 +864,18 @@ void loadBaseSystem() {
     sprintf(buf, ": code #%lu ;", (ulong)&dict[0]);  parseLine(buf);
     sprintf(buf, ": dict #%lu ;", (ulong)&words[0]); parseLine(buf);
     sprintf(buf, ": code-sz #%lu ;", (UCELL)DICT_SZ); parseLine(buf);
-    parseLine(": block-dump s4 #40+$400*a!$400[a@+C@,1-] forth ;");
+    parseLine(": block-dump s4: #40+$400*a!$400[a@+C@,1-] forth: ;");
     parseLine(": load dup block-read if block-load leave then drop ;");
     // parseLine("0 load");
 }
 
 void loadUserWords() {
     char* buf = (char *) &dict[sys->HERE + 48];
-    loadSource("s4");
+    loadSource("s4:");
     loadSource("\"BoardForth v0.0.1 - Chris Curl\"");
     loadSource("$d,$a,\"Source: https://github.com/CCurl/BoardForth\"");
     sprintf(buf, "$d,$a,\"Dictionary size is: %d ($%04x) bytes.\"$d,$a,", (int)DICT_SZ, (int)DICT_SZ);
     loadSource(buf);
     loadSource("\"Hello.\"");
-    loadSource("forth");
+    loadSource("forth:");
 }
