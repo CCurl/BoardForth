@@ -1,5 +1,34 @@
 Reference for the pre-installed BoardForth words
 
-WORD     STACK     DESCRIPTION
--------- --------- ------------------------------------------
-xxx      (--)      xxxxx
+WORD        STACK         DESCRIPTION
+----------- ------------- ------------------------------------------
+CELL        (--n)         size of a CELL
+CELLS       (n1--n2)      size of n1 CELLs
+WORD        (--n)         size of a WORD
+WORDS       (n1--n2)      size of n1 WORDs
+tib         (--a)         address of the text input buffer
+>in         (--a)         address of current input character
+(h)         (--a)         address of HERE
+here        (a--n)        value of HERE
+(l)         (--a)         address of LAST
+last        (a--n)        value of LAST
+base        (--a)         current BASE
+state       (--a)         address of state
+(dstk)      (--a)         address of the data stack
+(rstk)      (--a)         address of the return stack
+(dsp)       (--a)         address of the stack pointer
+dsp         (a--n)        value of the stack pointer
+?dup        (n--n|n)      duplicates TOS if <> 0
+min         (n1,n2--n3)   leaves minimum of n1 and n2 on stack
+max         (n1,n2--n3)   leaves maximim of n1 and n2 on stack
+hex         (--)          change BASE to 16
+decimal     (--)          change BASE to 10
+binary      (--)          change BASE to 2
+allot       (n--)         adds n to HERE
+fill        (a,n,c--)     fills n bytes with c starting at address a
+w@          (a--n)        fetch WORD at a
+w!          (n,a--)       store WORD to a
+k           (n1--n2)      multiply n1 by 1000
+mil         (n1--n2)      multiply n1 by 1000000
+elapsed     (t--)         print elapsed time since t
+bm          (n--)         a simple benchmark

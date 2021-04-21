@@ -1,14 +1,19 @@
-: CELL 4 ; : CELLS 4 * ;
-: WORD 2 ; : WORDS 2 * ;
+: CELL 4 ; 
+: CELLS 4 * ;
+: WORD 2 ; 
+: WORDS 2 * ;
 : tib #8 @ ; 
 : >in #12 ;
-: (h) #16 ; : here (h) @ ;
-: (l) #20 ; : last (l) @ ;
+: (h) #16 ; 
+: here (h) @ ;
+: (l) #20 ; 
+: last (l) @ ;
 : base #24 ;
 : state #28 ;
 : (dstk) #32 ;
 : (rstk) #36 ;
-: (dsp) #40 ; : dsp (dsp) @ ;
+: (dsp) #40 ; 
+: dsp (dsp) @ ;
 : ?dup dup if dup then ;
 : min over over < if drop else nip then ;
 : max over over > if drop else nip then ;
@@ -19,7 +24,7 @@
 : fill s4 R<Sa!R>S[Oa@+C!1-]\ forth ;
 : w@ dup c@ swap 1+ c@ 8<< + ;
 : w! over 8>> over 1+ c! c! ;
-
-: k 1000 * ; : mil k dup * ;
+: k s4 K forth ; 
+: mil s4 KK forth ;
 : elapsed tick swap - dup 1000 / . 1000 mod . ;
 : bm tick swap begin 1- while elapsed ;
