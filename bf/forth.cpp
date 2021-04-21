@@ -169,7 +169,7 @@ void run(CELL pc, CELL max_cycles) {
     buf[1] = 0;
     while (1) {
         if (max_cycles && (--max_cycles < 1)) { return; }
-        if ((pc < 0) || (DICT_SZ <= pc)) { return; }
+        if ((pc < ADDR_HERE_BASE) || (DICT_SZ <= pc)) { return; }
         ir = dict[pc++];
         // printStringF("\r\n-PC-%d/%lx:IR-%d/%x-", PC-1, PC-1, (int)IR, (unsigned int)IR); fDOTS();
         switch (ir) {
@@ -201,7 +201,7 @@ void run(CELL pc, CELL max_cycles) {
             if (t1 == '-') { ++pc; --T; }
             if (t1 == '+') { ++pc; ++T; }
             break;
-        case ':': rpush(pc + 4); pc = s4addrAt(pc); break;  // 58
+        case ':': rpush(pc + ADDR_SZ); pc = addrAt(pc); break;  // 58
         case ';': pc = rpop(); break;                       // 59
         case '<': t1 = dict[pc];  t2 = pop();               // 60
             if (t1 == '=') { T = (T <= t2) ? -1 : 0; ++pc; }
@@ -216,7 +216,7 @@ void run(CELL pc, CELL max_cycles) {
      // case '?': push(_getch());                   break;  // 63
         case '@': T = cellAt(T);                    break;  // 64
         case 'A': break;   /* *** FREE ***  */
-        case 'B': break;   /* *** FREE ***  */
+        case 'B': push(dict[pc++]); break;
         case 'C': t1 = dict[pc++];
             if (t1 == '@') { T = (inAddrSpace(T)) ? dict[T] : 0; }
             if (t1 == '!') { t1 = pop(); t2 = pop(); if (inAddrSpace(t1)) { dict[t1] = (byte)t2; } }
@@ -256,12 +256,12 @@ void run(CELL pc, CELL max_cycles) {
             if (t1 == 'n') { if (T) { pc = addrAt(pc); } else { pc += ADDR_SZ; } }
             break;
         case 'K': T *= 1000; break;
-        case 'L': break;   /* *** FREE ***  */
+        case 'L': push(cellAt(pc)); pc += CELL_SZ;   /* *** FREE ***  */
         case 'M': t1 = dict[pc++];
             if (t1 == '@') { T = *((byte*)T); }
             if (t1 == '!') { *((byte*)T) = (N & 0xFF); }
             break;
-        case 'N': pc = doNumber(pc); break;
+        case 'N': push(wordAt(pc)); pc += WORD_SZ; break;
         case 'O': push(N); break;
         case 'P': pc = doPins(pc);
             break;
@@ -549,24 +549,26 @@ void fPARSEWORD() {    // opcode #59
         CELL xt = pop();
         sprintf(s4, ":%04x", (WORD)xt);
         if (compiling(w, 0)) {
-            s4CompileString(s4);
+            CCOMMA(':');
+            ACOMMA(xt);
+        } else { 
+            rpush(-1); 
+            run(xt, 0); 
         }
-        else { s4RunString(s4); }
         return;
     }
 
     if (isNumber(w)) {
         if (compiling(w, 0)) {
             t1 = pop();
-            CCOMMA('N');
             if ((0 <= t1) && (t1 <= 0xFF)) {
-                CCOMMA('1');
+                CCOMMA('B');
                 CCOMMA((BYTE)t1);
             } else if ((0x0100 <= t1) && (t1 <= 0xFFFF)) {
-                CCOMMA('2');
+                CCOMMA('N');
                 WCOMMA((WORD)t1);
             } else {
-                CCOMMA('4');
+                CCOMMA('L');
                 COMMA(t1);
             }
         }
@@ -575,14 +577,14 @@ void fPARSEWORD() {    // opcode #59
 
     if (strcmp(w, ";") == 0) {
         if (!compiling(w, 1)) { return; }
-        s4CompileString(";");
+        CCOMMA(';');
         sys->STATE = 0;
         return;
     }
 
     if (strcmp(w, "if") == 0) {
         if (!compiling(w, 1)) { return; }
-        s4CompileString("(");
+        CCOMMA('(');
         push(sys->HERE);
         s4CompileString("00");
         return;
@@ -600,7 +602,7 @@ void fPARSEWORD() {    // opcode #59
 
     if (strcmp(w, "then") == 0) {
         if (!compiling(w, 1)) { return; }
-        s4CompileString(")");
+        CCOMMA(')');
         t1 = pop();
         s4PutAddress(t1, sys->HERE);
         return;
@@ -608,13 +610,13 @@ void fPARSEWORD() {    // opcode #59
 
     if (strcmp(w, "begin") == 0) {
         if (!compiling(w, 1)) { return; }
-        s4CompileString("[");
+        CCOMMA('[');
         return;
     }
 
     if (strcmp(w, "while") == 0) {
         if (!compiling(w, 1)) { return; }
-        s4CompileString("]");
+        CCOMMA(']');
         return;
     }
 
@@ -637,8 +639,8 @@ void fPARSEWORD() {    // opcode #59
         if (pop()) {
             push(wa);
             fCREATE();
-            s4CompileString("N2");
-            WCOMMA((WORD)sys->HERE+3);
+            CCOMMA('N');
+            ACOMMA(sys->HERE+3);
             CCOMMA(';');
             COMMA(0);
         }
@@ -652,7 +654,7 @@ void fPARSEWORD() {    // opcode #59
         if (pop()) {
             push(wa);
             fCREATE();
-            s4CompileString("N4");
+            CCOMMA('L');
             COMMA(pop());
             CCOMMA(';');
         }
@@ -819,6 +821,9 @@ void COMMA(CELL v) {
     dict[sys->HERE++] = v & 0xFF; v = v >> 8;
     dict[sys->HERE++] = v & 0xFF; v = v >> 8;
     dict[sys->HERE++] = v & 0xFF;
+}
+void ACOMMA(CELL v) {
+    (ADDR_SZ == 2) ? WCOMMA((WORD)v) : COMMA(v);
 }
 
 BYTE nextChar() {

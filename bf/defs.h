@@ -84,6 +84,7 @@ void run(CELL, CELL);
 BYTE nextChar();
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
+void ACOMMA(CELL v);
 void COMMA(CELL v);
 void parseLine(const char*);
 void loadBaseSystem();
