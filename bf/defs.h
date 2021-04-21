@@ -100,6 +100,7 @@ void wordStore(CELL addr, CELL val);
 void cellStore(CELL addr, CELL val);
 void addrStore(CELL addr, CELL val);
 void doBlockRead();
+void doBlockWrite();
 void doBlockLoad();
 CELL doNumber(CELL);
 int isNumber(char *);

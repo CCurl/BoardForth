@@ -32,3 +32,36 @@ k           (n1--n2)      multiply n1 by 1000
 mil         (n1--n2)      multiply n1 by 1000000
 elapsed     (t--)         print elapsed time since t
 bm          (n--)         a simple benchmark
+
+mod
+negate
+-+*/
+< <= = <> >= >
+1- 1+
+8<< 8>>
+and or xor not
+dup drop swap over nip tuck
+c@ @ c! !
+tick
+emit
+blk-read
+blk-write
+leave
+words
+. (.)
+space cr tab
+.si
+.ic
+.iw
+.ir
+.s
+mc@ mc!
+>r r> r@
+pin-input
+pin-output
+pin-pullup
+pin-pulldown
+dp-read 
+dp-write
+ap-read 
+ap-write

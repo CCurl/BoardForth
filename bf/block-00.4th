@@ -1,7 +1,3 @@
-: CELL 4 ; 
-: CELLS 4 * ;
-: WORD 2 ; 
-: WORDS 2 * ;
 : tib #8 @ ; 
 : >in #12 ;
 : (h) #16 ; 
