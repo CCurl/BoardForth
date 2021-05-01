@@ -70,7 +70,8 @@ CELL wordAt(ADDR);
 ADDR addrAt(ADDR);
 void fDUMPDICT();
 void doNextWord();
-void doParseLine();
+void doParse(char sep);
+int doNumber(const char *);
 
 #pragma warning(disable:4996)
 
@@ -83,6 +84,7 @@ long millis() { return 0; }
 void cellStore(ADDR addr, CELL val);
 void wordStore(ADDR addr, CELL val);
 void doPARSEWORD();
+void doCreate(const char* name);
 
 BYTE IR;
 ADDR PC;
@@ -152,10 +154,10 @@ int isBYE = 0;
     X("CREATE", CREATE, ) \
     X("FIND", FIND, ) \
     X("NEXTWORD", NEXTWORD, doNextWord()) \
-    X("ISNUMBER", ISNUMBER, ) \
+    X("ISNUMBER", ISNUMBER, doNumber((char *)pop());) \
     X("NJMPZ", NJMPZ, PC = (T == 0)? addrAt(PC) : PC + ADDR_SZ) \
     X("NJMPNZ", NJMPNZ, PC = (T != 0)? addrAt(PC) : PC + ADDR_SZ) \
-    X("PARSELINE", PARSELINE, doParseLine()) \
+    X("PARSELINE", PARSELINE, doParse(' ')) \
     X("=", EQUALS, N = (N == T) ? 1 : 0; pop()) \
     X(">", GREATER, N = (N > T) ? 1 : 0; pop()) \
     X("I", I, ) \
@@ -220,16 +222,58 @@ void init_handlers() {
 #define X(name, op, code) if (strcmp(w, name) == 0) { return OP_ ## op; }
 BYTE getOpcode(char* w) {
     OPCODES
-    return 0xFF;
+        return 0xFF;
+}
+
+#undef X
+#define X(name, op, code) doCreate(name);
+void defineWords() {
+    OPCODES
+}
+
+void doCreate(const char *name) {
+    HERE = align4(HERE);
+    // printStringF("-define [%s] at %d (%lx)", name, HERE, HERE);
+
+    DICT_T* dp = (DICT_T*)HERE;
+    dp->prev = (ADDR)LAST;
+    dp->flags = 0;
+    dp->len = (BYTE)strlen(name);
+    strcpy(dp->name, name);
+    LAST = HERE;
+    HERE += ADDR_SZ + dp->len + 3;
+    // printStringF(",XT:%d (%lx)-", HERE, HERE);
 }
 
 void doNextWord() {
     char* l = (char*)pop();
 }
 
-void doParseLine() {
-    char* l = (char*)pop();
-    char* w = (char *)HERE + 0x40;
+int matches(char ch, char sep) {
+    if (ch == sep) { return 1; }
+    if ((sep == ' ') && (ch < sep)) { return 1; }
+    return 0;
+}
+
+void doParse(char sep) {
+    toIN = (char*)pop();
+    TIBEnd = toIN + strlen(toIN);
+    while (1) {
+        char* w = (char*)HERE + 0x40;
+        char* wp = w;
+        CELL len = 0;
+        while ((toIN < TIBEnd) && matches(*toIN, sep)) {
+            ++toIN;
+        }
+        while ((toIN < TIBEnd) && !matches(*toIN, sep)) {
+            ++len;
+            *(wp++) = *(toIN++);
+        }
+        *wp = 0;
+        if (len == 0) { return; }
+        push((CELL)w);
+        doPARSEWORD();
+    }
 }
 
 void vmInit() {
@@ -574,14 +618,28 @@ static CELL parse(CELL sep, CELL* ret) {
     return len;
 }
 
+int doFind(const char *name) {         // opcode #65
+    printStringF("-find:[%s]-", name);
+    DICT_T* dp = (DICT_T*)LAST;
+    while (dp) {
+        if (strcmp(name, dp->name) == 0) {
+            push((CELL)dp);
+            return 1;
+        }
+        dp = (DICT_T*)dp->prev;
+    }
+    return 0;
+}
 
+int doNumber(const char *w) {
+    return 0;
+}
 
 // ( a -- )
 void doPARSEWORD() {    // opcode #59
     char *w = (char *)pop();
-    // printStringF("-pw[%s]-", w);
-    push((CELL)w); fFIND();
-    if (pop()) {
+    printStringF("-pw[%s]-", w);
+    if (doFind(w)) {
         DICT_T *dp = (DICT_T *)T;
         fGETXT();
         ADDR xt = (ADDR)pop();
@@ -602,8 +660,7 @@ void doPARSEWORD() {    // opcode #59
 
     if (isInlineWord(w)) { return; }
 
-    push((CELL)w); fISNUMBER();
-    if (pop()) {
+    if (doNumber(w)) {
         if (compiling(w, 0)) {
             if ((0x0000 <= T) && (T < 0x0100)) {
                 CCOMMA(OP_CLIT);
@@ -735,7 +792,7 @@ void doPARSEWORD() {    // opcode #59
     if (strcmp_PF(w, PSTR(":")) == 0) {
         if (! interpreting(w, 1)) { return; }
         push((CELL)w);
-        fNEXTWORD();
+        doNextWord();
         if (pop()) {
             push((CELL)w);
             fCREATE();
@@ -879,7 +936,7 @@ void parseLine(char *line) {
     TIB = TIBBuf;
     strcpy(TIB, line);
     push((CELL)TIB);
-    doParseLine();
+    doParse(' ');
 }
 
 void loadUserWords() {
