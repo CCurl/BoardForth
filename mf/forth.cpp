@@ -73,7 +73,6 @@ void fDUMPDICT();
 CELL getNextWord(char *, char);
 void doParse(char sep);
 int doNumber(const char *);
-void doCall();
 
 #pragma warning(disable:4996)
 
@@ -107,13 +106,13 @@ ADDR allocAddrBase, allocCurFree;
 FP prims[256];
 int isBYE = 0;
 
-#define Y(op, code) X("", op, code)
+#define Y(op, code) X(#op, op, code)
 
 #define OPCODES \
     X("NOOP", NOOP, ) \
-    X("cliteral", CLIT, push(*(PC++))) \
-    X("wliteral", WLIT, push(wordAt(PC)); PC += WORD_SZ) \
-    X("literal", LIT, push(cellAt(PC)); PC += CELL_SZ) \
+    Y(CLIT, push(*(PC++))) \
+    Y(WLIT, push(wordAt(PC)); PC += WORD_SZ) \
+    Y(LIT, push(cellAt(PC)); PC += CELL_SZ) \
     X("c@", CFETCH, ADDR a = (ADDR)T; T = (CELL)*a) \
     X("w@", WFETCH, T = wordAt((ADDR)T)) \
     X("@",  FETCH,  T = cellAt((ADDR)T)) \
@@ -123,7 +122,7 @@ int isBYE = 0;
     X("w!", WSTORE, ADDR a = (ADDR)pop(); CELL v = pop(); wordStore(a, v)) \
     X("a!", ASTORE, ADDR a = (ADDR)pop(); CELL v = pop(); (ADDR_SZ == 2) ? wordStore(a,v) : cellStore(a,v)) \
     X("RSHIFT", RSHIFT, T = T>>1) \
-    X("AND", AND, N &= T; pop()) \
+    Y(AND, N &= T; pop()) \
     X("OR", OR, N |= T; pop()) \
     X("XOR", XOR, N ^= T; pop()) \
     X("NOT", NOT, T = (T) ? 0 : -1) \
@@ -181,7 +180,7 @@ int isBYE = 0;
     X("WCOMMA", WCOMMA, push((CELL)HERE); fWSTORE(); HERE += WORD_SZ) \
     X("COMMA", COMMA, push((CELL)HERE); fSTORE(); HERE += CELL_SZ) \
     X("ACOMMA", ACOMMA, (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA()) \
-    X("CALL", CALL, doCall()) \
+    X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
     X("RET", RET, PC = (ADDR)rpop()) \
     X("JMP", JMP, PC = addrAt(PC)) \
     X("JMPZ", JMPZ, PC = (T == 0)? addrAt(PC) : PC + ADDR_SZ; pop()) \
@@ -225,11 +224,6 @@ BYTE getOpcode(char* w) {
 }
 
 #undef X
-
-void doCall() {
-    rpush((CELL)PC + ADDR_SZ);
-    PC = addrAt(PC);
-}
 
 void doCreate(const char *name) {
     HERE = align4(HERE);
@@ -1017,6 +1011,9 @@ void doHistory(char* l) {
 
 void loop() {
     char buf[128];
+    numTIB = 0;
+    TIBEnd = TIB;
+    *TIBEnd = 0;
     fgets(buf, 128, stdin);
     int len = strlen(buf);
     while ((0 < len) && (buf[len - 1] <= ' ')) {
