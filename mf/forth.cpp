@@ -25,6 +25,7 @@ typedef BYTE* ADDR;
 
 typedef struct {
     ADDR prev;
+    ADDR XT;
     BYTE flags;
     BYTE len;
     char name[32]; // not really 32 ... but we need a number
@@ -69,9 +70,10 @@ CELL cellAt(ADDR);
 CELL wordAt(ADDR);
 ADDR addrAt(ADDR);
 void fDUMPDICT();
-void doNextWord();
+CELL getNextWord(char *, char);
 void doParse(char sep);
 int doNumber(const char *);
+void doCall();
 
 #pragma warning(disable:4996)
 
@@ -83,7 +85,7 @@ void delay(int ms) {}
 long millis() { return 0; }
 void cellStore(ADDR addr, CELL val);
 void wordStore(ADDR addr, CELL val);
-void doPARSEWORD();
+void doParseWord();
 void doCreate(const char* name);
 
 BYTE IR;
@@ -109,7 +111,6 @@ int isBYE = 0;
 
 #define OPCODES \
     X("NOOP", NOOP, ) \
-    X("test", TEST, push(*(PC++))) \
     X("cliteral", CLIT, push(*(PC++))) \
     X("wliteral", WLIT, push(wordAt(PC)); PC += WORD_SZ) \
     X("literal", LIT, push(cellAt(PC)); PC += CELL_SZ) \
@@ -146,14 +147,11 @@ int isBYE = 0;
     X("LOOP", LOOP, ) \
     X("LOOPP", LOOPP, ) \
     X("DEBUGGER", DEBUGGER, ) \
-    X("PARSEWORD", PARSEWORD, doPARSEWORD()) \
+    X("PARSEWORD", PARSEWORD, doParseWord()) \
     X("<", LESS, N = (N < T) ? 1 : 0; pop()) \
     X("GETXT", GETXT, ) \
     X("ALIGN2", ALIGN2, ) \
     X("ALIGN4", ALIGN4, ) \
-    X("CREATE", CREATE, ) \
-    X("FIND", FIND, ) \
-    X("NEXTWORD", NEXTWORD, doNextWord()) \
     X("ISNUMBER", ISNUMBER, doNumber((char *)pop());) \
     X("NJMPZ", NJMPZ, PC = (T == 0)? addrAt(PC) : PC + ADDR_SZ) \
     X("NJMPNZ", NJMPNZ, PC = (T != 0)? addrAt(PC) : PC + ADDR_SZ) \
@@ -180,10 +178,10 @@ int isBYE = 0;
     X("SLMOD", SLMOD, ) \
     X("LSHIFT", LSHIFT, T = T << 1) \
     X("CCOMMA", CCOMMA, *(HERE++) = (BYTE)pop()) \
-    X("WCOMMA", WCOMMA, ) \
-    X("COMMA", COMMA, ) \
-    X("ACOMMA", ACOMMA, ) \
-    X("CALL", CALL, ) \
+    X("WCOMMA", WCOMMA, push((CELL)HERE); fWSTORE(); HERE += WORD_SZ) \
+    X("COMMA", COMMA, push((CELL)HERE); fSTORE(); HERE += CELL_SZ) \
+    X("ACOMMA", ACOMMA, (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA()) \
+    X("CALL", CALL, doCall()) \
     X("RET", RET, PC = (ADDR)rpop()) \
     X("JMP", JMP, PC = addrAt(PC)) \
     X("JMPZ", JMPZ, PC = (T == 0)? addrAt(PC) : PC + ADDR_SZ; pop()) \
@@ -194,12 +192,13 @@ int isBYE = 0;
     X("SWAP", SWAP, CELL x = T; T = N; N = x) \
     X("DROP", DROP, pop()) \
     X("OVER", OVER, push(N)) \
+    X(".", DOT, printStringF("%d",pop())) \
     X("BYE", BYE, isBYE = 1) \
 
 #define X(name, op, code) OP_ ## op,
-enum {
+typedef enum {
     OPCODES
-};
+} OPCODE_T;
 
 #undef X
 #define X(name, op, code) void f ## op();
@@ -219,21 +218,22 @@ void init_handlers() {
 }
 
 #undef X
-#define X(name, op, code) if (strcmp(w, name) == 0) { return OP_ ## op; }
+#define X(name, op, code) if (strcmpi(w, name) == 0) { return OP_ ## op; }
 BYTE getOpcode(char* w) {
     OPCODES
         return 0xFF;
 }
 
 #undef X
-#define X(name, op, code) doCreate(name);
-void defineWords() {
-    OPCODES
+
+void doCall() {
+    rpush((CELL)PC + ADDR_SZ);
+    PC = addrAt(PC);
 }
 
 void doCreate(const char *name) {
     HERE = align4(HERE);
-    // printStringF("-define [%s] at %d (%lx)", name, HERE, HERE);
+    printStringF("\n-define [%s] at %ld (%lx)", name, HERE, HERE);
 
     DICT_T* dp = (DICT_T*)HERE;
     dp->prev = (ADDR)LAST;
@@ -241,12 +241,9 @@ void doCreate(const char *name) {
     dp->len = (BYTE)strlen(name);
     strcpy(dp->name, name);
     LAST = HERE;
-    HERE += ADDR_SZ + dp->len + 3;
-    // printStringF(",XT:%d (%lx)-", HERE, HERE);
-}
-
-void doNextWord() {
-    char* l = (char*)pop();
+    HERE += (ADDR_SZ*2) + dp->len + 3;
+    dp->XT = HERE;
+    printStringF(",XT:%lx (HERE=%lx)-", dp->XT, HERE);
 }
 
 int matches(char ch, char sep) {
@@ -255,24 +252,39 @@ int matches(char ch, char sep) {
     return 0;
 }
 
+char getNextChar() {
+    if (*toIN == 0) { return 0; }
+    return *(toIN++);
+}
+
+CELL getNextWord(char *to, char sep) {
+    while (*toIN && matches(*toIN, sep)) {
+        ++toIN;
+    }
+    CELL len = 0;
+    while (*toIN && !matches(*toIN, sep)) {
+        ++len;
+        *(to++) = *(toIN++);
+    }
+    *to = 0;
+    return len;
+}
+
 void doParse(char sep) {
     toIN = (char*)pop();
     TIBEnd = toIN + strlen(toIN);
-    while (1) {
-        char* w = (char*)HERE + 0x40;
-        char* wp = w;
-        CELL len = 0;
-        while ((toIN < TIBEnd) && matches(*toIN, sep)) {
-            ++toIN;
+    try {
+        while (1) {
+            char* w = (char*)HERE + 0x40;
+            char* wp = w;
+            CELL len = getNextWord(w, sep);
+            if (len == 0) { return; }
+            push((CELL)w);
+            doParseWord();
         }
-        while ((toIN < TIBEnd) && !matches(*toIN, sep)) {
-            ++len;
-            *(wp++) = *(toIN++);
-        }
-        *wp = 0;
-        if (len == 0) { return; }
-        push((CELL)w);
-        doPARSEWORD();
+    }
+    catch (...) {
+        printString("error caught");
     }
 }
 
@@ -297,7 +309,7 @@ void run(ADDR start, CELL max_cycles) {
     PC = start;
     // printStringF("\r\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
     while (1) {
-        BYTE IR = *(PC++);
+        OPCODE_T IR = (OPCODE_T)*(PC++);
         if (IR == OP_BYE) { return; }
         if (IR == OP_RET) {
             if (RSP < 1) { return; }
@@ -306,6 +318,7 @@ void run(ADDR start, CELL max_cycles) {
             prims[IR]();
         } else {
             printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC-1);
+            throw(2);
         }
         if (max_cycles) {
             if (--max_cycles < 1) { return; }
@@ -599,30 +612,11 @@ int isInlineWord(char *w) {
     return 0;
 }
 
-static int match(CELL sep, CELL ch) {
-    if (sep == ch) { return 1; }
-    if (sep == ' ') { return (ch <= ' ') ? 1 : 0; }
-    return 0;
-}
-
-static CELL parse(CELL sep, CELL* ret) {
-    while ((toIN < TIBEnd) && match(sep, *toIN)) {
-        ++toIN;
-    }
-    CELL len = 0;
-    while ((toIN < TIBEnd) && !match(sep, *toIN)) {
-        ++len;
-        ++toIN;
-    }
-    *ret = (CELL)toIN;
-    return len;
-}
-
 int doFind(const char *name) {         // opcode #65
-    printStringF("-find:[%s]-", name);
+    // printStringF("-find:[%s]-", name);
     DICT_T* dp = (DICT_T*)LAST;
     while (dp) {
-        if (strcmp(name, dp->name) == 0) {
+        if (strcmpi(name, dp->name) == 0) {
             push((CELL)dp);
             return 1;
         }
@@ -631,18 +625,52 @@ int doFind(const char *name) {         // opcode #65
     return 0;
 }
 
+int isDigit(char c, int base) {
+    if ((base < 10) && ('0' <= c) && (c < ('0' + base))) return c - '0';
+    if (('0' <= c) && (c <= '9')) return c - '0';
+    if ((base == 16) && ('a' <= c) && (c <= 'f')) return c - 'a' + 10;
+    if ((base == 16) && ('A' <= c) && (c <= 'F')) return c - 'A' + 10;
+    return -1;
+}
+
 int doNumber(const char *w) {
-    return 0;
+    int base = BASE;
+    if (*w == '#') {
+        base = 10;
+        ++w;
+    }
+    if (*w == '$') {
+        base = 16;
+        ++w;
+    }
+    if (*w == '%') {
+        base = 2;
+        ++w;
+    }
+    int isNeg = 0;
+    if ((base == 10) && (*w == '-')) {
+        isNeg = 1;
+        ++w;
+    }
+    CELL num = 0;
+    while (*w) {
+        int n = isDigit(*w, base);
+        if (n < 0) { return 0; }
+        num = (num * base) + n;
+        ++w;
+    }
+    if (isNeg) { num = -num; }
+    push(num);
+    return 1;
 }
 
 // ( a -- )
-void doPARSEWORD() {    // opcode #59
+void doParseWord() {    // opcode #59
     char *w = (char *)pop();
-    printStringF("-pw[%s]-", w);
+    // printStringF("-pw[%s]-", w);
     if (doFind(w)) {
-        DICT_T *dp = (DICT_T *)T;
-        fGETXT();
-        ADDR xt = (ADDR)pop();
+        DICT_T *dp = (DICT_T *)pop();
+        ADDR xt = dp->XT;
         // printStringF("-found:%08lx/%08lx-", dp, xt);
         if (compiling(w, 0)) {
             if (dp->flags == 1) {
@@ -791,11 +819,8 @@ void doPARSEWORD() {    // opcode #59
 
     if (strcmp_PF(w, PSTR(":")) == 0) {
         if (! interpreting(w, 1)) { return; }
-        push((CELL)w);
-        doNextWord();
-        if (pop()) {
-            push((CELL)w);
-            fCREATE();
+        if (getNextWord(w, ' ')) {
+            doCreate(w);
             STATE = 1;
         }
         return;
@@ -803,11 +828,8 @@ void doPARSEWORD() {    // opcode #59
 
     if (strcmp_PF(w, PSTR("variable")) == 0) {
         if (! interpreting(w, 1)) { return; }
-        push((CELL)w);
-        fNEXTWORD();
-        if (pop()) {
-            push((CELL)w);
-            fCREATE();
+        if (getNextWord(w, ' ')) {
+            doCreate(w);
             CCOMMA(OP_LIT);
             COMMA((CELL)HERE+CELL_SZ+1);
             CCOMMA(OP_RET);
@@ -818,11 +840,8 @@ void doPARSEWORD() {    // opcode #59
 
     if (strcmp_PF(w, PSTR("constant")) == 0) {
         if (! interpreting(w, 1)) { return; }
-        push((CELL)w);
-        fNEXTWORD();
-        if (pop()) {
-            push((CELL)w);
-            fCREATE();
+        if (getNextWord(w, ' ')) {
+            doCreate(w);
             CCOMMA(OP_LIT);
             fCOMMA();
             CCOMMA(OP_RET);
@@ -844,98 +863,17 @@ void doPARSEWORD() {    // opcode #59
     }
     STATE = 0;
     printStringF("[%s]??", w);
+    throw(123);
 }
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void is_hex(char *word) {
-    CELL num = 0;
-    if (*word == (char)0) { push(0); return; }
-    while (*word) {
-        char c = *(word++);
-        if ((c >= '0') && (c <= '9')) {
-            num *= 0x10;
-            num += (c - '0');
-            continue;
-        }
-        if ((c >= 'A') && (c <= 'F')) {
-            num *= 0x10;
-            num += ((c+10) - 'A');
-            continue;
-        }
-        if ((c >= 'a') && (c <= 'f')) {
-            num *= 0x10;
-            num += ((c+10) - 'a');
-            continue;
-        }
-        push(0);
-        return;
-    }
-    push((CELL)num);
-    push(1);
-}
-
-void is_decimal(char *word) {
-    long num = 0;
-    int is_neg = 0;
-    if (*word == '-') {
-        word++;
-        is_neg = 1;
-    }
-    if (*word == (char)0) { push(0); return; }
-    while (*word) {
-        char c = *(word++);
-        if ((c >= '0') && (c <= '9')) {
-            num *= 10;
-            num += (c - '0');
-        } else {
-            push(0);
-            return;
-        }
-    }
-
-    num = is_neg ? -num : num;
-    push((CELL)num);
-    push(1);
-}
-
-void is_binary(char *word) {
-    CELL num = 0;
-    if (*word == (char)0) { push(0); return; }
-    while (*word) {
-        char c = *(word++);
-        if ((c >= '0') && (c <= '1')) {
-            num *= 2;
-            num += (c - '0');
-        } else {
-            push(0);
-            return;
-        }
-    }
-
-    push((CELL)num);
-    push(1);
-}
-
 void parseLine(char *line) {
-    TIB = TIBBuf;
-    strcpy(TIB, line);
-    push((CELL)TIB);
+    //TIB = TIBBuf;
+    //strcpy(TIB, line);
+    //push((CELL)TIB);
+    push((CELL)line);
     doParse(' ');
 }
 
@@ -1079,7 +1017,6 @@ void doHistory(char* l) {
 
 void loop() {
     char buf[128];
-    ok();
     fgets(buf, 128, stdin);
     int len = strlen(buf);
     while ((0 < len) && (buf[len - 1] <= ' ')) {
@@ -1124,13 +1061,12 @@ void loadBaseSystem() {
         "\n: decimal #10 base ! ;"
         "\n: binary %10 base ! ;"
         "\n: +! tuck @ + swap ! ;"
-        "\n: ?dup if- dup then ;"
+        "\n: ?dup dup if dup then ;"
         "\n: abs dup 0 < if 0 swap - then ;"
         "\n: min over over < if drop else nip then ;"
         "\n: max over over > if drop else nip then ;"
         "\n: between rot dup >r min max r> = ;"
         "\n: cr #13 emit #10 emit ;"
-        "\n: . 0 num>str space type ;"
         "\n: allot here + (h) ! ;"
         "\n: .word cr dup . space dup >body . addr +"
         "\n   dup c@ . 1+ space count type ;"
@@ -1167,6 +1103,7 @@ int main()
     int num = 0;
     int x = 0;
     numTIB = 0;
+    ok();
 
     while (true) {
         loop();
