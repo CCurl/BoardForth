@@ -96,6 +96,7 @@ void wordStore(ADDR addr, CELL val);
 void doParseWord();
 void doCreate(const char* name);
 void doSlMod();
+void doUSlMod();
 void doType();
 void doDotS();
 
@@ -116,6 +117,7 @@ ALLOC_T allocTbl[ALLOC_SZ];
 int num_alloced = 0, numTIB = 0;
 ADDR allocAddrBase, allocCurFree;
 FP prims[256];
+int lastWasCall = 0;
 int isBYE = 0;
 
 #define Y(op, code) X(#op, op, code)
@@ -138,6 +140,7 @@ int isBYE = 0;
     X("-", SUB, N -= T; pop()) \
     X("*", MULT, N *= T; pop()) \
     X("/MOD", SLMOD, doSlMod()) \
+    X("U/MOD", USLMOD, doUSlMod()) \
     X("2/", RSHIFT, T = T >> 1) \
     X("2*", LSHIFT, T = T << 1) \
     X("1-", ONEMINUS, --T) \
@@ -169,8 +172,8 @@ int isBYE = 0;
     X("DEBUGGER", DEBUGGER, ) \
     X("PARSEWORD", PARSEWORD, doParseWord()) \
     X("NUMBER?", ISNUMBER, doNumber((char *)pop());) \
-    X("NJMPZ", NJMPZ, PC = (T == 0)? addrAt(PC) : PC + ADDR_SZ) \
-    X("NJMPNZ", NJMPNZ, PC = (T != 0)? addrAt(PC) : PC + ADDR_SZ) \
+    X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
+    X("NJMPNZ", NJMPNZ, PC = (T != 0) ? addrAt(PC) : PC + ADDR_SZ) \
     X("PARSELINE", PARSELINE, doParse(' ')) \
     X("I", I, ) \
     X("J", J, ) \
@@ -277,7 +280,20 @@ void doSlMod() {
     if (y) {
         N = x % y;
         T = x / y;
-    } else {
+    }
+    else {
+        printString("-divide by 0-");
+        throw(3);
+    }
+}
+
+void doUSlMod() {
+    unsigned long x = N, y = T;
+    if (y) {
+        N = x % y;
+        T = x / y;
+    }
+    else {
         printString("-divide by 0-");
         throw(3);
     }
@@ -607,6 +623,8 @@ int doNumber(const char *w) {
 // ( a -- )
 void doParseWord() {    // opcode #59
     char *w = (char *)pop();
+    int lwc = lastWasCall;
+    lastWasCall = 0;
     // printStringF("-pw[%s]-", w);
     if (doFind(w)) {
         DICT_T *dp = (DICT_T *)pop();
@@ -619,6 +637,7 @@ void doParseWord() {    // opcode #59
             } else {
                 CCOMMA(OP_CALL);
                 ACOMMA((ADDR)xt);
+                lastWasCall = 1;
             }
         } else {
             run(xt, 0);
@@ -646,7 +665,8 @@ void doParseWord() {    // opcode #59
 
     if (strcmp_PF(w, PSTR(";")) == 0) {
         if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_RET);
+        if (lwc && (*(HERE-5) == OP_CALL)) { *(HERE-5) = OP_JMP; } 
+        else { CCOMMA(OP_RET); }
         STATE = 0;
         return;
     }
@@ -964,42 +984,37 @@ void loadBaseSystem() {
     loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
     loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
 
-    loadSource(": hex $10 base ! ;"
-        "\n: decimal #10 base ! ;"
-        "\n: binary %10 base ! ;"
-        " : nip swap drop ;"
-        " : tuck swap over ;"
-        " : 2dup over over ;"
-        " : 2drop drop drop ;"
-        " : mod /mod drop ;"
-        " : / /mod nip ;"
+    loadSource(": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+        " : nip swap drop ; : tuck swap over ;"
+        " : 2dup over over ; : 2drop drop drop ;"
+        " : mod /mod drop ; : / /mod nip ;"
         " : <> = 0= ;"
         " : negate 0 swap - ;"
+        " : abs dup 0 < if negate then ;"
         " : bl #32 ; : space bl emit ;"
         " : pad here $40 + ; "
         " : (neg) here $44 + ; "
         " : is-neg? dup 0 < if negate 1 (neg) ! then ; "
         " : hold pad @ 1- dup pad ! c! ; "
         " : <# pad dup ! ; "
-        " : # base @ /mod swap '0' + dup '9' > if 7 + then hold ; "
+        " : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
         " : #s begin # while- drop ; "
         " : #> (neg) @ if '-' emit then pad @ pad over - type ; "
         " : (.)  <# 0 (neg) ! base @ #10 = if is-neg? then #s #> ; "
         " : (u.) <# 0 (neg) ! #s #> ; "
-        " : . space (.) ; "
-        "\n: +! tuck @ + swap ! ;"
-        "\n: ?dup dup if dup then ;"
-        "\n: abs dup 0 < if 0 swap - then ;"
-        "\n: min over over < if drop else nip then ;"
-        "\n: max over over > if drop else nip then ;"
-        "\n: between rot dup >r min max r> = ;"
-        "\n: cr #13 emit #10 emit ;"
-        "\n: allot here + (here) ! ;"
-        "\n: >body addr + a@ ;"
-        "\n: .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
-        "\n: wordsl last begin dup .wordl a@ while- drop ;"
-        "\n: .word addr 2* + 1+ count type 9 emit ;"
-        "\n: words last begin dup .word a@ while- drop ;"
+        " : . space (.) ;  : u. space (u.) ; "
+        " : +! tuck @ + swap ! ;"
+        " : ?dup if- dup then ;"
+        " : min over over < if drop else nip then ;"
+        " : max over over > if drop else nip then ;"
+        " : between rot dup >r min max r> = ;"
+        " : cr #13 emit #10 emit ;"
+        " : allot here + (here) ! ;"
+        " : >body addr + a@ ;"
+        " : .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
+        " : wordsl last begin dup .wordl a@ while- drop ;"
+        " : .word addr 2* + 1+ count type 9 emit ;"
+        " : words last begin dup .word a@ while- drop ;"
     );
 }
 
