@@ -17,10 +17,10 @@
     #define ALLOC_SZ 16
 #else
     #include <windows.h>
-    #define DICT_SZ (64*1024)
-    #define STK_SZ 32
+    #define DICT_SZ (512*1024)
+    #define STK_SZ 64
     #define TIB_SZ 0x0400
-    #define ALLOC_SZ 32
+    #define ALLOC_SZ 64
     #define F(str) (char *)str
     #define PSTR(str) (char *)str
     #define strcmp_PF(str1, str2) strcmp(str1, str2)

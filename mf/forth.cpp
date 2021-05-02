@@ -142,7 +142,6 @@ int isBYE = 0;
     X("2*", LSHIFT, T = T << 1) \
     X("1-", ONEMINUS, --T) \
     X("1+", ONEPLUS, ++T) \
-    X(".", DOT, printStringF(" %d",pop())) \
     X(".S", DOTS, doDotS()) \
     X("AND", AND, N &= T; pop()) \
     X("OR", OR, N |= T; pop()) \
@@ -268,7 +267,7 @@ CELL rpop() {
 void doDotS() {
     printString("(");
     for (int i = 1; i <= DSP; i++) {
-        printStringF(" %d", dstk[i]);
+        printStringF(" #%d/$%lx", dstk[i], dstk[i]);
     }
     printString(" )");
 }
@@ -340,7 +339,7 @@ void doParse(char sep) {
     TIBEnd = toIN + strlen(toIN);
     try {
         while (1) {
-            char* w = (char*)HERE + 0x40;
+            char* w = (char*)HERE + 0x100;
             char* wp = w;
             CELL len = getNextWord(w, sep);
             if (len == 0) { return; }
@@ -580,6 +579,10 @@ int isDigit(char c, int base) {
 }
 
 int doNumber(const char *w) {
+    if ((*(w) == '\'') && (*(w+2) == '\'') && (*(w+3) == 0)) {
+        push(*(w+1));
+        return 1;
+    }
     CELL num = 0;
     int base = BASE;
     int isNeg = 0;
@@ -971,7 +974,19 @@ void loadBaseSystem() {
         " : mod /mod drop ;"
         " : / /mod nip ;"
         " : <> = 0= ;"
-        " : bl 32 ; : space bl emit ;"
+        " : negate 0 swap - ;"
+        " : bl #32 ; : space bl emit ;"
+        " : pad here $40 + ; "
+        " : (neg) here $44 + ; "
+        " : is-neg? dup 0 < if negate 1 (neg) ! then ; "
+        " : hold pad @ 1- dup pad ! c! ; "
+        " : <# pad dup ! ; "
+        " : # base @ /mod swap '0' + dup '9' > if 7 + then hold ; "
+        " : #s begin # while- drop ; "
+        " : #> (neg) @ if '-' emit then pad @ pad over - type ; "
+        " : (.)  <# 0 (neg) ! base @ #10 = if is-neg? then #s #> ; "
+        " : (u.) <# 0 (neg) ! #s #> ; "
+        " : . space (.) ; "
         "\n: +! tuck @ + swap ! ;"
         "\n: ?dup dup if dup then ;"
         "\n: abs dup 0 < if 0 swap - then ;"
