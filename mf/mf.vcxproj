@@ -153,11 +153,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="forth.cpp" />
-    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h" />
-    <ClInclude Include="defs.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="history.txt" />
