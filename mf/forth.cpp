@@ -9,7 +9,7 @@
 #include <stdarg.h>
 
 #ifdef __DEV_BOARD__
-Serial pc(PA_9, PA_10, "pc", 19200);
+Serial pc(PA_9, PA_10, "pc", 19200)
 
 void printSerial(const char* str) {
     pc.printf("%s", str);
@@ -31,8 +31,8 @@ typedef BYTE* ADDR;
 #define N dstk[DSP-1]
 #define R rstk[RSP]
 #define A ((ADDR)dstk[DSP])
-#define DROP DSP = ((0 < DSP) ? DSP-1 : 0)
-#define DROP2 DROP; DROP
+#define DROP1 DSP = ((0 < DSP) ? DSP-1 : 0)
+#define DROP2 DROP1; DROP1
 
 typedef struct {
     ADDR prev;
@@ -123,7 +123,7 @@ long millis() { return GetTickCount(); }
     X("NOOP", NOOP, ) \
     X("DUP", DUP, push(T)) \
     X("SWAP", SWAP, CELL x = T; T = N; N = x) \
-    X("DROP", DROP, pop()) \
+    X("DROP", DROP, DROP1) \
     X("OVER", OVER, push(N)) \
     X("c@", CFETCH, T = (BYTE)*A) \
     X("w@", WFETCH, T = wordAt(A)) \
@@ -169,19 +169,19 @@ long millis() { return GetTickCount(); }
     X("DEBUGGER", DEBUGGER, ) \
     X("PARSEWORD", PARSEWORD, doParseWord()) \
     X("NUMBER?", ISNUMBER, doNumber((char *)pop());) \
-    X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
-    X("NJMPNZ", NJMPNZ, PC = (T != 0) ? addrAt(PC) : PC + ADDR_SZ) \
     X("PARSELINE", PARSELINE, doParse(' ')) \
     X("I", I, ) \
     X("J", J, ) \
-    X("INPUT-PIN", INPUTPIN, pop()) \
-    X("OUTPUT-PIN", OUTPUTPIN, pop()) \
+    X("INPUT-PIN", INPUT_PIN, DROP1) \
+    X("INPUT-PULLUP", INPUT_PULLUP, DROP1) \
+    X("INPUT-PULLDOWN", INPUT_PULLDOWN, DROP1) \
+    X("OUTPUT-PIN", OUTPUT_PIN, DROP1) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
-    X("APINSTORE", APINSTORE, ) \
-    X("dp!", DPINSTORE, ) \
-    X("ap@", APINFETCH, ) \
-    X("dp@", DPINFETCH, ) \
+    X("ap!", APIN_STORE, DROP2 ) \
+    X("dp!", DPIN_STORE, DROP2 ) \
+    X("ap@", APIN_FETCH, DROP1 ) \
+    X("dp@", DPIN_FETCH, DROP1 ) \
     X("COM", COM, T = ~T ) \
     X("SQUOTE", SQUOTE, ) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)pop()) \
@@ -193,6 +193,8 @@ long millis() { return GetTickCount(); }
     X("JMP", JMP, PC = addrAt(PC)) \
     X("JMPZ", JMPZ, PC = (T == 0)? addrAt(PC) : PC + ADDR_SZ; pop()) \
     X("JMPNZ", JMPNZ, PC = (T != 0)? addrAt(PC) : PC + ADDR_SZ; pop()) \
+    X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
+    X("NJMPNZ", NJMPNZ, PC = (T != 0) ? addrAt(PC) : PC + ADDR_SZ) \
     Y(CLIT, push(*(PC++))) \
     Y(WLIT, push(wordAt(PC)); PC += WORD_SZ) \
     Y(LIT, push(cellAt(PC)); PC += CELL_SZ) \
@@ -949,11 +951,12 @@ void loadBaseSystem() {
     loadSourceF(": base $%lx ;", (long)&BASE);
     loadSourceF(": state $%lx ;", (long)&STATE);
     loadSourceF(": tib $%lx ;", (long)&TIB[0]);
-    loadSourceF(": dsp $%lx ; : rsp $%lx ;", (long)&DSP, (long)&RSP);
+    loadSourceF(": (dsp) $%lx ; : (rsp) $%lx ;", (long)&DSP, (long)&RSP);
     loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
     loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
 
     loadSource(": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+        " : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
         " : nip swap drop ; : tuck swap over ;"
         " : 2dup over over ; : 2drop drop drop ;"
         " : mod /mod drop ; : / /mod nip ;"
