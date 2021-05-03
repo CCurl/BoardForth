@@ -27,6 +27,10 @@
     void loadSource(const char *source);
     typedef unsigned int uint;
     typedef unsigned long ulong;
+    #define PIN_INPUT 0
+    #define PIN_INPUT_PULLUP 0
+    #define PIN_INPUT_PULLDOWN 0
+    #define PIN_OUTPUT 0
 #endif
 
 #endif

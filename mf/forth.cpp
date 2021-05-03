@@ -17,21 +17,22 @@ void printSerial(const char* str) {
 #endif
 
 typedef void (*FP)();
-typedef long  CELL;
-typedef unsigned long  ulong;
+typedef long CELL;
+typedef ulong UCELL;
 typedef unsigned short WORD;
 typedef unsigned char  BYTE;
 typedef BYTE* ADDR;
 
-#define CELL_SZ (sizeof(CELL))
+#define CELL_SZ (4)
 #define WORD_SZ (2)
 #define ADDR_SZ (sizeof(ADDR))
 
 #define T dstk[DSP]
 #define N dstk[DSP-1]
 #define R rstk[RSP]
-
-#define PIN_OUTPUT 0
+#define A ((ADDR)dstk[DSP])
+#define DROP DSP = ((0 < DSP) ? DSP-1 : 0)
+#define DROP2 DROP; DROP
 
 typedef struct {
     ADDR prev;
@@ -47,7 +48,6 @@ typedef struct {
     WORD sz;
 } ALLOC_T;
 
-void dumpDict();
 void startUp();
 void vmInit();
 void push(CELL);
@@ -59,9 +59,6 @@ ADDR allocSpace(WORD);
 void allocFree(ADDR);
 BYTE getOpcode(char*);
 ADDR align4(ADDR);
-void is_hex(char*);
-void is_decimal(char*);
-void is_binary(char*);
 void CCOMMA(BYTE v);
 void WCOMMA(WORD v);
 void COMMA(CELL);
@@ -78,19 +75,9 @@ void autoRun();
 CELL cellAt(ADDR);
 CELL wordAt(ADDR);
 ADDR addrAt(ADDR);
-void fDUMPDICT();
 CELL getNextWord(char *, char);
 void doParse(char sep);
 int doNumber(const char *);
-
-#pragma warning(disable:4996)
-
-int digitalRead(int pin) {return 0;}
-int analogRead(int pin) {return 0;}
-void digitalWrite(int pin, int val) {}
-void analogWrite(int pin, int val) {}
-void delay(int ms) { Sleep(ms); }
-long millis() { return GetTickCount(); }
 void cellStore(ADDR addr, CELL val);
 void wordStore(ADDR addr, CELL val);
 void doParseWord();
@@ -120,6 +107,16 @@ FP prims[256];
 int lastWasCall = 0;
 int isBYE = 0;
 
+#ifndef __DEV_BOARD__
+#pragma warning(disable:4996)
+int digitalRead(int pin) { return 0; }
+int analogRead(int pin) { return 0; }
+void digitalWrite(int pin, int val) {}
+void analogWrite(int pin, int val) {}
+void delay(int ms) { Sleep(ms); }
+long millis() { return GetTickCount(); }
+#endif
+
 #define Y(op, code) X(#op, op, code)
 
 #define OPCODES \
@@ -128,14 +125,14 @@ int isBYE = 0;
     X("SWAP", SWAP, CELL x = T; T = N; N = x) \
     X("DROP", DROP, pop()) \
     X("OVER", OVER, push(N)) \
-    X("c@", CFETCH, ADDR a = (ADDR)T; T = (CELL)*a) \
-    X("w@", WFETCH, T = wordAt((ADDR)T)) \
-    X("@",  FETCH,  T = cellAt((ADDR)T)) \
+    X("c@", CFETCH, T = (BYTE)*A) \
+    X("w@", WFETCH, T = wordAt(A)) \
+    X("@",  FETCH,  T = cellAt(A)) \
     X("a@", AFETCH, (ADDR_SZ == 2) ? fWFETCH() : fFETCH()) \
-    X("c!", CSTORE, ADDR a = (ADDR)pop(); CELL v = pop(); *(a) = (v & 0xFF)) \
-    X("!",  STORE,  ADDR a = (ADDR)pop(); CELL v = pop(); cellStore(a, v)) \
-    X("w!", WSTORE, ADDR a = (ADDR)pop(); CELL v = pop(); wordStore(a, v)) \
-    X("a!", ASTORE, ADDR a = (ADDR)pop(); CELL v = pop(); (ADDR_SZ == 2) ? wordStore(a,v) : cellStore(a,v)) \
+    X("c!", CSTORE, *A = (N & 0xFF); DROP2) \
+    X("!",  STORE,  cellStore(A, N); DROP2) \
+    X("w!", WSTORE, wordStore(A, N); DROP2) \
+    X("a!", ASTORE, (ADDR_SZ == 2) ? wordStore(A, N) : cellStore(A, N); DROP2) \
     X("+", ADD, N += T; pop()) \
     X("-", SUB, N -= T; pop()) \
     X("*", MULT, N *= T; pop()) \
@@ -288,7 +285,7 @@ void doSlMod() {
 }
 
 void doUSlMod() {
-    unsigned long x = N, y = T;
+    UCELL x = N, y = T;
     if (y) {
         N = x % y;
         T = x / y;
@@ -415,11 +412,9 @@ void printStringF(const char *fmt, ...) {
 CELL cellAt(ADDR loc) {
     return (*(loc+3) << 24) + (*(loc+2) << 16) + (*(loc+1) <<  8) + *(loc);
 }
-
 CELL wordAt(ADDR loc) {
     return (*(loc+1) <<  8) + *(loc);
 }
-
 ADDR addrAt(ADDR loc) {         // opcode #16
     return (ADDR_SZ == 2) ? (ADDR)wordAt(loc) : (ADDR)cellAt(loc);
 }
@@ -428,7 +423,6 @@ void wordStore(ADDR addr, CELL val) {
     *(addr)   = (val & 0xFF);
     *(addr+1) = (val >>  8) & 0xFF;
 }
-
 void cellStore(ADDR addr, CELL val) {
     *(addr)   = (val & 0xFF);
     *(addr+1) = (val >>  8) & 0xFF;
@@ -501,12 +495,6 @@ ADDR allocSpace(WORD sz) {
     return allocCurFree;
 }
 #pragma endregion
-
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
 
 void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
 void WCOMMA(WORD v) { push(v); fWCOMMA(); }
@@ -830,16 +818,11 @@ void doParseWord() {    // opcode #59
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 void parseLine(char *line) {
-    //TIB = TIBBuf;
-    //strcpy(TIB, line);
-    //push((CELL)TIB);
     push((CELL)line);
     doParse(' ');
 }
 
 void loadUserWords() {
-    // sprintf(buf, ": dpin-base #%ld ; : apifln-base #%ld ;", (long)0, (long)A0);
-    // parseLine(buf);
     loadSource(PSTR(": auto-run-last last >body dict a! ;"));
     loadSource(PSTR(": auto-run-off 0 0 a! ;"));
     loadSource(PSTR(": elapsed tick swap - 1000 /mod . . ;"));
@@ -866,20 +849,6 @@ void loadUserWords() {
     #endif
     // loadSource(PSTR(""));
 }
-
-void dumpDict() {
-    ADDR addr = &dict[0];
-    printStringF("%04x %04x (%ld %ld)", HERE, LAST, HERE, LAST);
-    for (int i = 0; i < 9999; i++) {
-        if (addr > HERE) { return; }
-        if (i % 16 == 0) printStringF("\r\n %08lx:", addr);
-        printStringF(" %02x", *(addr++));
-    }
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
 
 // ---------------------------------------------------------------------
 // main.c
@@ -1020,7 +989,7 @@ void loadBaseSystem() {
 
 void ok() {
     printString(" ok. ");
-    fDOTS();
+    doDotS();
     printString("\r\n");
 }
 
@@ -1032,18 +1001,14 @@ void startUp() {
     printString("Hello.");
 }
 
+#ifndef __DEV_BOARD__
 int main()
 {
     // Initialise the digital pin LED13 as an output
-#ifdef __DEV_BOARD__
-    DigitalOut led(PC_13);
-#endif
 
     startUp();
     loadBaseSystem();
     loadUserWords();
-    // push(0);
-    // fDUMPDICT();
     int num = 0;
     int x = 0;
     numTIB = 0;
@@ -1051,15 +1016,7 @@ int main()
 
     while (true) {
         loop();
-#ifdef __DEV_BOARD__
-        num += 1;
-        if (num > 499999) {
-            num = 0;
-            x = (x) ? 0 : 1;
-            led = x;
-        }
-#else
         if (isBYE) { break; }
-#endif
     }
 }
+#endif
