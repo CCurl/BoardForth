@@ -802,35 +802,35 @@ void doParseWord() {    // opcode #59
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
-void parseLine(char *line) {
+void parseLine(const char *line) {
     push((CELL)line);
     doParse(' ');
 }
 
 void loadUserWords() {
-    loadSource(PSTR(": auto-run-last last >body dict a! ;"));
-    loadSource(PSTR(": auto-run-off 0 0 a! ;"));
-    loadSource(PSTR(": elapsed tick swap - 1000 /mod . . ;"));
-    loadSource(PSTR(": bm tick swap begin 1- while- drop elapsed ;"));
-    loadSource(PSTR(": low->high over over > if swap then ;"));
-    loadSource(PSTR(": high->low over over < if swap then ;"));
-    loadSource(PSTR(": dump low->high do i c@ . loop ;"));
-    loadSource(PSTR(": led 13 ;"));
-    loadSource(PSTR(": led-on 1 led dp! ; : led-off 0 led dp! ;"));
-    loadSource(PSTR(": blink led-on dup ms led-off dup ms ;"));
-    loadSource(PSTR(": k 1000 * ; : mil k k ;"));
-    loadSource(PSTR(": blinks 0 swap do blink loop ;"));
-    loadSource(PSTR("variable pot  3 pot ! "));
-    loadSource(PSTR("variable but  6 but ! "));
-    loadSource(PSTR(": init led output-pin pot @ input-pin but @ input-pin ;"));
-    loadSource(PSTR("variable pot-lv variable sens 4 sens !"));
-    loadSource(PSTR(": but@ but @ dp@ ;"));
-    loadSource(PSTR(": pot@ pot @ ap@ ;"));
-    loadSource(PSTR(": bp->led but@ if led-on else led-off then ;"));
-    loadSource(PSTR(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"));
-    loadSource(PSTR(": go bp->led .pot? ;"));
+    parseLine(": auto-run-last last >body dict a! ;");
+    parseLine(": auto-run-off 0 0 a! ;");
+    parseLine(": elapsed tick swap - 1000 /mod . . ;");
+    parseLine(": bm tick swap begin 1- while- drop elapsed ;");
+    parseLine(": low->high over over > if swap then ;");
+    parseLine(": high->low over over < if swap then ;");
+    parseLine(": dump low->high do i c@ . loop ;");
+    parseLine(": led 13 ;");
+    parseLine(": led-on 1 led dp! ; : led-off 0 led dp! ;");
+    parseLine(": blink led-on dup ms led-off dup ms ;");
+    parseLine(": k 1000 * ; : mil k k ;");
+    parseLine(": blinks 0 swap do blink loop ;");
+    parseLine("variable pot  3 pot ! ");
+    parseLine("variable but  6 but ! ");
+    parseLine(": init led output-pin pot @ input-pin but @ input-pin ;");
+    parseLine("variable pot-lv variable sens 4 sens !");
+    parseLine(": but@ but @ dp@ ;");
+    parseLine(": pot@ pot @ ap@ ;");
+    parseLine(": bp->led but@ if led-on else led-off then ;");
+    parseLine(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;");
+    parseLine(": go bp->led .pot? ;");
     #ifdef __DEV_BOARD__
-    loadSource(PSTR("init // auto-run-last"));
+    parseLine(PSTR("init // auto-run-last"));
     #endif
     // loadSource(PSTR(""));
 }
@@ -913,10 +913,6 @@ void loop() {
 }
 #endif
 
-void loadSource(const char* src) {
-    parseLine((char*)src);
-}
-
 void loadSourceF(const char* fmt, ...) {
     char buf[96];
     va_list args;
@@ -938,7 +934,7 @@ void loadBaseSystem() {
     loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
     loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
 
-    loadSource(": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+    parseLine(": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
         " : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
         " : nip swap drop ; : tuck swap over ;"
         " : 2dup over over ; : 2drop drop drop ;"
