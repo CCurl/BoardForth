@@ -52,7 +52,6 @@ void push(CELL);
 CELL pop();
 void rpush(CELL);
 CELL rpop();
-void allocFreeAll();
 void printString(const char*);
 void printStringF(const char*, ...);
 void ok();
@@ -69,6 +68,9 @@ void doSlMod();
 void doUSlMod();
 void doType();
 void doDotS();
+void doFor();
+void doLoop();
+void doI();
 
 BYTE IR;
 ADDR PC;
@@ -146,15 +148,13 @@ long millis() { return GetTickCount(); }
     X("FILEREAD", FILEREAD, ) \
     X("LOAD", LOAD, ) \
     X("THRU", THRU, ) \
-    X("DO", DO, ) \
-    X("LOOP", LOOP, ) \
-    X("LOOPP", LOOPP, ) \
+    X("FOR", DO, doFor()) \
+    X("I", I, doI()) \
+    X("NEXT", LOOP, doLoop()) \
     X("DEBUGGER", DEBUGGER, ) \
     X("PARSEWORD", PARSEWORD, doParseWord()) \
     X("NUMBER?", ISNUMBER, doNumber((char *)pop());) \
     X("PARSELINE", PARSELINE, doParse(' ')) \
-    X("I", I, ) \
-    X("J", J, ) \
     X("INPUT-PIN", INPUT_PIN, DROP1) \
     X("INPUT-PULLUP", INPUT_PULLUP, DROP1) \
     X("INPUT-PULLDOWN", INPUT_PULLDOWN, DROP1) \
@@ -292,6 +292,43 @@ void doType() {
     }
 }
 
+typedef struct {
+    ADDR startAddr;
+    CELL index;
+    CELL stop;
+} DO_LOOP_T;
+
+DO_LOOP_T doStack[8];
+int doStackTop = 0;
+
+void doFor() {
+    if (doStackTop < 8) {
+        DO_LOOP_T* dp = &doStack[doStackTop++];
+        dp->startAddr = PC;
+        dp->index = 0;
+        dp->stop = pop();
+    }
+}
+
+void doLoop() {
+    if (0 < doStackTop) {
+        DO_LOOP_T* dp = &doStack[doStackTop - 1];
+        ++dp->index;
+        if (dp->index < dp->stop) {
+            PC = dp->startAddr;
+        } else {
+            --doStackTop;
+        }
+    }
+}
+
+void doI() {
+    if (0 < doStackTop) {
+        DO_LOOP_T* dp = &doStack[doStackTop - 1];
+        push(dp->index);
+    }
+}
+
 ADDR align4(ADDR x) {
     CELL y = (CELL)x;
     while (y % 4) { ++y; }
@@ -363,7 +400,6 @@ void vmInit() {
     allocAddrBase = &dict[DICT_SZ];
     allocCurFree = allocAddrBase;
     allocAddrBase = allocCurFree;
-    allocFreeAll();
     loopDepth = 0;
 }
 
@@ -414,72 +450,6 @@ void cellStore(ADDR addr, CELL val) {
     *(addr+2) = (val >> 16) & 0xFF;
     *(addr+3) = (val >> 24) & 0xFF;
 }
-
-#pragma region allocation
-void allocDump() {
-    printStringF("\r\nAlloc table (sz %d, %d used)", ALLOC_SZ, num_alloced);
-    printString("\r\n-------------------------------");
-    for (int i = 0; i < num_alloced; i++) {
-        printStringF("\r\n%2d %04lx %4d %s", i, allocTbl[i].addr, (int)allocTbl[i].sz, (int)allocTbl[i].available ? "available" : "in-use");
-    }
-}
-
-int allocFind(ADDR addr) {
-    for (int i = 0; i < num_alloced; i++) {
-        if (allocTbl[i].addr == addr) return i;
-    }
-    return -1;
-}
-
-void allocFree(ADDR addr) {
-    // printStringF("-allocFree:%d-", (int)addr);
-    int x = allocFind(addr);
-    if (x >= 0) {
-        // printStringF("-found:%d-", (int)x);
-        allocTbl[x].available = 1;
-        if ((x+1) == num_alloced) { -- num_alloced; }
-        if (num_alloced == 0) { allocCurFree = allocAddrBase; }
-    }
-}
-
-void allocFreeAll() {
-    allocCurFree = allocAddrBase;
-    for (int i = 0; i < ALLOC_SZ; i++) allocTbl[i].available = 1;
-    num_alloced = 0;
-}
-
-int allocFindAvailable(WORD sz) {
-    // allocDump();
-    for (int i = 0; i < num_alloced; i++) {
-        if ((allocTbl[i].available) && (allocTbl[i].sz >= sz)) return i;
-    }
-    return -1;
-}
-
-ADDR allocSpace(WORD sz) {
-    int x = allocFindAvailable(sz);
-    if (x >= 0) {
-        // printStringF("-alloc:reuse:%d-", x);
-        allocTbl[x].available = 0;
-        return allocTbl[x].addr;
-    }
-    // printStringF("-alloc:%d,%d-\r\n", (int)sz, (int)allocCurFree);
-    allocCurFree -= (sz);
-    if (allocCurFree <= HERE) {
-        printString("-out of space!-");
-        allocCurFree += sz;
-        return 0;
-    }
-    if (num_alloced < ALLOC_SZ) {
-        allocTbl[num_alloced].addr = allocCurFree;
-        allocTbl[num_alloced].sz = sz;
-        allocTbl[num_alloced++].available = 0;
-    } else {
-        printString("-allocTbl too small-");
-    }
-    return allocCurFree;
-}
-#pragma endregion
 
 void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
 void WCOMMA(WORD v) { push(v); fWCOMMA(); }
@@ -737,14 +707,6 @@ void doParseWord() {    // opcode #59
     if (strcmp_PF(w, PSTR("loop")) == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_LOOP);
-        CCOMMA(OP_JMPNZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp_PF(w, PSTR("loop+")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_LOOPP);
         CCOMMA(OP_JMPNZ);
         fACOMMA();
         return;
