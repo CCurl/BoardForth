@@ -68,9 +68,13 @@ void doSlMod();
 void doUSlMod();
 void doType();
 void doDotS();
-void doFor();
+void doDo();
 void doLoop();
 void doI();
+void doJ();
+void doBegin();
+void doAgain();
+void doWhile(int, int);
 
 BYTE IR;
 ADDR PC;
@@ -81,7 +85,6 @@ char TIBBuf[TIB_SZ];
 char *TIB = TIBBuf;
 char *toIN, *TIBEnd;
 CELL BASE, STATE, DSP, RSP;
-CELL loopSTK[12];
 CELL dstk[STK_SZ+1];
 CELL rstk[STK_SZ+1];
 CELL loopDepth;
@@ -148,9 +151,16 @@ long millis() { return GetTickCount(); }
     X("FILEREAD", FILEREAD, ) \
     X("LOAD", LOAD, ) \
     X("THRU", THRU, ) \
-    X("FOR", DO, doFor()) \
+    X("DO", DO, doDo()) \
     X("I", I, doI()) \
-    X("NEXT", LOOP, doLoop()) \
+    X("J", J, doJ()) \
+    X("LOOP", LOOP, doLoop()) \
+    X("BEGIN", BEGIN, doBegin()) \
+    X("AGAIN", AGAIN, doAgain()) \
+    X("WHILE", WHILE, doWhile(1, 0)) \
+    X("UNTIL", UNTIL, doWhile(1, 1)) \
+    X("WHILE-", WHILEN, doWhile(0, 0)) \
+    X("UNTIL-", UNTILN, doWhile(0, 1)) \
     X("DEBUGGER", DEBUGGER, ) \
     X("PARSEWORD", PARSEWORD, doParseWord()) \
     X("NUMBER?", ISNUMBER, doNumber((char *)pop());) \
@@ -294,38 +304,57 @@ void doType() {
 
 typedef struct {
     ADDR startAddr;
+    CELL start;
     CELL index;
     CELL stop;
 } DO_LOOP_T;
 
-DO_LOOP_T doStack[8];
-int doStackTop = 0;
+#define LOOP_STK_SZ 8
+DO_LOOP_T doStack[LOOP_STK_SZ];
+int loopSP = -1;
 
-void doFor() {
-    if (doStackTop < 8) {
-        DO_LOOP_T* dp = &doStack[doStackTop++];
+void doDo() {
+    if (loopSP < LOOP_STK_SZ) {
+        DO_LOOP_T* dp = &doStack[++loopSP];
         dp->startAddr = PC;
-        dp->index = 0;
         dp->stop = pop();
+        dp->start = pop();
+        dp->index = dp->start;
     }
 }
 
+void doI() { if (0 <= loopSP) { push(doStack[loopSP].index); } }
+void doJ() { if (1 <= loopSP) { push(doStack[loopSP - 1].index); } }
+
 void doLoop() {
-    if (0 < doStackTop) {
-        DO_LOOP_T* dp = &doStack[doStackTop - 1];
+    if (0 <= loopSP) {
+        DO_LOOP_T* dp = &doStack[loopSP];
         ++dp->index;
         if (dp->index < dp->stop) {
             PC = dp->startAddr;
         } else {
-            --doStackTop;
+            --loopSP;
         }
     }
 }
 
-void doI() {
-    if (0 < doStackTop) {
-        DO_LOOP_T* dp = &doStack[doStackTop - 1];
-        push(dp->index);
+void doBegin() {
+    if (loopSP < LOOP_STK_SZ) {
+        DO_LOOP_T* dp = &doStack[++loopSP];
+        dp->startAddr = PC;
+    }
+}
+
+void doAgain() { if (0 <= loopSP) { PC = doStack[loopSP].startAddr; } }
+void doWhile(int dropIt, int isUntil) {
+    if (loopSP < 0) { return; }
+    CELL x = (dropIt) ? pop() : T;
+    if (isUntil) x = (x) ? 0 : 1;
+    if (x) {
+        PC = doStack[loopSP].startAddr;
+    } else {
+        if (!dropIt) pop();
+        --loopSP;
     }
 }
 
@@ -650,65 +679,9 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("begin")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        push((CELL)HERE);
-        return;
-    }
-
-    if (strcmp_PF(w, PSTR("repeat")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_JMP);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp_PF(w, PSTR("while")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_JMPNZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp_PF(w, PSTR("until")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_JMPZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp_PF(w, PSTR("while-")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_NJMPNZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp_PF(w, PSTR("until-")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_NJMPZ);
-        fACOMMA();
-        return;
-    }
-
-    if (strcmp_PF(w, PSTR("do")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_DO);
-        push((CELL)HERE);
-        return;
-    }
-
     if (strcmp_PF(w, PSTR("leave")) == 0) {
         if (! compiling(w, 1)) { return; }
         printString("WARNING: LEAVE not supported!");
-        return;
-    }
-
-    if (strcmp_PF(w, PSTR("loop")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_LOOP);
-        CCOMMA(OP_JMPNZ);
-        fACOMMA();
         return;
     }
 
@@ -770,27 +743,29 @@ void parseLine(const char *line) {
 }
 
 void loadUserWords() {
-    parseLine(": auto-run-last last >body dict a! ;");
-    parseLine(": auto-run-off 0 0 a! ;");
-    parseLine(": elapsed tick swap - 1000 /mod . . ;");
-    parseLine(": bm tick swap begin 1- while- drop elapsed ;");
-    parseLine(": low->high over over > if swap then ;");
-    parseLine(": high->low over over < if swap then ;");
-    parseLine(": dump low->high do i c@ . loop ;");
-    parseLine(": led 13 ;");
-    parseLine(": led-on 1 led dp! ; : led-off 0 led dp! ;");
-    parseLine(": blink led-on dup ms led-off dup ms ;");
-    parseLine(": k 1000 * ; : mil k k ;");
-    parseLine(": blinks 0 swap do blink loop ;");
-    parseLine("variable pot  3 pot ! ");
-    parseLine("variable but  6 but ! ");
-    parseLine(": init led output-pin pot @ input-pin but @ input-pin ;");
-    parseLine("variable pot-lv variable sens 4 sens !");
-    parseLine(": but@ but @ dp@ ;");
-    parseLine(": pot@ pot @ ap@ ;");
-    parseLine(": bp->led but@ if led-on else led-off then ;");
-    parseLine(": .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;");
-    parseLine(": go bp->led .pot? ;");
+    parseLine(
+        ": auto-run-last last >body dict a! ;"
+        " : auto-run-off 0 0 a! ;"
+        " : elapsed tick swap - 1000 /mod . . ;"
+        " : bm tick swap begin 1- while- elapsed ;"
+        " : low->high over over > if swap then ;"
+        " : high->low over over < if swap then ;"
+        " : dump low->high do i c@ . loop ;"
+        " : led 13 ;"
+        " : led-on 1 led dp! ; : led-off 0 led dp! ;"
+        " : blink led-on dup ms led-off dup ms ;"
+        " : k 1000 * ; : mil k k ;"
+        " : blinks 0 swap do blink loop ;"
+        " variable pot  3 pot ! "
+        " variable but  6 but ! "
+        " : init led output-pin pot @ input-pin but @ input-pin ;"
+        " variable pot-lv variable sens 4 sens !"
+        " : but@ but @ dp@ ;"
+        " : pot@ pot @ ap@ ;"
+        " : bp->led but@ if led-on else led-off then ;"
+        " : .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"
+        " : go bp->led .pot? ;"
+    );
     #ifdef __DEV_BOARD__
     parseLine(PSTR("init // auto-run-last"));
     #endif
@@ -911,7 +886,7 @@ void loadBaseSystem() {
         " : hold pad @ 1- dup pad ! c! ; "
         " : <# pad dup ! ; "
         " : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
-        " : #s begin # while- drop ; "
+        " : #s begin # while- ; "
         " : #> (neg) @ if '-' emit then pad @ pad over - type ; "
         " : (.)  <# 0 (neg) ! base @ #10 = if is-neg? then #s #> ; "
         " : (u.) <# 0 (neg) ! #s #> ; "
@@ -925,9 +900,9 @@ void loadBaseSystem() {
         " : allot here + (here) ! ;"
         " : >body addr + a@ ;"
         " : .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
-        " : wordsl last begin dup .wordl a@ while- drop ;"
+        " : wordsl last begin dup .wordl a@ while- ;"
         " : .word addr 2* + 1+ count type 9 emit ;"
-        " : words last begin dup .word a@ while- drop ;"
+        " : words last begin dup .word a@ while- ;"
     );
 }
 
