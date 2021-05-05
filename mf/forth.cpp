@@ -48,6 +48,14 @@ typedef struct {
     WORD sz;
 } ALLOC_T;
 
+#define LOOP_STK_SZ 8
+typedef struct {
+    ADDR startAddr;
+    CELL start;
+    CELL index;
+    CELL stop;
+} DO_LOOP_T;
+
 void push(CELL);
 CELL pop();
 void rpush(CELL);
@@ -93,6 +101,8 @@ int num_alloced = 0, numTIB = 0;
 ADDR allocAddrBase, allocCurFree;
 FP prims[256];
 int lastWasCall = 0;
+DO_LOOP_T doStack[LOOP_STK_SZ];
+int loopSP = -1;
 int isBYE = 0;
 
 #ifndef __DEV_BOARD__
@@ -301,17 +311,6 @@ void doType() {
         printString(x);
     }
 }
-
-typedef struct {
-    ADDR startAddr;
-    CELL start;
-    CELL index;
-    CELL stop;
-} DO_LOOP_T;
-
-#define LOOP_STK_SZ 8
-DO_LOOP_T doStack[LOOP_STK_SZ];
-int loopSP = -1;
 
 void doDo() {
     if (loopSP < LOOP_STK_SZ) {
@@ -527,20 +526,6 @@ int isInlineWord(char *w) {
         dp->flags = 1;
         return 1;
     }
-    /*
-    */
-
-    if (strcmp_PF(w, PSTR("count")) == 0) {
-        BYTE xx[] = {OP_DUP, OP_ONEPLUS, OP_SWAP, OP_CFETCH };
-        compileOrExecute(4, xx);
-        return 1;
-    }
-
-    if (strcmp_PF(w, PSTR("rot")) == 0) {
-        BYTE xx[] = { OP_DTOR, OP_SWAP, OP_RTOD, OP_SWAP };
-        compileOrExecute(4, xx);
-        return 1;
-    }
 
     return 0;
 }
@@ -744,7 +729,7 @@ void parseLine(const char *line) {
 
 void loadUserWords() {
     parseLine(
-        ": auto-run-last last >body dict a! ;"
+        " : auto-run-last last >body dict a! ;"
         " : auto-run-off 0 0 a! ;"
         " : elapsed tick swap - 1000 /mod . . ;"
         " : bm tick swap begin 1- while- elapsed ;"
@@ -860,7 +845,7 @@ void loadSourceF(const char* fmt, ...) {
 }
 
 void loadBaseSystem() {
-    loadSourceF(": cell %d ; : addr %d ;", CELL_SZ, ADDR_SZ);
+    loadSourceF(": cell %d ; : cells cell * ; : addr %d ;", CELL_SZ, ADDR_SZ);
     loadSourceF(": dict $%lx ;", (long)&dict[0]);
     loadSourceF(": (here) $%lx ; : here (here) @ ;", (long)&HERE);
     loadSourceF(": (last) $%lx ; : last (last) @ ;", (long)&LAST);
@@ -871,38 +856,44 @@ void loadBaseSystem() {
     loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
     loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
 
-    parseLine(": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+    parseLine(
         " : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
         " : nip swap drop ; : tuck swap over ;"
+        " : ?dup if- dup then ;"
+        " : rot >r swap r> swap ; : -rot swap >r swap r> ;"
         " : 2dup over over ; : 2drop drop drop ;"
         " : mod /mod drop ; : / /mod nip ;"
+        " : +! tuck @ + swap ! ;"
         " : <> = 0= ;"
         " : negate 0 swap - ;"
         " : abs dup 0 < if negate then ;"
-        " : bl #32 ; : space bl emit ;"
-        " : pad here $40 + ; "
-        " : (neg) here $44 + ; "
-        " : is-neg? dup 0 < if negate 1 (neg) ! then ; "
+        " : bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
+        " : pad here $40 + ; : (neg) here $44 + ; "
         " : hold pad @ 1- dup pad ! c! ; "
         " : <# pad dup ! ; "
         " : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
         " : #s begin # while- ; "
         " : #> (neg) @ if '-' emit then pad @ pad over - type ; "
+        " : is-neg? dup 0 < if negate 1 (neg) ! then ; "
         " : (.)  <# 0 (neg) ! base @ #10 = if is-neg? then #s #> ; "
         " : (u.) <# 0 (neg) ! #s #> ; "
-        " : . space (.) ;  : u. space (u.) ; "
-        " : +! tuck @ + swap ! ;"
-        " : ?dup if- dup then ;"
-        " : min over over < if drop else nip then ;"
-        " : max over over > if drop else nip then ;"
+        " : . space (.) ; : u. space (u.) ; "
+        " : hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+        " : min 2dup < if drop else nip then ;"
+        " : max 2dup > if drop else nip then ;"
         " : between rot dup >r min max r> = ;"
-        " : cr #13 emit #10 emit ;"
         " : allot here + (here) ! ;"
         " : >body addr + a@ ;"
+        " : count dup 1+ swap c@ ;"
         " : .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
         " : wordsl last begin dup .wordl a@ while- ;"
-        " : .word addr 2* + 1+ count type 9 emit ;"
+        " : .word addr 2* + 1+ count type tab ;"
         " : words last begin dup .word a@ while- ;"
+        " variable (regs) 9 cells allot"
+        " : reg cells (regs) + ;"
+        " : >src 0 reg ! ; : >dst 1 reg ! ; "
+        " : src 0 reg @ ; : src+ src dup 1+ >src ; : src+4 src dup 4 + >src ;"
+        " : dst 1 reg @ ; : dst+ dst dup 1+ >dst ; : dst+4 dst dup 4 + >dst ;"
     );
 }
 
