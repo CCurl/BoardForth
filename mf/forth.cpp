@@ -31,7 +31,7 @@ typedef BYTE* ADDR;
 #define N dstk[DSP-1]
 #define R rstk[RSP]
 #define A ((ADDR)dstk[DSP])
-#define DROP1 DSP = ((0 < DSP) ? DSP-1 : 0)
+#define DROP1 --DSP
 #define DROP2 DROP1; DROP1
 
 typedef struct {
@@ -107,10 +107,11 @@ int isBYE = 0;
 
 #ifndef __DEV_BOARD__
 #pragma warning(disable:4996)
-int digitalRead(int pin) { return 0; }
-int analogRead(int pin) { return 0; }
-void digitalWrite(int pin, int val) {}
-void analogWrite(int pin, int val) {}
+void pinMode(int pin, int mode) {}
+int digitalRead(int pin) { return pin+1; }
+int analogRead(int pin) { return pin+1; }
+void digitalWrite(int pin, int val) { printString("-dp!-"); }
+void analogWrite(int pin, int val) { printString("-ap!-"); }
 void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
 #endif
@@ -175,33 +176,33 @@ long millis() { return GetTickCount(); }
     X("PARSEWORD", PARSEWORD, doParseWord()) \
     X("NUMBER?", ISNUMBER, doNumber((char *)pop());) \
     X("PARSELINE", PARSELINE, doParse(' ')) \
-    X("INPUT-PIN", INPUT_PIN, DROP1) \
-    X("INPUT-PULLUP", INPUT_PULLUP, DROP1) \
-    X("INPUT-PULLDOWN", INPUT_PULLDOWN, DROP1) \
-    X("OUTPUT-PIN", OUTPUT_PIN, DROP1) \
+    X("INPUT-PIN",      INPUT_PIN,      pinMode(T, PIN_INPUT); DROP1) \
+    X("INPUT-PULLUP",   INPUT_PULLUP,   pinMode(T, PIN_INPUT_PULLUP); DROP1) \
+    X("INPUT-PULLDOWN", INPUT_PULLDOWN, pinMode(T, PIN_INPUT_PULLDOWN); DROP1) \
+    X("OUTPUT-PIN",     OUTPUT_PIN,     pinMode(T, PIN_OUTPUT); DROP1) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
-    X("ap!", APIN_STORE, DROP2 ) \
-    X("dp!", DPIN_STORE, DROP2 ) \
-    X("ap@", APIN_FETCH, DROP1 ) \
-    X("dp@", DPIN_FETCH, DROP1 ) \
+    X("ap!", APIN_STORE, analogWrite(N, T);  DROP2 ) \
+    X("dp!", DPIN_STORE, digitalWrite(N, T); DROP2 ) \
+    X("ap@", APIN_FETCH, T = analogRead(T); ) \
+    X("dp@", DPIN_FETCH, T = digitalRead(T); ) \
     X("COM", COM, T = ~T ) \
     X("SQUOTE", SQUOTE, ) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)pop()) \
     X("W,", WCOMMA, push((CELL)HERE); fWSTORE(); HERE += WORD_SZ) \
-    X(",", COMMA, push((CELL)HERE); fSTORE(); HERE += CELL_SZ) \
+    X(",",  COMMA,  push((CELL)HERE); fSTORE(); HERE += CELL_SZ) \
     X("A,", ACOMMA, (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA()) \
     X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
     X("RET", RET, PC = (ADDR)rpop()) \
-    X("JMP", JMP, PC = addrAt(PC)) \
-    X("JMPZ", JMPZ, PC = (T == 0)? addrAt(PC) : PC + ADDR_SZ; pop()) \
-    X("JMPNZ", JMPNZ, PC = (T != 0)? addrAt(PC) : PC + ADDR_SZ; pop()) \
+    X("JMP",    JMP,    PC = addrAt(PC)) \
+    X("JMPZ",   JMPZ,   PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
+    X("JMPNZ",  JMPNZ,  PC = (T != 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
     X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
     X("NJMPNZ", NJMPNZ, PC = (T != 0) ? addrAt(PC) : PC + ADDR_SZ) \
     Y(CLIT, push(*(PC++))) \
     Y(WLIT, push(wordAt(PC)); PC += WORD_SZ) \
     Y(LIT, push(cellAt(PC)); PC += CELL_SZ) \
-    X("BYE", BYE, isBYE = 1) \
+    X("BYE", BYE, printString(" bye."); isBYE = 1) \
 
 #define X(name, op, code) OP_ ## op,
 typedef enum {
@@ -234,12 +235,10 @@ void run(ADDR start, CELL max_cycles) {
     PC = start;
     // printStringF("\r\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
     while (1) {
+        if (DSP < 0) { DSP = 0; }
         OPCODE_T IR = (OPCODE_T)*(PC++);
-        if (IR == OP_BYE) { return; }
-        if (IR == OP_RET) {
-            if (RSP < 1) { return; }
-            PC = (ADDR)rpop();
-        } else if (prims[IR]) {
+        if ((IR == OP_RET) && (RSP < 1)) { return; }
+        if ((0 <= IR) && (IR <= OP_BYE) && (prims[IR])) {
             prims[IR]();
         } else {
             printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC-1);
@@ -252,20 +251,20 @@ void run(ADDR start, CELL max_cycles) {
 }
 
 void push(CELL v) {
-    DSP = (DSP < STK_SZ) ? DSP + 1 : STK_SZ;
+    if (DSP < STK_SZ) ++DSP;
     T = v;
 }
 CELL pop() {
-    DSP = (DSP > 0) ? DSP - 1 : 0;
+    if (0 < DSP) --DSP;
     return dstk[DSP + 1];
 }
 
 void rpush(CELL v) {
-    RSP = (RSP < STK_SZ) ? RSP + 1 : STK_SZ;
+    if (RSP < STK_SZ) ++RSP;
     R = v;
 }
 CELL rpop() {
-    RSP = (RSP > 0) ? RSP - 1 : 0;
+    if (0 < RSP) --RSP;
     return rstk[RSP + 1];
 }
 
@@ -316,9 +315,14 @@ void doDo() {
     if (loopSP < LOOP_STK_SZ) {
         DO_LOOP_T* dp = &doStack[++loopSP];
         dp->startAddr = PC;
-        dp->stop = pop();
-        dp->start = pop();
+        dp->stop = T;
+        dp->start = N;
+        if (dp->stop < dp->start) {
+            dp->stop = N;
+            dp->start = T;
+        }
         dp->index = dp->start;
+        DROP2;
     }
 }
 
@@ -345,6 +349,7 @@ void doBegin() {
 }
 
 void doAgain() { if (0 <= loopSP) { PC = doStack[loopSP].startAddr; } }
+
 void doWhile(int dropIt, int isUntil) {
     if (loopSP < 0) { return; }
     CELL x = (dropIt) ? pop() : T;
@@ -414,23 +419,6 @@ void doParse(char sep) {
         printString("error caught");
     }
 }
-
-void vmInit() {
-    init_handlers();
-    HERE = &dict[0];
-    LAST = 0;
-    BASE = 10;
-    STATE = 0;
-    DSP = 0;
-    RSP = 0;
-    TIB = TIBBuf;
-    TIBEnd = TIBBuf;
-    allocAddrBase = &dict[DICT_SZ];
-    allocCurFree = allocAddrBase;
-    allocAddrBase = allocCurFree;
-    loopDepth = 0;
-}
-
 
 void autoRun() {
     ADDR addr = addrAt(&dict[0]);
@@ -622,7 +610,7 @@ void doParseWord() {    // opcode #59
 
     if (strcmp_PF(w, PSTR(";")) == 0) {
         if (! compiling(w, 1)) { return; }
-        if (lwc && (*(HERE-5) == OP_CALL)) { *(HERE-5) = OP_JMP; } 
+        if (lwc && (*(HERE-ADDR_SZ-1) == OP_CALL)) { *(HERE-ADDR_SZ-1) = OP_JMP; } 
         else { CCOMMA(OP_RET); }
         STATE = 0;
         return;
@@ -727,35 +715,6 @@ void parseLine(const char *line) {
     doParse(' ');
 }
 
-void loadUserWords() {
-    parseLine(
-        " : auto-run-last last >body dict a! ;"
-        " : auto-run-off 0 0 a! ;"
-        " : elapsed tick swap - 1000 /mod . . ;"
-        " : bm tick swap begin 1- while- elapsed ;"
-        " : low->high over over > if swap then ;"
-        " : high->low over over < if swap then ;"
-        " : dump low->high do i c@ . loop ;"
-        " : led 13 ;"
-        " : led-on 1 led dp! ; : led-off 0 led dp! ;"
-        " : blink led-on dup ms led-off dup ms ;"
-        " : k 1000 * ; : mil k k ;"
-        " : blinks 0 swap do blink loop ;"
-        " variable pot  3 pot ! "
-        " variable but  6 but ! "
-        " : init led output-pin pot @ input-pin but @ input-pin ;"
-        " variable pot-lv variable sens 4 sens !"
-        " : but@ but @ dp@ ;"
-        " : pot@ pot @ ap@ ;"
-        " : bp->led but@ if led-on else led-off then ;"
-        " : .pot? pot@ dup pot-lv @ - abs sens @ > if dup . cr pot-lv ! else drop then ;"
-        " : go bp->led .pot? ;"
-    );
-    #ifdef __DEV_BOARD__
-    parseLine(PSTR("init // auto-run-last"));
-    #endif
-    // loadSource(PSTR(""));
-}
 
 // ---------------------------------------------------------------------
 // main.c
@@ -799,6 +758,23 @@ void toTIB(int c) {
     }
 }
 
+void vmInit() {
+    init_handlers();
+    HERE = &dict[0];
+    LAST = 0;
+    BASE = 10;
+    STATE = 0;
+    DSP = 0;
+    RSP = 0;
+    TIB = TIBBuf;
+    TIBEnd = TIBBuf;
+    allocAddrBase = &dict[DICT_SZ];
+    allocCurFree = allocAddrBase;
+    allocAddrBase = allocCurFree;
+    loopDepth = 0;
+    COMMA(0);
+}
+
 #ifdef __DEV_BOARD__
 void loop() {
     while (pc.readable()) {
@@ -824,10 +800,6 @@ void loop() {
     int len = strlen(buf);
     while ((0 < len) && (buf[len - 1] < ' ')) {
         buf[--len] = 0;
-    }
-    if (strcmp(buf, "bye") == 0) {
-        isBYE = 1;
-        return;
     }
     doHistory(buf);
     for (int i = 0; i < len; i++) toTIB(buf[i]);
@@ -866,7 +838,10 @@ void loadBaseSystem() {
         " : +! tuck @ + swap ! ;"
         " : <> = 0= ;"
         " : negate 0 swap - ;"
+        " : off 0 swap ! ; : on 1 swap ! ;"
         " : abs dup 0 < if negate then ;"
+        " : hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+        " : hex? base @ #16 = ; : decimal? base @ #10 = ;"
         " : bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
         " : pad here $40 + ; : (neg) here $44 + ; "
         " : hold pad @ 1- dup pad ! c! ; "
@@ -874,13 +849,16 @@ void loadBaseSystem() {
         " : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
         " : #s begin # while- ; "
         " : #> (neg) @ if '-' emit then pad @ pad over - type ; "
-        " : is-neg? dup 0 < if negate 1 (neg) ! then ; "
-        " : (.)  <# 0 (neg) ! base @ #10 = if is-neg? then #s #> ; "
-        " : (u.) <# 0 (neg) ! #s #> ; "
+        " : is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
+        " : (.) is-neg? <# #s #> ; "
+        " : (u.) (neg) off <# #s #> ; "
         " : . space (.) ; : u. space (u.) ; "
-        " : hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
-        " : min 2dup < if drop else nip then ;"
-        " : max 2dup > if drop else nip then ;"
+        " : .n >r is-neg? r> <# 0 do # loop #> drop ;"
+        " : .c decimal? if 3 .n else hex? if 2 .n else . then then ;"
+        " : low->high 2dup > if swap then ;"
+        " : high->low 2dup < if swap then ;"
+        " : min low->high drop ;"
+        " : max high->low drop ;"
         " : between rot dup >r min max r> = ;"
         " : allot here + (here) ! ;"
         " : >body addr + a@ ;"
@@ -894,7 +872,40 @@ void loadBaseSystem() {
         " : >src 0 reg ! ; : >dst 1 reg ! ; "
         " : src 0 reg @ ; : src+ src dup 1+ >src ; : src+4 src dup 4 + >src ;"
         " : dst 1 reg @ ; : dst+ dst dup 1+ >dst ; : dst+4 dst dup 4 + >dst ;"
+        " variable (ch)    variable (cl)"
+        " : marker here (ch) ! last (cl) ! ;"
+        " : forget (ch) @ (here) ! (cl) @ (last) ! ;"
+        " : forget-1 last (here) ! last a@ (last) ! ;"
+        " marker"
     );
+}
+
+void loadUserWords() {
+    parseLine(
+        " : auto-run-last last >body dict a! ;"
+        " : auto-run-off 0 dict a! ;"
+        " : k 1000 * ; : mil k k ;"
+        " : elapsed tick swap - 1000 /mod . . ;"
+        " : bm tick swap begin 1- while- elapsed ;"
+        " : bm2 >r tick 0 r> do loop elapsed ;"
+        " : dump low->high do i c@ space .c loop ;"
+        " : led 13 ; : led-on 1 led dp! ; : led-off 0 led dp! ;"
+        " : blink led-on dup ms led-off dup ms ;"
+        " : blinks 0 swap do blink loop ;"
+        " variable (button)  6 (button) ! : button (button) @ ;  : button-val button dp@ ;"
+        " : button->led button-val if led-on else led-off then ;"
+        " variable (pot)  3 (pot) !  : pot (pot) @ ; : pot-val pot ap@ ;"
+        " variable pot-lastVal  variable sensitivity  4 sensitivity !"
+        " : pot-changed? pot-lastVal @ - abs sensitivity @ > ;"
+        " : .pot dup pot-lastVal ! . cr ;"
+        " : .pot? pot-val dup pot-changed? if .pot else drop then ;"
+        " : init led output-pin pot input-pin button input-pin ;"
+        " : go button->led .pot? ;"
+    );
+    #ifdef __DEV_BOARD__
+    parseLine(PSTR("init // auto-run-last"));
+    #endif
+    // loadSource(PSTR(""));
 }
 
 void ok() {
@@ -908,7 +919,11 @@ void startUp() {
     printString("Source: https://github.com/CCurl/BoardForth \r\n");
     printStringF("Dictionary size is: %d ($%04x) bytes. \r\n", (int)DICT_SZ, (int)DICT_SZ);
     vmInit();
+    loadBaseSystem();
+    loadUserWords();
     printString("Hello.");
+    numTIB = 0;
+    ok();
 }
 
 #ifndef __DEV_BOARD__
@@ -917,12 +932,6 @@ int main()
     // Initialise the digital pin LED13 as an output
 
     startUp();
-    loadBaseSystem();
-    loadUserWords();
-    int num = 0;
-    int x = 0;
-    numTIB = 0;
-    ok();
 
     while (true) {
         loop();
