@@ -179,8 +179,8 @@ long millis() { return GetTickCount(); }
     X("OUTPUT-PIN",   OUTPUT_PIN,       pinMode(T, PIN_OUTPUT);       DROP1) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
-    X("ap!", APIN_STORE, analogWrite(N, T);  DROP2 ) \
-    X("dp!", DPIN_STORE, digitalWrite(N, T); DROP2 ) \
+    X("ap!", APIN_STORE, analogWrite(T, N);  DROP2 ) \
+    X("dp!", DPIN_STORE, digitalWrite(T, N); DROP2 ) \
     X("ap@", APIN_FETCH, T = analogRead(T); ) \
     X("dp@", DPIN_FETCH, T = digitalRead(T); ) \
     X("COM", COM, T = ~T ) \
@@ -230,7 +230,6 @@ BYTE getOpcode(char* w) {
 
 void run(ADDR start, CELL max_cycles) {
     PC = start;
-    // printStringF("\r\nrun: %d (%04lx), %d cycles ... ", PC, PC, max_cycles);
     while (1) {
         if (DSP < 0) { DSP = 0; }
         OPCODE_T IR = (OPCODE_T)*(PC++);
@@ -367,7 +366,6 @@ ADDR align4(ADDR x) {
 
 void doCreate(const char *name) {
     HERE = align4(HERE);
-    // printStringF("\n-define [%s] at %ld (%lx)", name, HERE, HERE);
 
     DICT_T* dp = (DICT_T*)HERE;
     dp->prev = (ADDR)LAST;
@@ -377,7 +375,6 @@ void doCreate(const char *name) {
     LAST = HERE;
     HERE += (ADDR_SZ*2) + dp->len + 3;
     dp->XT = HERE;
-    // printStringF(",XT:%lx (HERE=%lx)-", dp->XT, HERE);
 }
 
 int matches(char ch, char sep) {
@@ -516,7 +513,6 @@ int isInlineWord(char *w) {
 }
 
 int doFind(const char *name) {         // opcode #65
-    // printStringF("-find:[%s]-", name);
     DICT_T* dp = (DICT_T*)LAST;
     while (dp) {
         if (stricmp(name, dp->name) == 0) {
@@ -567,14 +563,12 @@ void doParseWord() {    // opcode #59
     char *w = (char *)pop();
     int lwc = lastWasCall;
     lastWasCall = 0;
-    // printStringF("-pw[%s]-", w);
     if (doFind(w)) {
         DICT_T *dp = (DICT_T *)pop();
         ADDR xt = dp->XT;
-        // printStringF("-found:%08lx/%08lx-", dp, xt);
+        // 1 => IMMEDIATE?
         if (compiling(w, 0)) {
             if (dp->flags == 1) {
-                // 1 => IMMEDIATE
                 run(xt, 0);
             } else {
                 CCOMMA(OP_CALL);
@@ -729,7 +723,6 @@ void toTIB(int c) {
         return;
     }
     if (c == 13) {
-        // printStringF("[%s]\r\n", TIB);
         parseLine(TIB);
         ok();
         numTIB = 0;
@@ -778,6 +771,7 @@ void loop() {
         int c = mySerial.read();
         toTIB(c);
     }
+    autoRun();
 }
 #else
 void doHistory(char* l) {
@@ -886,7 +880,8 @@ void loadUserWords() {
         " : bm tick swap begin 1- while- elapsed ;"
         " : bm2 >r tick 0 r> do loop elapsed ;"
         " : dump low->high do i c@ space .c loop ;"
-        " : led 13 ; : led-on 1 led dp! ; : led-off 0 led dp! ;"
+        " variable (led) 13 (led) ! : led (led) @ ;"
+        " : led-on 1 led dp! ; : led-off 0 led dp! ;"
         " : blink led-on dup ms led-off dup ms ;"
         " : blinks 0 swap do blink loop ;"
         " variable (button)  6 (button) ! : button (button) @ ;  : button-val button dp@ ;"
@@ -915,25 +910,25 @@ void setup() {
     mySerial.begin(19200);
     while (!mySerial) {}
     while (mySerial.available()) {}
-#endif
+#else
     printString("BoardForth v0.0.1 - Chris Curl\r\n");
     printString("Source: https://github.com/CCurl/BoardForth \r\n");
     printStringF("Dictionary size is: %d ($%04x) bytes. \r\n", (int)DICT_SZ, (int)DICT_SZ);
+#endif
     vmInit();
     loadBaseSystem();
     loadUserWords();
     printString("Hello.");
     numTIB = 0;
+    TIBEnd = TIB;
+    *TIBEnd = 0;
     ok();
 }
 
 #ifndef __DEV_BOARD__
 int main()
 {
-    // Initialise the digital pin LED13 as an output
-
     setup();
-
     while (true) {
         loop();
         if (isBYE) { break; }
