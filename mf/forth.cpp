@@ -40,12 +40,6 @@ typedef struct {
     char name[32]; // not really 32 ... but we need a number
 } DICT_T;
 
-typedef struct {
-    ADDR addr;
-    BYTE available;
-    WORD sz;
-} ALLOC_T;
-
 #define LOOP_STK_SZ 8
 typedef struct {
     ADDR startAddr;
@@ -94,14 +88,14 @@ CELL BASE, STATE, DSP, RSP;
 CELL dstk[STK_SZ+1];
 CELL rstk[STK_SZ+1];
 CELL loopDepth;
-ALLOC_T allocTbl[ALLOC_SZ];
-int num_alloced = 0, numTIB = 0;
+int numTIB = 0;
 ADDR allocAddrBase, allocCurFree;
 FP prims[256];
 int lastWasCall = 0;
 DO_LOOP_T doStack[LOOP_STK_SZ];
 int loopSP = -1;
 int isBYE = 0;
+DICT_T tempWords[10];
 
 #ifndef __DEV_BOARD__
 #pragma warning(disable:4996)
@@ -364,10 +358,24 @@ ADDR align4(ADDR x) {
     return (ADDR)y;
 }
 
-void doCreate(const char *name) {
-    HERE = align4(HERE);
+DICT_T* isTempWord(const char* name) {
+    if (strlen(name) != 3) return 0;
+    if (name[0] != '_') return 0;
+    if (name[1] != 't') return 0;
+    if (name[2] < '0') return 0;
+    if (name[2] > '9') return 0;
+    return &tempWords[name[2] - '0'];
+}
 
-    DICT_T* dp = (DICT_T*)HERE;
+void doCreate(const char *name) {
+    DICT_T* dp = isTempWord(name);
+    if (dp) {
+        dp->XT = HERE;
+        return;
+    }
+
+    HERE = align4(HERE);
+    dp = (DICT_T*)HERE;
     dp->prev = (ADDR)LAST;
     dp->flags = 0;
     dp->len = (BYTE)strlen(name);
@@ -513,7 +521,12 @@ int isInlineWord(char *w) {
 }
 
 int doFind(const char *name) {         // opcode #65
-    DICT_T* dp = (DICT_T*)LAST;
+    DICT_T* dp = isTempWord(name);
+    if (dp) {
+        push((CELL)dp);
+        return 1; 
+    }
+    dp = (DICT_T*)LAST;
     while (dp) {
         if (stricmp(name, dp->name) == 0) {
             push((CELL)dp);
