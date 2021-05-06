@@ -184,12 +184,10 @@ long millis() { return GetTickCount(); }
     X(",",  COMMA,  push((CELL)HERE); fSTORE(); HERE += CELL_SZ) \
     X("A,", ACOMMA, (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA()) \
     X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
-    X("RET", RET, PC = (ADDR)rpop()) \
+    X("EXIT", RET, PC = (ADDR)rpop()) \
     X("JMP",    JMP,    PC = addrAt(PC)) \
     X("JMPZ",   JMPZ,   PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
-    X("JMPNZ",  JMPNZ,  PC = (T != 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
     X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
-    X("NJMPNZ", NJMPNZ, PC = (T != 0) ? addrAt(PC) : PC + ADDR_SZ) \
     Y(CLIT, push(*(PC++))) \
     Y(WLIT, push(wordAt(PC)); PC += WORD_SZ) \
     Y(LIT, push(cellAt(PC)); PC += CELL_SZ) \
@@ -612,14 +610,6 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR(";")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        if (lwc && (*(HERE-ADDR_SZ-1) == OP_CALL)) { *(HERE-ADDR_SZ-1) = OP_JMP; } 
-        else { CCOMMA(OP_RET); }
-        STATE = 0;
-        return;
-    }
-
     if (strcmp_PF(w, PSTR("if")) == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPZ);
@@ -656,18 +646,20 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("leave")) == 0) {
-        if (! compiling(w, 1)) { return; }
-        printString("WARNING: LEAVE not supported!");
-        return;
-    }
-
     if (strcmp_PF(w, PSTR(":")) == 0) {
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
             STATE = 1;
         }
+        return;
+    }
+
+    if (strcmp_PF(w, PSTR(";")) == 0) {
+        if (!compiling(w, 1)) { return; }
+        if (lwc && (*(HERE - ADDR_SZ - 1) == OP_CALL)) { *(HERE - ADDR_SZ - 1) = OP_JMP; }
+        else { CCOMMA(OP_RET); }
+        STATE = 0;
         return;
     }
 
@@ -718,7 +710,6 @@ void parseLine(const char *line) {
     push((CELL)line);
     doParse(' ');
 }
-
 
 // ---------------------------------------------------------------------
 // main.c
