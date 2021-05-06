@@ -112,6 +112,14 @@ long millis() { return GetTickCount(); }
 
 #define OPCODES \
     X("NOOP", NOOP, ) \
+    X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
+    X("EXIT", RET, PC = (ADDR)rpop()) \
+    X("JMP",    JMP,    PC = addrAt(PC)) \
+    X("JMPZ",   JMPZ,   PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
+    X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
+    Y(CLIT, push(*(PC++))) \
+    Y(WLIT, push(wordAt(PC)); PC += WORD_SZ) \
+    Y(LIT, push(cellAt(PC)); PC += CELL_SZ) \
     X("DUP", DUP, push(T)) \
     X("SWAP", SWAP, CELL x = T; T = N; N = x) \
     X("DROP", DROP, DROP1) \
@@ -139,16 +147,14 @@ long millis() { return GetTickCount(); }
     X("XOR", XOR, N ^= T; pop()) \
     X("<", LESS, N = (N < T) ? 1 : 0; pop()) \
     X("=", EQUALS, N = (N == T) ? 1 : 0; pop()) \
-    X("0=", NOT, T = (T == 0) ? -1 : 0) \
+    X("0=", LNOT, T = (T == 0) ? -1 : 0) \
     X(">", GREATER, N = (N > T) ? 1 : 0; pop()) \
     X(">r", DTOR, rpush(pop())) \
     X("r@", RFETCH, push(R)) \
     X("r>", RTOD, push(rpop())) \
-    X("(", PAREN, ) \
     X("TYPE", TYPE, doType() ) \
     X("EMIT", EMIT, printStringF("%c", (char)pop())) \
     X("WDTFEED", WDTFEED, ) \
-    X("BREAK", BREAK, ) \
     X("OPENBLOCK", OPENBLOCK, ) \
     X("FILECLOSE", FILECLOSE, ) \
     X("FILEREAD", FILEREAD, ) \
@@ -164,10 +170,6 @@ long millis() { return GetTickCount(); }
     X("UNTIL", UNTIL, doWhile(1, 1)) \
     X("WHILE-", WHILEN, doWhile(0, 0)) \
     X("UNTIL-", UNTILN, doWhile(0, 1)) \
-    X("DEBUGGER", DEBUGGER, ) \
-    X("PARSEWORD", PARSEWORD, doParseWord()) \
-    X("NUMBER?", ISNUMBER, doNumber((char *)pop());) \
-    X("PARSELINE", PARSELINE, doParse(' ')) \
     X("INPUT-PIN",    INPUT_PIN,        pinMode(T, PIN_INPUT);        DROP1) \
     X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
     X("OUTPUT-PIN",   OUTPUT_PIN,       pinMode(T, PIN_OUTPUT);       DROP1) \
@@ -178,19 +180,11 @@ long millis() { return GetTickCount(); }
     X("ap@", APIN_FETCH, T = analogRead(T); ) \
     X("dp@", DPIN_FETCH, T = digitalRead(T); ) \
     X("COM", COM, T = ~T ) \
-    X("SQUOTE", SQUOTE, ) \
+    X("S\"", SQUOTE, ) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)pop()) \
     X("W,", WCOMMA, push((CELL)HERE); fWSTORE(); HERE += WORD_SZ) \
     X(",",  COMMA,  push((CELL)HERE); fSTORE(); HERE += CELL_SZ) \
     X("A,", ACOMMA, (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA()) \
-    X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
-    X("EXIT", RET, PC = (ADDR)rpop()) \
-    X("JMP",    JMP,    PC = addrAt(PC)) \
-    X("JMPZ",   JMPZ,   PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
-    X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
-    Y(CLIT, push(*(PC++))) \
-    Y(WLIT, push(wordAt(PC)); PC += WORD_SZ) \
-    Y(LIT, push(cellAt(PC)); PC += CELL_SZ) \
     X("BYE", BYE, printString(" bye."); isBYE = 1) \
 
 #define X(name, op, code) OP_ ## op,
@@ -849,7 +843,7 @@ void loadBaseSystem() {
         " : (u.) (neg) off <# #s #> ; "
         " : . space (.) ; : u. space (u.) ; "
         " : .n >r is-neg? r> <# 0 do # loop #> drop ;"
-        " : .c decimal? if 3 .n else hex? if 2 .n else . then then ;"
+        " : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
         " : low->high 2dup > if swap then ;"
         " : high->low 2dup < if swap then ;"
         " : min low->high drop ;"
@@ -864,10 +858,15 @@ void loadBaseSystem() {
         " : words last begin dup .word a@ while- ;"
         " variable (regs) 9 cells allot"
         " : reg cells (regs) + ;"
-        " : >src 0 reg ! ; : >dst 1 reg ! ; "
-        " : src 0 reg @ ; : src+ src dup 1+ >src ; : src+4 src dup 4 + >src ;"
-        " : dst 1 reg @ ; : dst+ dst dup 1+ >dst ; : dst+4 dst dup 4 + >dst ;"
-        " variable (ch)    variable (cl)"
+        " : >src 0 reg ! ; : >dst 1 reg ! ;"
+        " : src 0 reg @ ; : src+ src dup 1+ >src ;"
+        " : dst 1 reg @ ; : dst+ dst dup 1+ >dst ;"
+        " : dump low->high do i c@ space .c loop ;"
+        " : _t0 cr dup 8 .n ':' emit #16 over + dump ;"
+        " : _t1 dup _t0 #16 + ;"
+        " : dump-dict dict begin _t1 dup here < while drop ;"
+        " : elapsed tick swap - 1000 /mod . '.' emit 3 .n ;"
+        " variable (ch)  variable (cl)"
         " : marker here (ch) ! last (cl) ! ;"
         " : forget (ch) @ (here) ! (cl) @ (last) ! ;"
         " : forget-1 last (here) ! last a@ (last) ! ;"
@@ -880,10 +879,8 @@ void loadUserWords() {
         " : auto-run-last last >body dict a! ;"
         " : auto-run-off 0 dict a! ;"
         " : k 1000 * ; : mil k k ;"
-        " : elapsed tick swap - 1000 /mod . . ;"
         " : bm tick swap begin 1- while- elapsed ;"
         " : bm2 >r tick 0 r> do loop elapsed ;"
-        " : dump low->high do i c@ space .c loop ;"
         " variable (led) 13 (led) ! : led (led) @ ;"
         " : led-on 1 led dp! ; : led-off 0 led dp! ;"
         " : blink led-on dup ms led-off dup ms ;"
