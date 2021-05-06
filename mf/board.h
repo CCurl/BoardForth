@@ -15,6 +15,9 @@
     #define STK_SZ 32
     #define TIB_SZ 0x0400
     #define ALLOC_SZ 16
+    #define PIN_INPUT INPUT
+    #define PIN_INPUT_PULLUP INPUT_PULLUP
+    #define PIN_OUTPUT OUTPUT
 #else
     #include <windows.h>
     #define DICT_SZ (512*1024)
@@ -27,10 +30,9 @@
     void loadSource(const char *source);
     typedef unsigned int uint;
     typedef unsigned long ulong;
-    #define PIN_INPUT 0
-    #define PIN_INPUT_PULLUP 0
-    #define PIN_INPUT_PULLDOWN 0
-    #define PIN_OUTPUT 0
+    #define PIN_INPUT 1
+    #define PIN_INPUT_PULLUP 2
+    #define PIN_OUTPUT 3
 #endif
 
 #endif

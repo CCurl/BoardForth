@@ -9,10 +9,8 @@
 #include <stdarg.h>
 
 #ifdef __DEV_BOARD__
-Serial pc(PA_9, PA_10, "pc", 19200)
-
 void printSerial(const char* str) {
-    pc.printf("%s", str);
+    mySerial.print(str);
 }
 #endif
 
@@ -176,10 +174,9 @@ long millis() { return GetTickCount(); }
     X("PARSEWORD", PARSEWORD, doParseWord()) \
     X("NUMBER?", ISNUMBER, doNumber((char *)pop());) \
     X("PARSELINE", PARSELINE, doParse(' ')) \
-    X("INPUT-PIN",      INPUT_PIN,      pinMode(T, PIN_INPUT); DROP1) \
-    X("INPUT-PULLUP",   INPUT_PULLUP,   pinMode(T, PIN_INPUT_PULLUP); DROP1) \
-    X("INPUT-PULLDOWN", INPUT_PULLDOWN, pinMode(T, PIN_INPUT_PULLDOWN); DROP1) \
-    X("OUTPUT-PIN",     OUTPUT_PIN,     pinMode(T, PIN_OUTPUT); DROP1) \
+    X("INPUT-PIN",    INPUT_PIN,        pinMode(T, PIN_INPUT);        DROP1) \
+    X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
+    X("OUTPUT-PIN",   OUTPUT_PIN,       pinMode(T, PIN_OUTPUT);       DROP1) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
     X("ap!", APIN_STORE, analogWrite(N, T);  DROP2 ) \
@@ -223,7 +220,7 @@ void init_handlers() {
 }
 
 #undef X
-#define X(name, op, code) if (strcmpi(w, name) == 0) { return OP_ ## op; }
+#define X(name, op, code) if (stricmp(w, name) == 0) { return OP_ ## op; }
 BYTE getOpcode(char* w) {
     OPCODES
         return 0xFF;
@@ -242,7 +239,7 @@ void run(ADDR start, CELL max_cycles) {
             prims[IR]();
         } else {
             printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC-1);
-            throw(2);
+            // throw(2);
         }
         if (max_cycles) {
             if (--max_cycles < 1) { return; }
@@ -284,7 +281,7 @@ void doSlMod() {
     }
     else {
         printString("-divide by 0-");
-        throw(3);
+        // throw(3);
     }
 }
 
@@ -296,7 +293,7 @@ void doUSlMod() {
     }
     else {
         printString("-divide by 0-");
-        throw(3);
+        // throw(3);
     }
 }
 
@@ -405,19 +402,19 @@ CELL getNextWord(char *to, char sep) {
 void doParse(char sep) {
     toIN = (char*)pop();
     TIBEnd = toIN + strlen(toIN);
-    try {
+    // try {
         while (1) {
             char* w = (char*)HERE + 0x100;
-            char* wp = w;
+            // char* wp = w;
             CELL len = getNextWord(w, sep);
             if (len == 0) { return; }
             push((CELL)w);
             doParseWord();
         }
-    }
-    catch (...) {
-        printString("error caught");
-    }
+    // }
+    // catch (...) {
+    //    printString("error caught");
+    // }
 }
 
 void autoRun() {
@@ -522,7 +519,7 @@ int doFind(const char *name) {         // opcode #65
     // printStringF("-find:[%s]-", name);
     DICT_T* dp = (DICT_T*)LAST;
     while (dp) {
-        if (strcmpi(name, dp->name) == 0) {
+        if (stricmp(name, dp->name) == 0) {
             push((CELL)dp);
             return 1;
         }
@@ -704,7 +701,7 @@ void doParseWord() {    // opcode #59
     }
     STATE = 0;
     printStringF("[%s]??", w);
-    throw(123);
+    // throw(123);
 }
 
 // ---------------------------------------------------------------------
@@ -777,8 +774,8 @@ void vmInit() {
 
 #ifdef __DEV_BOARD__
 void loop() {
-    while (pc.readable()) {
-        int c = pc.getc();
+    while (mySerial.available()) {
+        int c = mySerial.read();
         toTIB(c);
     }
 }
@@ -903,9 +900,8 @@ void loadUserWords() {
         " : go button->led .pot? ;"
     );
     #ifdef __DEV_BOARD__
-    parseLine(PSTR("init // auto-run-last"));
+    // parseLine("init auto-run-last");
     #endif
-    // loadSource(PSTR(""));
 }
 
 void ok() {
@@ -914,7 +910,12 @@ void ok() {
     printString("\r\n");
 }
 
-void startUp() {
+void setup() {
+#ifdef __DEV_BOARD__
+    mySerial.begin(19200);
+    while (!mySerial) {}
+    while (mySerial.available()) {}
+#endif
     printString("BoardForth v0.0.1 - Chris Curl\r\n");
     printString("Source: https://github.com/CCurl/BoardForth \r\n");
     printStringF("Dictionary size is: %d ($%04x) bytes. \r\n", (int)DICT_SZ, (int)DICT_SZ);
@@ -931,7 +932,7 @@ int main()
 {
     // Initialise the digital pin LED13 as an output
 
-    startUp();
+    setup();
 
     while (true) {
         loop();
