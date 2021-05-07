@@ -132,9 +132,9 @@ long millis() { return GetTickCount(); }
     X("!",  STORE,  cellStore(A, N); DROP2) \
     X("w!", WSTORE, wordStore(A, N); DROP2) \
     X("a!", ASTORE, (ADDR_SZ == 2) ? wordStore(A, N) : cellStore(A, N); DROP2) \
-    X("+", ADD, N += T; pop()) \
-    X("-", SUB, N -= T; pop()) \
-    X("*", MULT, N *= T; pop()) \
+    X("+", ADD, N += T; DROP1) \
+    X("-", SUB, N -= T; DROP1) \
+    X("*", MULT, N *= T; DROP1) \
     X("/MOD", SLMOD, doSlMod()) \
     X("U/MOD", USLMOD, doUSlMod()) \
     X("2/", RSHIFT, T = T >> 1) \
@@ -142,13 +142,14 @@ long millis() { return GetTickCount(); }
     X("1-", ONEMINUS, --T) \
     X("1+", ONEPLUS, ++T) \
     X(".S", DOTS, doDotS()) \
-    X("AND", AND, N &= T; pop()) \
-    X("OR", OR, N |= T; pop()) \
-    X("XOR", XOR, N ^= T; pop()) \
-    X("<", LESS, N = (N < T) ? 1 : 0; pop()) \
-    X("=", EQUALS, N = (N == T) ? 1 : 0; pop()) \
+    X("AND", AND, N &= T; DROP1) \
+    X("NAND", NAND, (N & T) ? 0 : 1; DROP1) \
+    X("OR", OR, N |= T; DROP1) \
+    X("XOR", XOR, N ^= T; DROP1) \
+    X("<", LESS, N = (N < T) ? 1 : 0; DROP1) \
+    X("=", EQUALS, N = (N == T) ? 1 : 0; DROP1) \
     X("0=", LNOT, T = (T == 0) ? -1 : 0) \
-    X(">", GREATER, N = (N > T) ? 1 : 0; pop()) \
+    X(">", GREATER, N = (N > T) ? 1 : 0; DROP1) \
     X(">r", DTOR, rpush(pop())) \
     X("r@", RFETCH, push(R)) \
     X("r>", RTOD, push(rpop())) \
