@@ -143,7 +143,7 @@ long millis() { return GetTickCount(); }
     X("1+", ONEPLUS, ++T) \
     X(".S", DOTS, doDotS()) \
     X("AND", AND, N &= T; DROP1) \
-    X("NAND", NAND, (N & T) ? 0 : 1; DROP1) \
+    X("NAND", NAND, N = (N & T) ? 0 : 1; DROP1) \
     X("OR", OR, N |= T; DROP1) \
     X("XOR", XOR, N ^= T; DROP1) \
     X("<", LESS, N = (N < T) ? 1 : 0; DROP1) \
