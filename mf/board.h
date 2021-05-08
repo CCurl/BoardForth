@@ -26,7 +26,6 @@
     #define ALLOC_SZ 64
     #define F(str) (char *)str
     #define PSTR(str) (char *)str
-    #define strcmp_PF(str1, str2) strcmp(str1, str2)
     void loadSource(const char *source);
     typedef unsigned int uint;
     typedef unsigned long ulong;

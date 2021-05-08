@@ -519,13 +519,13 @@ void compileOrExecute(int num, ADDR bytes) {
 
 int isInlineWord(char *w) {
 
-    if (strcmp_PF(w, PSTR("inline")) == 0) {
+    if (stricmp(w, "inline") == 0) {
         DICT_T *dp = (DICT_T *)LAST;
         dp->flags = 2;
         return 1;
     }
 
-    if (strcmp_PF(w, PSTR("immediate")) == 0) {
+    if (stricmp(w, "immediate") == 0) {
         DICT_T *dp = (DICT_T *)LAST;
         dp->flags = 1;
         return 1;
@@ -626,7 +626,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("if")) == 0) {
+    if (stricmp(w, "if") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPZ);
         push((CELL)HERE);
@@ -634,7 +634,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("if-")) == 0) {
+    if (stricmp(w, "if-") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_NJMPZ);
         push((CELL)HERE);
@@ -642,7 +642,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("else")) == 0) {
+    if (stricmp(w, "else") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMP);
         push((CELL)HERE);
@@ -654,7 +654,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("then")) == 0) {
+    if (stricmp(w, "then") == 0) {
         if (! compiling(w, 1)) { return; }
         push((CELL)HERE);
         fSWAP();
@@ -662,7 +662,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR(":")) == 0) {
+    if (stricmp(w, ":") == 0) {
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
@@ -671,7 +671,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR(";")) == 0) {
+    if (stricmp(w, ";") == 0) {
         if (!compiling(w, 1)) { return; }
         if (lwc && (*(HERE - ADDR_SZ - 1) == OP_CALL)) { *(HERE - ADDR_SZ - 1) = OP_JMP; }
         else { CCOMMA(OP_RET); }
@@ -679,7 +679,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("variable")) == 0) {
+    if (stricmp(w, "variable") == 0) {
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
@@ -691,7 +691,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("constant")) == 0) {
+    if (stricmp(w, "constant") == 0) {
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
@@ -702,7 +702,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR("s\"")) == 0) {
+    if (stricmp(w, "s\"") == 0) {
         CCOMMA(OP_SQUOTE);
         ADDR la = HERE;
         BYTE len = 0;
@@ -719,7 +719,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (strcmp_PF(w, PSTR(".\"")) == 0) {
+    if (stricmp(w, ".\"") == 0) {
         CCOMMA(OP_DOTQUOTE);
         ADDR la = HERE;
         BYTE len = 0;
@@ -921,7 +921,7 @@ void loadBaseSystem() {
         " : _t0 cr dup 8 .n ':' emit #16 over + dump ;"
         " : _t1 dup _t0 #16 + ;"
         " : dump-dict dict begin _t1 dup here < while drop ;"
-        " : elapsed tick swap - 1000 /mod . '.' emit 3 .n ;"
+        " : elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;"
         " variable (ch)  variable (cl)"
         " : marker here (ch) ! last (cl) ! ;"
         " : forget (ch) @ (here) ! (cl) @ (last) ! ;"
