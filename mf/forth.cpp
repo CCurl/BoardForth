@@ -69,6 +69,7 @@ void doParse(char sep);
 int doNumber(const char *);
 void cellStore(ADDR addr, CELL val);
 void wordStore(ADDR addr, CELL val);
+void addrStore(ADDR addr, ADDR val);
 void doParseWord();
 void doCreate(const char* name);
 void doSlMod();
@@ -84,6 +85,9 @@ void doAgain();
 void doWhile(int, int);
 void doSQuote();
 void doDotQuote();
+void doWComma(WORD);
+void doComma(CELL);
+void doAComma(ADDR);
 int strCmp(const char*, const char*);
 
 BYTE IR;
@@ -97,7 +101,7 @@ char *toIN, *TIBEnd;
 CELL BASE, STATE, DSP, RSP;
 CELL dstk[STK_SZ+1];
 CELL rstk[STK_SZ+1];
-CELL loopDepth;
+CELL loopDepth, t1;
 int numTIB = 0;
 ADDR allocAddrBase, allocCurFree;
 FP prims[256];
@@ -127,17 +131,17 @@ long millis() { return GetTickCount(); }
     X("JMP",    JMP,    PC = addrAt(PC)) \
     X("JMPZ",   JMPZ,   PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
     X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
-    Y(CLIT, push(*(PC++))) \
-    Y(WLIT, push(wordAt(PC)); PC += WORD_SZ) \
-    Y(LIT, push(cellAt(PC)); PC += CELL_SZ) \
+    X("CLIT", CLIT, push(*(PC++))) \
+    X("WLIT", WLIT, push(wordAt(PC)); PC += WORD_SZ) \
+    X("LIT",  LIT, push(cellAt(PC)); PC += CELL_SZ) \
     X("DUP", DUP, push(T)) \
-    X("SWAP", SWAP, CELL x = T; T = N; N = x) \
+    X("SWAP", SWAP, t1 = T; T = N; N = t1) \
     X("DROP", DROP, DROP1) \
     X("OVER", OVER, push(N)) \
     X("c@", CFETCH, T = (BYTE)*A) \
     X("w@", WFETCH, T = wordAt(A)) \
     X("@",  FETCH,  T = cellAt(A)) \
-    X("a@", AFETCH, (ADDR_SZ == 2) ? fWFETCH() : fFETCH()) \
+    X("a@", AFETCH, (ADDR_SZ == 2) ? T = wordAt(A) : T = cellAt(A)) \
     X("c!", CSTORE, *A = (N & 0xFF); DROP2) \
     X("!",  STORE,  cellStore(A, N); DROP2) \
     X("w!", WSTORE, wordStore(A, N); DROP2) \
@@ -193,31 +197,41 @@ long millis() { return GetTickCount(); }
     X("COM", COM, T = ~T) \
     X("S\"", SQUOTE, doSQuote()) \
     X(".\"", DOTQUOTE, doDotQuote()) \
-    X("C,", CCOMMA, *(HERE++) = (BYTE)pop()) \
-    X("W,", WCOMMA, push((CELL)HERE); fWSTORE(); HERE += WORD_SZ) \
-    X(",",  COMMA,  push((CELL)HERE); fSTORE(); HERE += CELL_SZ) \
-    X("A,", ACOMMA, (ADDR_SZ == 2) ? fWCOMMA() : fCOMMA()) \
+    X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
+    X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
+    X(",",  COMMA, doComma(T); DROP1) \
+    X("A,", ACOMMA, doAComma(A); DROP1) \
     X("BYE", BYE, printString(" bye."); isBYE = 1) \
 
 #define X(name, op, code) OP_ ## op,
 typedef enum {
     OPCODES
 } OPCODE_T;
-
 #undef X
-#define X(name, op, code) void f ## op() { code; }
-OPCODES
 
+#define X(name, op, code) if (opcode == OP_ ## op) { strcpy(buf, #op); }
+void printOpcode(BYTE opcode) {
+    char buf[32];
+    sprintf(buf, "-op;%d-", opcode);
+    buf[0] = 0;
+    OPCODES;
+    printf("-op:%s-", buf);
+}
 #undef X
-#define X(name, op, code) prims[OP_ ## op] = f ## op;
+
+//#undef X
+//#define X(name, op, code) void f ## op() { code; }
+//OPCODES
+//
+//#undef X
+//#define X(name, op, code) prims[OP_ ## op] = f ## op;
 void init_handlers() {
-    for (int i = 0; i < 256; i++) {
-        prims[i] = 0;
-    }
-    OPCODES
+//    for (int i = 0; i < 256; i++) {
+//        prims[i] = 0;
+//    }
+//    OPCODES
 }
 
-#undef X
 #define X(name, op, code) if (strCmp(w, name) == 0) { return OP_ ## op; }
 BYTE getOpcode(char* w) {
     OPCODES
@@ -225,24 +239,42 @@ BYTE getOpcode(char* w) {
 }
 
 #undef X
+#define X(name, op, code) case OP_ ## op: code; break;
 
 void run(ADDR start, CELL max_cycles) {
     PC = start;
     while (1) {
-        if (DSP < 0) { DSP = 0; }
-        OPCODE_T IR = (OPCODE_T)*(PC++);
+        IR = *(PC++);
+        // printOpcode(IR);
         if ((IR == OP_RET) && (RSP < 1)) { return; }
-        if ((0 <= IR) && (IR <= OP_BYE) && (prims[IR])) {
-            prims[IR]();
-        } else {
-            printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC-1);
-            // throw(2);
+        switch (IR) {
+            OPCODES
+        default: 
+            printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC - 1);
+            return;
         }
-        if (max_cycles) {
-            if (--max_cycles < 1) { return; }
-        }
+        if ((max_cycles) && (--max_cycles < 1)) { return; }
     }
 }
+#undef X
+
+//void runx(ADDR start, CELL max_cycles) {
+//    PC = start;
+//    while (1) {
+//        if (DSP < 0) { DSP = 0; }
+//        OPCODE_T IR = (OPCODE_T)*(PC++);
+//        if ((IR == OP_RET) && (RSP < 1)) { return; }
+//        if ((0 <= IR) && (IR <= OP_BYE) && (prims[IR])) {
+//            prims[IR]();
+//        } else {
+//            printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC-1);
+//            // throw(2);
+//        }
+//        if (max_cycles) {
+//            if (--max_cycles < 1) { return; }
+//        }
+//    }
+//}
 
 void push(CELL v) {
     if (DSP < STK_SZ) ++DSP;
@@ -386,6 +418,7 @@ DICT_T* isTempWord(const char* name) {
 }
 
 void doCreate(const char *name) {
+    // printf("-cw:%s(%lx)-", name, HERE);
     DICT_T* dp = isTempWord(name);
     if (dp) {
         dp->XT = HERE;
@@ -432,7 +465,6 @@ void doParse(char sep) {
     // try {
         while (1) {
             char* w = (char*)HERE + 0x100;
-            // char* wp = w;
             CELL len = getNextWord(w, sep);
             if (len == 0) { return; }
             push((CELL)w);
@@ -495,16 +527,21 @@ void wordStore(ADDR addr, CELL val) {
     *(addr+1) = (val >>  8) & 0xFF;
 }
 void cellStore(ADDR addr, CELL val) {
-    *(addr)   = (val & 0xFF);
-    *(addr+1) = (val >>  8) & 0xFF;
-    *(addr+2) = (val >> 16) & 0xFF;
-    *(addr+3) = (val >> 24) & 0xFF;
+    *(addr++) = (val & 0xFF);
+    *(addr++) = (val >>  8) & 0xFF;
+    *(addr++) = (val >> 16) & 0xFF;
+    *(addr)   = (val >> 24) & 0xFF;
+}
+void addrStore(ADDR addr, ADDR v) {
+    (ADDR_SZ == 2) ? wordStore(addr, (WORD)v) : cellStore(addr, (CELL)v);
 }
 
-void CCOMMA(BYTE v) { push(v); fCCOMMA(); }
-void WCOMMA(WORD v) { push(v); fWCOMMA(); }
-void COMMA(CELL v)  { push(v); fCOMMA();  }
-void ACOMMA(ADDR v) { push((CELL)v); fACOMMA(); }
+inline void doCComma(BYTE v) { *(HERE++) = v; }
+void doWComma(WORD v) { wordStore(HERE, v); HERE += ADDR_SZ; }
+void doComma(CELL v) { cellStore(HERE, v); HERE += CELL_SZ; }
+void doAComma(ADDR v) {
+    (ADDR_SZ == 2) ? doWComma((WORD)v) : doComma((CELL)v); 
+}
 
 int compiling(char *w, int errIfNot) {
     if ((STATE == 0) && (errIfNot)) {
@@ -523,7 +560,7 @@ int interpreting(char *w, int errIfNot) {
 void compileOrExecute(int num, ADDR bytes) {
     if (STATE == 1) {
         for (int i = 0; i < num; i++) {
-            CCOMMA(bytes[i]);
+            doCComma(bytes[i]);
         }
     } else {
         ADDR xt = (HERE+0x0010);
@@ -606,6 +643,10 @@ int doNumber(const char *w) {
 // ( a -- )
 void doParseWord() {    // opcode #59
     char *w = (char *)pop();
+    // printf("-%s-", w);
+    if (strCmp(w, "allot") == 0) {
+        int x = 1;
+    }
     int lwc = lastWasCall;
     lastWasCall = 0;
     if (doFind(w)) {
@@ -616,8 +657,8 @@ void doParseWord() {    // opcode #59
             if (dp->flags == 1) {
                 run(xt, 0);
             } else {
-                CCOMMA(OP_CALL);
-                ACOMMA((ADDR)xt);
+                doCComma(OP_CALL);
+                doAComma((ADDR)xt);
                 lastWasCall = 1;
             }
         } else {
@@ -630,15 +671,16 @@ void doParseWord() {    // opcode #59
 
     if (doNumber(w)) {
         if (compiling(w, 0)) {
-            if ((0x0000 <= T) && (T < 0x0100)) {
-                CCOMMA(OP_CLIT);
-                fCCOMMA();
-            } else if ((0x0100 <= T) && (T < 0x010000)) {
-                CCOMMA(OP_WLIT);
-                fWCOMMA();
+            CELL v = pop();
+            if ((0x0000 <= v) && (v < 0x0100)) {
+                doCComma(OP_CLIT);
+                doCComma((BYTE)v);
+            } else if ((0x0100 <= v) && (v < 0x010000)) {
+                doCComma(OP_WLIT);
+                doWComma((WORD)v);
             } else {
-                CCOMMA(OP_LIT);
-                fCOMMA();
+                doCComma(OP_LIT);
+                doComma(v);
             }
         }
         return;
@@ -646,37 +688,34 @@ void doParseWord() {    // opcode #59
 
     if (strCmp(w, "if") == 0) {
         if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_JMPZ);
+        doCComma(OP_JMPZ);
         push((CELL)HERE);
-        ACOMMA(0);
+        doAComma(0);
         return;
     }
 
     if (strCmp(w, "if-") == 0) {
         if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_NJMPZ);
+        doCComma(OP_NJMPZ);
         push((CELL)HERE);
-        ACOMMA(0);
+        doAComma(0);
         return;
     }
 
     if (strCmp(w, "else") == 0) {
         if (! compiling(w, 1)) { return; }
-        CCOMMA(OP_JMP);
+        ADDR tgt = (ADDR)pop();
+        doCComma(OP_JMP);
         push((CELL)HERE);
-        fSWAP();
-        ACOMMA(0);
-        push((CELL)HERE);
-        fSWAP();
-        fASTORE();
+        doAComma(0);
+        addrStore(HERE, tgt);
         return;
     }
 
     if (strCmp(w, "then") == 0) {
         if (! compiling(w, 1)) { return; }
-        push((CELL)HERE);
-        fSWAP();
-        fASTORE();
+        ADDR tgt = (ADDR)pop();
+        addrStore(tgt, HERE);
         return;
     }
 
@@ -692,7 +731,7 @@ void doParseWord() {    // opcode #59
     if (strCmp(w, ";") == 0) {
         if (!compiling(w, 1)) { return; }
         if (lwc && (*(HERE - ADDR_SZ - 1) == OP_CALL)) { *(HERE - ADDR_SZ - 1) = OP_JMP; }
-        else { CCOMMA(OP_RET); }
+        else { doCComma(OP_RET); }
         STATE = 0;
         return;
     }
@@ -701,10 +740,10 @@ void doParseWord() {    // opcode #59
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
-            CCOMMA(OP_LIT);
-            COMMA((CELL)HERE+CELL_SZ+1);
-            CCOMMA(OP_RET);
-            COMMA(0);
+            doCComma(OP_LIT);
+            doComma((CELL)HERE+CELL_SZ+1);
+            doCComma(OP_RET);
+            doComma(0);
         }
         return;
     }
@@ -713,51 +752,51 @@ void doParseWord() {    // opcode #59
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
-            CCOMMA(OP_LIT);
-            fCOMMA();
-            CCOMMA(OP_RET);
+            doCComma(OP_LIT);
+            doComma(pop());
+            doCComma(OP_RET);
         }
         return;
     }
 
     if (strCmp(w, "s\"") == 0) {
-        CCOMMA(OP_SQUOTE);
+        doCComma(OP_SQUOTE);
         ADDR la = HERE;
         BYTE len = 0;
-        CCOMMA(0);
+        doCComma(0);
         char c = getNextChar();
         c = getNextChar();
         while (c && (c != '"')) {
-            CCOMMA(c);
+            doCComma(c);
             ++len;
             c = getNextChar();
         }
         *(la) = len;
-        CCOMMA(0);
+        doCComma(0);
         return;
     }
 
     if (strCmp(w, ".\"") == 0) {
-        CCOMMA(OP_DOTQUOTE);
+        doCComma(OP_DOTQUOTE);
         ADDR la = HERE;
         BYTE len = 0;
-        CCOMMA(0);
+        doCComma(0);
         char c = getNextChar();
         c = getNextChar();
         while (c && (c != '"')) {
-            CCOMMA(c);
+            doCComma(c);
             ++len;
             c = getNextChar();
         }
         *(la) = len;
-        CCOMMA(0);
+        doCComma(0);
         return;
     }
 
     BYTE op = getOpcode(w);
     if (op < 0xFF) {
         if (compiling(w, 0)) {
-            CCOMMA(op);
+            doCComma(op);
         } else {
             ADDR xt = HERE+0x20;
             *(xt) = op;
@@ -834,7 +873,7 @@ void vmInit() {
     allocCurFree = allocAddrBase;
     allocAddrBase = allocCurFree;
     loopDepth = 0;
-    COMMA(0);
+    doComma(0);
 }
 
 #ifdef __DEV_BOARD__
@@ -917,7 +956,8 @@ void loadBaseSystem() {
         " : (u.) (neg) off <# #s #> ; "
         " : . space (.) ; : u. space (u.) ; "
         " : .n >r is-neg? r> <# 0 do # loop #> drop ;"
-        " : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
+        " : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;");
+    parseLine(
         " : low->high 2dup > if swap then ;"
         " : high->low 2dup < if swap then ;"
         " : min low->high drop ;"
@@ -944,8 +984,7 @@ void loadBaseSystem() {
         " : marker here (ch) ! last (cl) ! ;"
         " : forget (ch) @ (here) ! (cl) @ (last) ! ;"
         " : forget-1 last (here) ! last a@ (last) ! ;"
-        " marker"
-    );
+        " marker");
 }
 
 void loadUserWords() {
