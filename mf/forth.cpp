@@ -77,6 +77,7 @@ void doAgain();
 void doWhile(int, int);
 void doSQuote();
 void doDotQuote();
+int strCmp(const char*, const char*);
 
 BYTE IR;
 ADDR PC;
@@ -210,7 +211,7 @@ void init_handlers() {
 }
 
 #undef X
-#define X(name, op, code) if (stricmp(w, name) == 0) { return OP_ ## op; }
+#define X(name, op, code) if (strCmp(w, name) == 0) { return OP_ ## op; }
 BYTE getOpcode(char* w) {
     OPCODES
         return 0xFF;
@@ -462,6 +463,16 @@ void printStringF(const char *fmt, ...) {
     printString(buf);
 }
 
+int strCmp(const char* l, const char* r) {
+    if (strlen(l) != strlen(r)) { return 1; }
+    while (*l) {
+        char x = *(l++), y = *(r++);
+        // if (x != y) { return 1; }
+        if (tolower(x) != tolower(y)) { return 1; }
+    }
+    return 0;
+}
+
 CELL cellAt(ADDR loc) {
     return (*(loc+3) << 24) + (*(loc+2) << 16) + (*(loc+1) <<  8) + *(loc);
 }
@@ -519,13 +530,13 @@ void compileOrExecute(int num, ADDR bytes) {
 
 int isInlineWord(char *w) {
 
-    if (stricmp(w, "inline") == 0) {
+    if (strCmp(w, "inline") == 0) {
         DICT_T *dp = (DICT_T *)LAST;
         dp->flags = 2;
         return 1;
     }
 
-    if (stricmp(w, "immediate") == 0) {
+    if (strCmp(w, "immediate") == 0) {
         DICT_T *dp = (DICT_T *)LAST;
         dp->flags = 1;
         return 1;
@@ -542,7 +553,7 @@ int doFind(const char *name) {         // opcode #65
     }
     dp = (DICT_T*)LAST;
     while (dp) {
-        if (stricmp(name, dp->name) == 0) {
+        if (strCmp(name, dp->name) == 0) {
             push((CELL)dp);
             return 1;
         }
@@ -626,7 +637,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, "if") == 0) {
+    if (strCmp(w, "if") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMPZ);
         push((CELL)HERE);
@@ -634,7 +645,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, "if-") == 0) {
+    if (strCmp(w, "if-") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_NJMPZ);
         push((CELL)HERE);
@@ -642,7 +653,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, "else") == 0) {
+    if (strCmp(w, "else") == 0) {
         if (! compiling(w, 1)) { return; }
         CCOMMA(OP_JMP);
         push((CELL)HERE);
@@ -654,7 +665,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, "then") == 0) {
+    if (strCmp(w, "then") == 0) {
         if (! compiling(w, 1)) { return; }
         push((CELL)HERE);
         fSWAP();
@@ -662,7 +673,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, ":") == 0) {
+    if (strCmp(w, ":") == 0) {
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
@@ -671,7 +682,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, ";") == 0) {
+    if (strCmp(w, ";") == 0) {
         if (!compiling(w, 1)) { return; }
         if (lwc && (*(HERE - ADDR_SZ - 1) == OP_CALL)) { *(HERE - ADDR_SZ - 1) = OP_JMP; }
         else { CCOMMA(OP_RET); }
@@ -679,7 +690,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, "variable") == 0) {
+    if (strCmp(w, "variable") == 0) {
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
@@ -691,7 +702,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, "constant") == 0) {
+    if (strCmp(w, "constant") == 0) {
         if (! interpreting(w, 1)) { return; }
         if (getNextWord(w, ' ')) {
             doCreate(w);
@@ -702,7 +713,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, "s\"") == 0) {
+    if (strCmp(w, "s\"") == 0) {
         CCOMMA(OP_SQUOTE);
         ADDR la = HERE;
         BYTE len = 0;
@@ -719,7 +730,7 @@ void doParseWord() {    // opcode #59
         return;
     }
 
-    if (stricmp(w, ".\"") == 0) {
+    if (strCmp(w, ".\"") == 0) {
         CCOMMA(OP_DOTQUOTE);
         ADDR la = HERE;
         BYTE len = 0;
