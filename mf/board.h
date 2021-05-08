@@ -7,13 +7,15 @@
 
 #ifdef __DEV_BOARD__
     #include <Arduino.h>
-    #define mySerial SerialUSB
+    // #define mySerial SerialUSB
+    #define mySerial Serial
+    #define __ESP32__
     void printSerial(const char *);
     void loadSource(const char *source);
     #define __NEEDS_ALIGN__
-    #define DICT_SZ (16*1024)
+    #define DICT_SZ (96*1024)
     #define STK_SZ 32
-    #define TIB_SZ 0x0200
+    #define TIB_SZ 0x0400
     #define ALLOC_SZ 16
     #define PIN_INPUT INPUT
     #define PIN_INPUT_PULLUP INPUT_PULLUP

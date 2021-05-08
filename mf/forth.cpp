@@ -14,6 +14,13 @@ void printSerial(const char* str) {
 }
 #endif
 
+#ifdef __ESP32__
+void printStringF(const char *, ...);
+void analogWrite(int pin, int val) {
+  printStringF("-ap!:%d/%d-", pin, val);
+}
+#endif
+
 typedef void (*FP)();
 typedef long CELL;
 typedef ulong UCELL;
