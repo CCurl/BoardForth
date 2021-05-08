@@ -75,6 +75,8 @@ void doJ();
 void doBegin();
 void doAgain();
 void doWhile(int, int);
+void doSQuote();
+void doDotQuote();
 
 BYTE IR;
 ADDR PC;
@@ -176,12 +178,13 @@ long millis() { return GetTickCount(); }
     X("OUTPUT-PIN",   OUTPUT_PIN,       pinMode(T, PIN_OUTPUT);       DROP1) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
-    X("ap!", APIN_STORE, analogWrite(T, N);  DROP2 ) \
-    X("dp!", DPIN_STORE, digitalWrite(T, N); DROP2 ) \
+    X("ap!", APIN_STORE, analogWrite(T, N);  DROP2) \
+    X("dp!", DPIN_STORE, digitalWrite(T, N); DROP2) \
     X("ap@", APIN_FETCH, T = analogRead(T); ) \
     X("dp@", DPIN_FETCH, T = digitalRead(T); ) \
-    X("COM", COM, T = ~T ) \
-    X("S\"", SQUOTE, ) \
+    X("COM", COM, T = ~T) \
+    X("S\"", SQUOTE, doSQuote()) \
+    X(".\"", DOTQUOTE, doDotQuote()) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)pop()) \
     X("W,", WCOMMA, push((CELL)HERE); fWSTORE(); HERE += WORD_SZ) \
     X(",",  COMMA,  push((CELL)HERE); fSTORE(); HERE += CELL_SZ) \
@@ -283,6 +286,20 @@ void doUSlMod() {
     }
 }
 
+void doSQuote() {
+    BYTE len = *(PC);
+    push((CELL)PC);
+    PC += (len + 2);
+}
+
+void doDotQuote() {
+    BYTE len = *(PC);
+    push((CELL)(PC + 1));
+    push(len);
+    PC += (len + 2);
+    doType();
+}
+
 void doType() {
     CELL l = pop();
     ADDR a = (ADDR)pop();
@@ -382,6 +399,10 @@ int matches(char ch, char sep) {
     if (ch == sep) { return 1; }
     if ((sep == ' ') && (ch < sep)) { return 1; }
     return 0;
+}
+
+BYTE getNextChar() {
+    return (*toIN) ? *(toIN++) : 0;
 }
 
 CELL getNextWord(char *to, char sep) {
@@ -681,6 +702,40 @@ void doParseWord() {    // opcode #59
         return;
     }
 
+    if (strcmp_PF(w, PSTR("s\"")) == 0) {
+        CCOMMA(OP_SQUOTE);
+        ADDR la = HERE;
+        BYTE len = 0;
+        CCOMMA(0);
+        char c = getNextChar();
+        c = getNextChar();
+        while (c && (c != '"')) {
+            CCOMMA(c);
+            ++len;
+            c = getNextChar();
+        }
+        *(la) = len;
+        CCOMMA(0);
+        return;
+    }
+
+    if (strcmp_PF(w, PSTR(".\"")) == 0) {
+        CCOMMA(OP_DOTQUOTE);
+        ADDR la = HERE;
+        BYTE len = 0;
+        CCOMMA(0);
+        char c = getNextChar();
+        c = getNextChar();
+        while (c && (c != '"')) {
+            CCOMMA(c);
+            ++len;
+            c = getNextChar();
+        }
+        *(la) = len;
+        CCOMMA(0);
+        return;
+    }
+
     BYTE op = getOpcode(w);
     if (op < 0xFF) {
         if (compiling(w, 0)) {
@@ -808,7 +863,7 @@ void loadSourceF(const char* fmt, ...) {
 
 void loadBaseSystem() {
     loadSourceF(": cell %d ; : cells cell * ; : addr %d ;", CELL_SZ, ADDR_SZ);
-    loadSourceF(": dict $%lx ;", (long)&dict[0]);
+    loadSourceF(": dict $%lx ; : dict-sz $%lx ;", (long)&dict[0], DICT_SZ);
     loadSourceF(": (here) $%lx ; : here (here) @ ;", (long)&HERE);
     loadSourceF(": (last) $%lx ; : last (last) @ ;", (long)&LAST);
     loadSourceF(": base $%lx ;", (long)&BASE);
@@ -913,14 +968,14 @@ void setup() {
     while (!mySerial) {}
     while (mySerial.available()) {}
 #else
-    printString("BoardForth v0.0.1 - Chris Curl\r\n");
-    printString("Source: https://github.com/CCurl/BoardForth \r\n");
-    printStringF("Dictionary size is: %d ($%04x) bytes. \r\n", (int)DICT_SZ, (int)DICT_SZ);
+    printString("BoardForth v0.0.1 - Chris Curl\n");
+    printString("Source: https://github.com/CCurl/BoardForth \n");
+    printStringF("Dictionary size is %ld bytes.", DICT_SZ);
 #endif
     vmInit();
     loadBaseSystem();
     loadUserWords();
-    printString("Hello.");
+    parseLine(": x cr .\" Hello.\" ; x forget-1");
     numTIB = 0;
     TIBEnd = TIB;
     *TIBEnd = 0;
