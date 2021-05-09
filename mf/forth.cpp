@@ -21,7 +21,7 @@ void analogWrite(int pin, int val) {
 }
 #endif
 
-typedef void (*FP)();
+//typedef void (*FP)();
 typedef long CELL;
 typedef ulong UCELL;
 typedef unsigned short WORD;
@@ -76,8 +76,8 @@ void doSlMod();
 void doUSlMod();
 void doType();
 void doDotS();
-void doDo();
-void doLoop();
+void doFor();
+void doNext();
 void doI();
 void doJ();
 void doBegin();
@@ -85,7 +85,7 @@ void doAgain();
 void doWhile(int, int);
 void doSQuote();
 void doDotQuote();
-void doWComma(WORD);
+void doWComma(CELL);
 void doComma(CELL);
 void doAComma(ADDR);
 int strCmp(const char*, const char*);
@@ -104,7 +104,7 @@ CELL rstk[STK_SZ+1];
 CELL loopDepth, t1;
 int numTIB = 0;
 ADDR allocAddrBase, allocCurFree;
-FP prims[256];
+//FP prims[256];
 int lastWasCall = 0;
 DO_LOOP_T doStack[LOOP_STK_SZ];
 int loopSP = -1;
@@ -122,7 +122,7 @@ void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
 #endif
 
-#define Y(op, code) X(#op, op, code)
+// #define Y(op, code) X(#op, op, code)
 
 #define OPCODES \
     X("NOOP", NOOP, ) \
@@ -175,10 +175,10 @@ long millis() { return GetTickCount(); }
     X("FILEREAD", FILEREAD, ) \
     X("LOAD", LOAD, ) \
     X("THRU", THRU, ) \
-    X("DO", DO, doDo()) \
+    X("FOR", FOR, doFor()) \
     X("I", I, doI()) \
     X("J", J, doJ()) \
-    X("LOOP", LOOP, doLoop()) \
+    X("NEXT", NEXT, doNext()) \
     X("BEGIN", BEGIN, doBegin()) \
     X("AGAIN", AGAIN, doAgain()) \
     X("WHILE", WHILE, doWhile(1, 0)) \
@@ -212,10 +212,10 @@ typedef enum {
 #define X(name, op, code) if (opcode == OP_ ## op) { strcpy(buf, #op); }
 void printOpcode(BYTE opcode) {
     char buf[32];
-    sprintf(buf, "-op;%d-", opcode);
+    sprintf(buf, "%d", opcode);
     buf[0] = 0;
     OPCODES;
-    printf("-op:%s-", buf);
+    printf("\n-op:%s(PC:%lx,T:%lx,N:%lx)-", buf, (UCELL)PC, T, N);
 }
 #undef X
 
@@ -225,12 +225,12 @@ void printOpcode(BYTE opcode) {
 //
 //#undef X
 //#define X(name, op, code) prims[OP_ ## op] = f ## op;
-void init_handlers() {
+//void init_handlers() {
 //    for (int i = 0; i < 256; i++) {
 //        prims[i] = 0;
 //    }
 //    OPCODES
-}
+//}
 
 #define X(name, op, code) if (strCmp(w, name) == 0) { return OP_ ## op; }
 BYTE getOpcode(char* w) {
@@ -351,7 +351,7 @@ void doType() {
     }
 }
 
-void doDo() {
+void doFor() {
     if (loopSP < LOOP_STK_SZ) {
         DO_LOOP_T* dp = &doStack[++loopSP];
         dp->startAddr = PC;
@@ -369,7 +369,7 @@ void doDo() {
 void doI() { if (0 <= loopSP) { push(doStack[loopSP].index); } }
 void doJ() { if (1 <= loopSP) { push(doStack[loopSP - 1].index); } }
 
-void doLoop() {
+void doNext() {
     if (0 <= loopSP) {
         DO_LOOP_T* dp = &doStack[loopSP];
         ++dp->index;
@@ -533,14 +533,14 @@ void cellStore(ADDR addr, CELL val) {
     *(addr)   = (val >> 24) & 0xFF;
 }
 void addrStore(ADDR addr, ADDR v) {
-    (ADDR_SZ == 2) ? wordStore(addr, (WORD)v) : cellStore(addr, (CELL)v);
+    (ADDR_SZ == 2) ? wordStore(addr, (CELL)v) : cellStore(addr, (CELL)v);
 }
 
 inline void doCComma(BYTE v) { *(HERE++) = v; }
-void doWComma(WORD v) { wordStore(HERE, v); HERE += ADDR_SZ; }
+void doWComma(CELL v) { wordStore(HERE, v); HERE += ADDR_SZ; }
 void doComma(CELL v) { cellStore(HERE, v); HERE += CELL_SZ; }
 void doAComma(ADDR v) {
-    (ADDR_SZ == 2) ? doWComma((WORD)v) : doComma((CELL)v); 
+    (ADDR_SZ == 2) ? doWComma((CELL)v) : doComma((CELL)v); 
 }
 
 int compiling(char *w, int errIfNot) {
@@ -643,10 +643,10 @@ int doNumber(const char *w) {
 // ( a -- )
 void doParseWord() {    // opcode #59
     char *w = (char *)pop();
-    // printf("-%s-", w);
-    if (strCmp(w, "allot") == 0) {
-        int x = 1;
-    }
+    //printf("-%s-", w);
+    //if (strCmp(w, "dump-dict") == 0) {
+    //    int x = 1;
+    //}
     int lwc = lastWasCall;
     lastWasCall = 0;
     if (doFind(w)) {
@@ -708,7 +708,7 @@ void doParseWord() {    // opcode #59
         doCComma(OP_JMP);
         push((CELL)HERE);
         doAComma(0);
-        addrStore(HERE, tgt);
+        addrStore(tgt, HERE);
         return;
     }
 
@@ -860,7 +860,7 @@ void toTIB(int c) {
 }
 
 void vmInit() {
-    init_handlers();
+    // init_handlers();
     HERE = &dict[0];
     LAST = 0;
     BASE = 10;
@@ -955,7 +955,7 @@ void loadBaseSystem() {
         " : (.) is-neg? <# #s #> ; "
         " : (u.) (neg) off <# #s #> ; "
         " : . space (.) ; : u. space (u.) ; "
-        " : .n >r is-neg? r> <# 0 do # loop #> drop ;"
+        " : .n >r is-neg? r> <# 0 for # next #> drop ;"
         " : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;");
     parseLine(
         " : low->high 2dup > if swap then ;"
@@ -975,7 +975,7 @@ void loadBaseSystem() {
         " : >src 0 reg ! ; : >dst 1 reg ! ;"
         " : src 0 reg @ ; : src+ src dup 1+ >src ;"
         " : dst 1 reg @ ; : dst+ dst dup 1+ >dst ;"
-        " : dump low->high do i c@ space .c loop ;"
+        " : dump low->high for i c@ space .c next ;"
         " : _t0 cr dup 8 .n ':' emit #16 over + dump ;"
         " : _t1 dup _t0 #16 + ;"
         " : dump-dict dict begin _t1 dup here < while drop ;"
@@ -993,11 +993,11 @@ void loadUserWords() {
         " : auto-run-off 0 dict a! ;"
         " : k 1000 * ; : mil k k ;"
         " : bm tick swap begin 1- while- elapsed ;"
-        " : bm2 >r tick 0 r> do loop elapsed ;"
+        " : bm2 >r tick 0 r> for next elapsed ;"
         " variable (led) 13 (led) ! : led (led) @ ;"
         " : led-on 1 led dp! ; : led-off 0 led dp! ;"
         " : blink led-on dup ms led-off dup ms ;"
-        " : blinks 0 swap do blink loop ;"
+        " : blinks 0 swap for blink next ;"
         " variable (button)  6 (button) ! : button (button) @ ;  : button-val button dp@ ;"
         " : button->led button-val if led-on else led-off then ;"
         " variable (pot)  3 (pot) !  : pot (pot) @ ; : pot-val pot ap@ ;"
