@@ -523,31 +523,47 @@ int strCmp(const char* l, const char* r) {
 }
 
 CELL cellAt(ADDR loc) {
-    return (*(loc+3) << 24) + (*(loc+2) << 16) + (*(loc+1) <<  8) + *(loc);
+#ifdef __NEEDS_ALIGN__
+    return (*(loc + 3) << 24) + (*(loc + 2) << 16) + (*(loc + 1) << 8) + *(loc);
+#else
+    return *(CELL*)loc;
+#endif
 }
 CELL wordAt(ADDR loc) {
+#ifdef __NEEDS_ALIGN__
     return (*(loc+1) <<  8) + *(loc);
+#else
+    return *(WORD*)loc;
+#endif
 }
 ADDR addrAt(ADDR loc) {         // opcode #16
     return (ADDR_SZ == 2) ? (ADDR)wordAt(loc) : (ADDR)cellAt(loc);
 }
 
 void wordStore(ADDR addr, CELL val) {
+#ifdef __NEEDS_ALIGN__
     *(addr)   = (val & 0xFF);
     *(addr+1) = (val >>  8) & 0xFF;
+#else
+    *(WORD*)addr = (WORD)val;
+#endif
 }
 void cellStore(ADDR addr, CELL val) {
+#ifdef __NEEDS_ALIGN__
     *(addr++) = (val & 0xFF);
     *(addr++) = (val >>  8) & 0xFF;
     *(addr++) = (val >> 16) & 0xFF;
     *(addr)   = (val >> 24) & 0xFF;
+#else
+    *(CELL*)addr = val;
+#endif
 }
 void addrStore(ADDR addr, ADDR v) {
     (ADDR_SZ == 2) ? wordStore(addr, (CELL)v) : cellStore(addr, (CELL)v);
 }
 
 inline void doCComma(BYTE v) { *(HERE++) = v; }
-void doWComma(CELL v) { wordStore(HERE, v); HERE += ADDR_SZ; }
+void doWComma(CELL v) { wordStore(HERE, v); HERE += WORD_SZ; }
 void doComma(CELL v) { cellStore(HERE, v); HERE += CELL_SZ; }
 void doAComma(ADDR v) {
     (ADDR_SZ == 2) ? doWComma((CELL)v) : doComma((CELL)v); 
@@ -565,21 +581,6 @@ int interpreting(char *w, int errIfNot) {
         printStringF("[%s]: Interpreting only.", w);
     }
     return (STATE == 0) ? 1 : 0;
-}
-
-void compileOrExecute(int num, ADDR bytes) {
-    if (STATE == 1) {
-        for (int i = 0; i < num; i++) {
-            doCComma(bytes[i]);
-        }
-    } else {
-        ADDR xt = (HERE+0x0010);
-        for (int i = 0; i < num; i++) {
-            *(xt+i) = bytes[i];
-        }
-        *(xt+num) = OP_RET;
-        run(xt, 0);
-    }
 }
 
 int isInlineWord(char *w) {
