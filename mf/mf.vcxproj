@@ -159,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="history.txt" />
+    <Text Include="reference.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="make.bat" />
