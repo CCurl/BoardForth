@@ -187,7 +187,7 @@ long millis() { return GetTickCount(); }
     X("DUMP-OPCODES",  DUMP_OPCODES, dumpOpcodes()) \
     X("A,", ACOMMA, doAComma(A); DROP1)
 
-#define __FILES__
+//#define __FILES__
 #ifndef __FILES__
 #define FILE_OPCODES
 #else
@@ -216,14 +216,14 @@ long millis() { return GetTickCount(); }
     X("INPUT-PIN", INPUT_PIN, pinMode(T, PIN_INPUT);        DROP1) \
     X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
     X("OUTPUT-PIN", OUTPUT_PIN, pinMode(T, PIN_OUTPUT);       DROP1) \
-    X("ap!", APIN_STORE, analogWrite(T, N);  DROP2) \
-    X("dp!", DPIN_STORE, digitalWrite(T, N); DROP2) \
-    X("ap@", APIN_FETCH, T = analogRead(T); ) \
-    X("dp@", DPIN_FETCH, T = digitalRead(T); )
+    X("ap!", APIN_STORE, analogWrite((int)T, (int)N);  DROP2) \
+    X("dp!", DPIN_STORE, digitalWrite((int)T, (int)N); DROP2) \
+    X("ap@", APIN_FETCH, T = analogRead((int)T); ) \
+    X("dp@", DPIN_FETCH, T = digitalRead((int)T); )
 #endif
 
 // NB: This is for the Joystick library in the Teensy
-// #define __JOYSTICK__
+//#define __JOYSTICK__
 #ifndef __JOYSTICK__
 #define JOYSTICK_OPCODES
 #else
