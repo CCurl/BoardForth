@@ -16,9 +16,7 @@ void printSerial(const char* str) {
 
 #ifdef __ESP32__
 void printStringF(const char *, ...);
-void analogWrite(int pin, int val) {
-  printStringF("-ap!:%d/%d-", pin, val);
-}
+void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
 #endif
 
 //typedef void (*FP)();
@@ -115,22 +113,20 @@ int debugOn = 0;
 void pinMode(int pin, int mode) {}
 int digitalRead(int pin) { return pin+1; }
 int analogRead(int pin) { return pin+1; }
-void digitalWrite(int pin, int val) { printString("-dp!-"); }
-void analogWrite(int pin, int val) { printString("-ap!-"); }
+void digitalWrite(int pin, int val) { printStringF("-dp!:%d/%d-", pin, val); }
+void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
 void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
 #endif
 
-// #define Y(op, code) X(#op, op, code)
-
-#define OPCODES \
+#define BASE_OPCODES \
     X("NOOP", NOOP, ) \
     X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
     X("EXIT", RET, PC = (ADDR)rpop()) \
     X("JMP",    JMP,    PC = addrAt(PC)) \
     X("JMPZ",   JMPZ,   PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
     X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
-    X("CLIT", CLIT, push(*(PC++))) \
+    X("BLIT", BLIT, push(*(PC++))) \
     X("WLIT", WLIT, push(wordAt(PC)); PC += WORD_SZ) \
     X("LIT",  LIT, push(cellAt(PC)); PC += CELL_SZ) \
     X("DUP", DUP, push(T)) \
@@ -154,26 +150,22 @@ long millis() { return GetTickCount(); }
     X("2*", LSHIFT, T = T << 1) \
     X("1-", ONEMINUS, --T) \
     X("1+", ONEPLUS, ++T) \
-    X(".S", DOTS, doDotS()) \
     X("AND", AND, N &= T; DROP1) \
     X("NAND", NAND, N = (N & T) ? 0 : 1; DROP1) \
     X("OR", OR, N |= T; DROP1) \
     X("XOR", XOR, N ^= T; DROP1) \
+    X("COM", COM, T = ~T) \
     X("<", LESS, N = (N < T) ? 1 : 0; DROP1) \
     X("=", EQUALS, N = (N == T) ? 1 : 0; DROP1) \
-    X("0=", LNOT, T = (T == 0) ? -1 : 0) \
+    X("<>", NEQUALS, N = (N != T) ? 1 : 0; DROP1) \
+    X("0=", ZEQUALS, T = (T == 0) ? 1 : 0) \
     X(">", GREATER, N = (N > T) ? 1 : 0; DROP1) \
     X(">r", DTOR, rpush(pop())) \
     X("r@", RFETCH, push(R)) \
     X("r>", RTOD, push(rpop())) \
     X("TYPE", TYPE, doType() ) \
     X("EMIT", EMIT, printStringF("%c", (char)pop())) \
-    X("WDTFEED", WDTFEED, ) \
-    X("OPENBLOCK", OPENBLOCK, ) \
-    X("FILECLOSE", FILECLOSE, ) \
-    X("FILEREAD", FILEREAD, ) \
-    X("LOAD", LOAD, ) \
-    X("THRU", THRU, ) \
+    X(".S", DOTS, doDotS()) \
     X("FOR", FOR, doFor()) \
     X("I", I, doI()) \
     X("J", J, doJ()) \
@@ -184,23 +176,73 @@ long millis() { return GetTickCount(); }
     X("UNTIL", UNTIL, doWhile(1, 1)) \
     X("WHILE-", WHILEN, doWhile(0, 0)) \
     X("UNTIL-", UNTILN, doWhile(0, 1)) \
-    X("INPUT-PIN",    INPUT_PIN,        pinMode(T, PIN_INPUT);        DROP1) \
-    X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
-    X("OUTPUT-PIN",   OUTPUT_PIN,       pinMode(T, PIN_OUTPUT);       DROP1) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
-    X("ap!", APIN_STORE, analogWrite(T, N);  DROP2) \
-    X("dp!", DPIN_STORE, digitalWrite(T, N); DROP2) \
-    X("ap@", APIN_FETCH, T = analogRead(T); ) \
-    X("dp@", DPIN_FETCH, T = digitalRead(T); ) \
-    X("COM", COM, T = ~T) \
     X("S\"", SQUOTE, doSQuote()) \
     X(".\"", DOTQUOTE, doDotQuote()) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
-    X("A,", ACOMMA, doAComma(A); DROP1) \
-    X("BYE", BYE, printString(" bye."); isBYE = 1) \
+    X("A,", ACOMMA, doAComma(A); DROP1)
+
+#define __FILES__
+#ifndef __FILES__
+#define FILE_OPCODES
+#else
+#define FILE_OPCODES \
+    X("FOPEN", FOPEN, N = (CELL)fopen((char *)(N+1), (char *)(T+1)); DROP1) \
+    X("FCLOSE", FCLOSE, fclose((FILE *)T); DROP1) \
+    X("FREAD", FREAD, ) \
+    X("FWRITE", FWRITE, )
+#endif
+
+//#define __LITTLEFS__
+#ifdef __LITTLEFS__
+#undef FILE_OPCODES
+#define FILE_OPCODES \
+    X("FOPEN", FOPEN, N = (CELL)fopen((char *)(N+1), (char *)(T+1)); DROP1) \
+    X("FCLOSE", FCLOSE, fclose((FILE *)T); DROP1) \
+    X("FREAD", FREAD, ) \
+    X("FWRITE", FWRITE, )
+#endif
+
+#define __ARDUINO__
+#ifndef __ARDUINO__
+#define ARDUINO_OPCODES
+#else
+#define ARDUINO_OPCODES \
+    X("INPUT-PIN", INPUT_PIN, pinMode(T, PIN_INPUT);        DROP1) \
+    X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
+    X("OUTPUT-PIN", OUTPUT_PIN, pinMode(T, PIN_OUTPUT);       DROP1) \
+    X("ap!", APIN_STORE, analogWrite(T, N);  DROP2) \
+    X("dp!", DPIN_STORE, digitalWrite(T, N); DROP2) \
+    X("ap@", APIN_FETCH, T = analogRead(T); ) \
+    X("dp@", DPIN_FETCH, T = digitalRead(T); )
+#endif
+
+// NB: This is for the Joystick library in the Teensy
+// #define __JOYSTICK__
+#ifndef __JOYSTICK__
+#define JOYSTICK_OPCODES
+#else
+#define JOYSTICK_OPCODES \
+    X("JOY-X", JOY_X, Joystick.X(T); DROP1) \
+    X("JOY-Y", JOY_Y, Joystick.Y(T); DROP1) \
+    X("JOY-Z", JOY_Z, Joystick.Z(T); DROP1) \
+    X("JOY-ZROTATE", JOY_ZROTATE, Joystick.Zrotate(T); DROP1) \
+    X("JOY-SLIDERLEFT", JOY_SLIDERLEFT, Joystick.sliderLeft(T); DROP1) \
+    X("JOY-SLIDERRIGHT", JOY_SLIDERRIGHT, Joystick.sliderRight(T); DROP1) \
+    X("JOY-BUTTON", JOY_BUTTON, Joystick.button(T); DROP1) \
+    X("JOY-USEMANUAL", JOY_USEMANUAL, Joystick.useManualSend(T); DROP1) \
+    X("JOY-SENDNOW", JOY_SENDNOW, Joystick.send_now();)
+#endif
+
+#define OPCODES \
+    BASE_OPCODES \
+    FILE_OPCODES \
+    ARDUINO_OPCODES \
+    JOYSTICK_OPCODES \
+    X("BYE", BYE, printString(" bye."); isBYE = 1)
 
 #define X(name, op, code) OP_ ## op,
 typedef enum {
@@ -641,7 +683,7 @@ void doParseWord() {    // opcode #59
         if (compiling(w, 0)) {
             CELL v = pop();
             if ((0x0000 <= v) && (v < 0x0100)) {
-                doCComma(OP_CLIT);
+                doCComma(OP_BLIT);
                 doCComma((BYTE)v);
             } else if ((0x0100 <= v) && (v < 0x010000)) {
                 doCComma(OP_WLIT);
@@ -903,7 +945,6 @@ void loadBaseSystem() {
         " : 2dup over over ; : 2drop drop drop ;"
         " : mod /mod drop ; : / /mod nip ;"
         " : +! tuck @ + swap ! ;"
-        " : <> = 0= ;"
         " : negate 0 swap - ;"
         " : off 0 swap ! ; : on 1 swap ! ;"
         " : abs dup 0 < if negate then ;"
