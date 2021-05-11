@@ -103,13 +103,12 @@ CELL dstk[STK_SZ+1];
 CELL rstk[STK_SZ+1];
 CELL loopDepth, t1;
 int numTIB = 0;
-ADDR allocAddrBase, allocCurFree;
-//FP prims[256];
 int lastWasCall = 0;
 DO_LOOP_T doStack[LOOP_STK_SZ];
 int loopSP = -1;
 int isBYE = 0;
 DICT_T tempWords[10];
+int debugOn = 0;
 
 #ifndef __DEV_BOARD__
 #pragma warning(disable:4996)
@@ -219,19 +218,6 @@ void printOpcode(BYTE opcode) {
 }
 #undef X
 
-//#undef X
-//#define X(name, op, code) void f ## op() { code; }
-//OPCODES
-//
-//#undef X
-//#define X(name, op, code) prims[OP_ ## op] = f ## op;
-//void init_handlers() {
-//    for (int i = 0; i < 256; i++) {
-//        prims[i] = 0;
-//    }
-//    OPCODES
-//}
-
 #define X(name, op, code) if (strCmp(w, name) == 0) { return OP_ ## op; }
 BYTE getOpcode(char* w) {
     OPCODES
@@ -245,7 +231,7 @@ void run(ADDR start, CELL max_cycles) {
     PC = start;
     while (1) {
         IR = *(PC++);
-        // printOpcode(IR);
+        if (debugOn) printOpcode(IR);
         if ((IR == OP_RET) && (RSP < 1)) { return; }
         switch (IR) {
             OPCODES
@@ -257,24 +243,6 @@ void run(ADDR start, CELL max_cycles) {
     }
 }
 #undef X
-
-//void runx(ADDR start, CELL max_cycles) {
-//    PC = start;
-//    while (1) {
-//        if (DSP < 0) { DSP = 0; }
-//        OPCODE_T IR = (OPCODE_T)*(PC++);
-//        if ((IR == OP_RET) && (RSP < 1)) { return; }
-//        if ((0 <= IR) && (IR <= OP_BYE) && (prims[IR])) {
-//            prims[IR]();
-//        } else {
-//            printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC-1);
-//            // throw(2);
-//        }
-//        if (max_cycles) {
-//            if (--max_cycles < 1) { return; }
-//        }
-//    }
-//}
 
 void push(CELL v) {
     if (DSP < STK_SZ) ++DSP;
@@ -869,9 +837,6 @@ void vmInit() {
     RSP = 0;
     TIB = TIBBuf;
     TIBEnd = TIBBuf;
-    allocAddrBase = &dict[DICT_SZ];
-    allocCurFree = allocAddrBase;
-    allocAddrBase = allocCurFree;
     loopDepth = 0;
     doComma(0);
 }
