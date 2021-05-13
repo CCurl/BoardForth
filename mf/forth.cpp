@@ -118,6 +118,7 @@ void digitalWrite(int pin, int val) { printStringF("-dp!:%d/%d-", pin, val); }
 void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
 void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
+void doJoyXYZ(int which, CELL val);
 #endif
 
 #define BASE_OPCODES \
@@ -187,7 +188,6 @@ long millis() { return GetTickCount(); }
     X("DUMP-OPCODES",  DUMP_OPCODES, dumpOpcodes()) \
     X("A,", ACOMMA, doAComma(A); DROP1)
 
-//#define __FILES__
 #ifndef __FILES__
 #define FILE_OPCODES
 #else
@@ -198,7 +198,6 @@ long millis() { return GetTickCount(); }
     X("FWRITE", FWRITE, )
 #endif
 
-//#define __LITTLEFS__
 #ifdef __LITTLEFS__
 #undef FILE_OPCODES
 #define FILE_OPCODES \
@@ -208,7 +207,6 @@ long millis() { return GetTickCount(); }
     X("FWRITE", FWRITE, )
 #endif
 
-#define __ARDUINO__
 #ifndef __ARDUINO__
 #define ARDUINO_OPCODES
 #else
@@ -223,20 +221,29 @@ long millis() { return GetTickCount(); }
 #endif
 
 // NB: This is for the Joystick library in the Teensy
-//#define __JOYSTICK__
 #ifndef __JOYSTICK__
 #define JOYSTICK_OPCODES
 #else
 #define JOYSTICK_OPCODES \
-    X("JOY-X", JOY_X, Joystick.X(T); DROP1) \
-    X("JOY-Y", JOY_Y, Joystick.Y(T); DROP1) \
-    X("JOY-Z", JOY_Z, Joystick.Z(T); DROP1) \
+    X("JOY-X", JOY_X, doJoyXYZ(1, T); DROP1) \
+    X("JOY-Y", JOY_Y, doJoyXYZ(2, T); DROP1) \
+    X("JOY-Z", JOY_Z, doJoyXYZ(3, T); DROP1) \
     X("JOY-ZROTATE", JOY_ZROTATE, Joystick.Zrotate(T); DROP1) \
     X("JOY-SLIDERLEFT", JOY_SLIDERLEFT, Joystick.sliderLeft(T); DROP1) \
     X("JOY-SLIDERRIGHT", JOY_SLIDERRIGHT, Joystick.sliderRight(T); DROP1) \
-    X("JOY-BUTTON", JOY_BUTTON, Joystick.button(T); DROP1) \
+    X("JOY-BUTTON", JOY_BUTTON, Joystick.button(T, N); DROP2) \
     X("JOY-USEMANUAL", JOY_USEMANUAL, Joystick.useManualSend(T); DROP1) \
     X("JOY-SENDNOW", JOY_SENDNOW, Joystick.send_now();)
+#endif
+
+#ifdef __JOYSTICK__
+void doJoyXYZ(int which, CELL val) {
+    switch (which) {
+    case 1: Joystick.X(val); break;
+    case 2: Joystick.Y(val); break;
+    case 3: Joystick.Z(val); break;
+    }
+}
 #endif
 
 #define OPCODES \
