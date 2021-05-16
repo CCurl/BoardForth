@@ -37,6 +37,12 @@ typedef BYTE* ADDR;
 #define DROP1 --DSP
 #define DROP2 DROP1; DROP1
 
+#define TMP_RUNOP    (HERE + 0x0020)
+#define TMP_PAD      (HERE + 0x0040)
+#define TMP_WORD     (HERE + 0x0080)
+#define TMP_SQUOTE   (HERE + 0x0100)
+#define TMP_DOTQUOTE (HERE + 0x0200)
+
 typedef struct {
     ADDR prev;
     ADDR XT;
@@ -87,6 +93,10 @@ void doWComma(CELL);
 void doComma(CELL);
 void doAComma(ADDR);
 void dumpOpcodes();
+void doFileOpen();
+void doFileClose();
+void doFileRead();
+void doFileWrite();
 int strCmp(const char*, const char*);
 
 BYTE IR;
@@ -118,13 +128,12 @@ void digitalWrite(int pin, int val) { printStringF("-dp!:%d/%d-", pin, val); }
 void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
 void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
-void doJoyXYZ(int which, CELL val);
 #endif
 
 #define BASE_OPCODES \
     X("NOOP", NOOP, ) \
     X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
-    X("EXIT", RET, PC = (ADDR)rpop()) \
+    X("RET", RET, PC = (ADDR)rpop()) \
     X("JMP",    JMP,    PC = addrAt(PC)) \
     X("JMPZ",   JMPZ,   PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
     X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
@@ -135,6 +144,7 @@ void doJoyXYZ(int which, CELL val);
     X("SWAP", SWAP, t1 = T; T = N; N = t1) \
     X("DROP", DROP, DROP1) \
     X("OVER", OVER, push(N)) \
+    X("NIP", NIP, N = T; DROP1) \
     X("c@", CFETCH, T = (BYTE)*A) \
     X("w@", WFETCH, T = wordAt(A)) \
     X("@",  FETCH,  T = cellAt(A)) \
@@ -185,26 +195,25 @@ void doJoyXYZ(int which, CELL val);
     X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
-    X("DUMP-OPCODES",  DUMP_OPCODES, dumpOpcodes()) \
     X("A,", ACOMMA, doAComma(A); DROP1)
 
 #ifndef __FILES__
 #define FILE_OPCODES
 #else
 #define FILE_OPCODES \
-    X("FOPEN", FOPEN, N = (CELL)fopen((char *)(N+1), (char *)(T+1)); DROP1) \
-    X("FCLOSE", FCLOSE, fclose((FILE *)T); DROP1) \
-    X("FREAD", FREAD, ) \
-    X("FWRITE", FWRITE, )
+    X("FOPEN", FOPEN, doFileOpen()) \
+    X("FCLOSE", FCLOSE, doFileClose()) \
+    X("FREAD", FREAD, doFileRead()) \
+    X("FWRITE", FWRITE, doFileWrite())
 #endif
 
 #ifdef __LITTLEFS__
 #undef FILE_OPCODES
 #define FILE_OPCODES \
-    X("FOPEN", FOPEN, N = (CELL)fopen((char *)(N+1), (char *)(T+1)); DROP1) \
-    X("FCLOSE", FCLOSE, fclose((FILE *)T); DROP1) \
-    X("FREAD", FREAD, ) \
-    X("FWRITE", FWRITE, )
+    X("FOPEN", FOPEN, doFileOpen()) \
+    X("FCLOSE", FCLOSE, doFileClose()) \
+    X("FREAD", FREAD, doFileRead()) \
+    X("FWRITE", FWRITE, doFileWrite())
 #endif
 
 #ifndef __ARDUINO__
@@ -224,6 +233,7 @@ void doJoyXYZ(int which, CELL val);
 #ifndef __JOYSTICK__
 #define JOYSTICK_OPCODES
 #else
+void doJoyXYZ(int which, CELL val);
 #define JOYSTICK_OPCODES \
     X("JOY-X", JOY_X, doJoyXYZ(1, T); DROP1) \
     X("JOY-Y", JOY_Y, doJoyXYZ(2, T); DROP1) \
@@ -236,21 +246,12 @@ void doJoyXYZ(int which, CELL val);
     X("JOY-SENDNOW", JOY_SENDNOW, Joystick.send_now();)
 #endif
 
-#ifdef __JOYSTICK__
-void doJoyXYZ(int which, CELL val) {
-    switch (which) {
-    case 1: Joystick.X(val); break;
-    case 2: Joystick.Y(val); break;
-    case 3: Joystick.Z(val); break;
-    }
-}
-#endif
-
 #define OPCODES \
     BASE_OPCODES \
     FILE_OPCODES \
     ARDUINO_OPCODES \
     JOYSTICK_OPCODES \
+    X("DUMP-OPCODES", DUMP_OPCODES, dumpOpcodes()) \
     X("BYE", BYE, printString(" bye."); isBYE = 1)
 
 #define X(name, op, code) OP_ ## op,
@@ -429,6 +430,73 @@ void doWhile(int dropIt, int isUntil) {
     }
 }
 
+#ifdef __FILES__
+void doFileOpen() {
+    char* mode = (char*)pop() + 1;
+    char* fn = (char*)pop() + 1;
+    FILE* fp = fopen(fn, mode);
+    push((CELL)fp);
+}
+
+void doFileClose() {
+    FILE* fp = (FILE*)pop();
+    fclose(fp);
+}
+
+void doFileRead() {
+    FILE* fp = (FILE *)pop();
+    BYTE* buf = (BYTE *)pop();
+    CELL sz = pop();
+    CELL num = fread(buf, 1, sz, fp);
+    push(num);
+}
+
+void doFileWrite() {
+    FILE* fp = (FILE*)pop();
+    CELL sz = pop();
+    BYTE* buf = (BYTE*)pop();
+    CELL num = fwrite(buf, 1, sz, fp);
+    push(num);
+}
+#endif
+
+#ifdef __LITTLEFS__
+void doFileOpen() {
+    char* fn = (char*)pop() + 1;
+    char* mode = (char *)pop() + 1;
+}
+
+void doFileClose() {
+    FILE* fp = (FILE*)pop();
+}
+
+void doFileRead() {
+    FILE* fp = (FILE*)pop();
+    BYTE* buf = (BYTE*)pop();
+    CELL sz = pop();
+    CELL num = fread(buf, 1, sz, fp);
+    push(num);
+}
+
+void doFileWrite() {
+    FILE* fp = (FILE*)pop();
+    BYTE* buf = (BYTE*)pop();
+    CELL sz = pop();
+    CELL num = fwrite(buf, 1, sz, fp);
+    push(num);
+}
+#endif
+
+#ifdef __JOYSTICK__
+void doJoyXYZ(int which, CELL val) {
+    switch (which) {
+    case 1: Joystick.X(val); break;
+    case 2: Joystick.Y(val); break;
+    case 3: Joystick.Z(val); break;
+    }
+}
+#endif
+
 ADDR align4(ADDR x) {
     CELL y = (CELL)x;
     while (y % 4) { ++y; }
@@ -491,7 +559,7 @@ void doParse(char sep) {
     TIBEnd = toIN + strlen(toIN);
     // try {
     while (1) {
-        char* w = (char*)HERE + 0x100;
+        char* w = (char*)TMP_WORD;
         CELL len = getNextWord(w, sep);
         if (len == 0) { return; }
         push((CELL)w);
@@ -792,6 +860,15 @@ void doParseWord() {    // opcode #59
     }
 
     if (strCmp(w, "s\"") == 0) {
+        if (STATE == 0) {
+            getNextChar();
+            push((CELL)TMP_SQUOTE);
+            char* x = (char*)T;
+            CELL len = getNextWord(x + 1, '"');
+            getNextChar();
+            *x = (BYTE)len;
+            return;
+        }
         doCComma(OP_SQUOTE);
         ADDR la = HERE;
         BYTE len = 0;
@@ -809,6 +886,16 @@ void doParseWord() {    // opcode #59
     }
 
     if (strCmp(w, ".\"") == 0) {
+        if (STATE == 0) {
+            getNextChar();
+            push((CELL)TMP_DOTQUOTE);
+            char* x = (char *)T;
+            CELL len = getNextWord(x, '"');
+            getNextChar();
+            push(len);
+            doType();
+            return;
+        }
         doCComma(OP_DOTQUOTE);
         ADDR la = HERE;
         BYTE len = 0;
@@ -831,7 +918,7 @@ void doParseWord() {    // opcode #59
             doCComma(op);
         }
         else {
-            ADDR xt = HERE + 0x20;
+            ADDR xt = TMP_RUNOP;
             *(xt) = op;
             *(xt + 1) = OP_RET;
             run(xt, 0);
@@ -962,7 +1049,7 @@ void loadBaseSystem() {
 
     parseLine(
         " : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
-        " : nip swap drop ; : tuck swap over ;"
+        " : tuck swap over ;"
         " : ?dup if- dup then ;"
         " : rot >r swap r> swap ; : -rot swap >r swap r> ;"
         " : 2dup over over ; : 2drop drop drop ;"

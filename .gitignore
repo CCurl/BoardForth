@@ -66,3 +66,5 @@ vm-dump.txt
 /mf/Debug
 /mf/Release
 /mf/mf.vcxproj.user
+/bf/image.bin
+/mf/image.bin
