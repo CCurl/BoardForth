@@ -118,6 +118,7 @@ int loopSP = -1;
 int isBYE = 0;
 DICT_T tempWords[10];
 int debugOn = 0;
+extern char screen1[], screen2[], screen3[], userWords[];
 
 #ifndef __DEV_BOARD__
 #pragma warning(disable:4996)
@@ -621,7 +622,7 @@ CELL wordAt(ADDR loc) {
     return *(WORD*)loc;
 #endif
 }
-ADDR addrAt(ADDR loc) {         // opcode #16
+ADDR addrAt(ADDR loc) {
     return (ADDR_SZ == 2) ? (ADDR)wordAt(loc) : (ADDR)cellAt(loc);
 }
 
@@ -931,16 +932,10 @@ void doParseWord() {    // opcode #59
 }
 
 // ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
 void parseLine(const char* line) {
     push((CELL)line);
     doParse(' ');
 }
-
-// ---------------------------------------------------------------------
-// main.c
-// ---------------------------------------------------------------------
 
 #pragma warning(disable:4996)
 
@@ -1047,83 +1042,13 @@ void loadBaseSystem() {
     loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
     loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
 
-    parseLine(
-        " : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
-        " : tuck swap over ;"
-        " : ?dup if- dup then ;"
-        " : rot >r swap r> swap ; : -rot swap >r swap r> ;"
-        " : 2dup over over ; : 2drop drop drop ;"
-        " : mod /mod drop ; : / /mod nip ;"
-        " : +! tuck @ + swap ! ;"
-        " : negate 0 swap - ;"
-        " : off 0 swap ! ; : on 1 swap ! ;"
-        " : abs dup 0 < if negate then ;"
-        " : hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
-        " : hex? base @ #16 = ; : decimal? base @ #10 = ;"
-        " : bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
-        " : pad here $40 + ; : (neg) here $44 + ; "
-        " : hold pad @ 1- dup pad ! c! ; "
-        " : <# pad dup ! ; "
-        " : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
-        " : #s begin # while- ; "
-        " : #> (neg) @ if '-' emit then pad @ pad over - type ; "
-        " : is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
-        " : (.) is-neg? <# #s #> ; "
-        " : (u.) (neg) off <# #s #> ; "
-        " : . space (.) ; : u. space (u.) ; "
-        " : .n >r is-neg? r> <# 0 for # next #> drop ;"
-        " : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;");
-    parseLine(
-        " : low->high 2dup > if swap then ;"
-        " : high->low 2dup < if swap then ;"
-        " : min low->high drop ;"
-        " : max high->low drop ;"
-        " : between rot dup >r min max r> = ;"
-        " : allot here + (here) ! ;"
-        " : >body addr + a@ ;"
-        " : count dup 1+ swap c@ ;"
-        " : .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
-        " : wordsl last begin dup .wordl a@ while- ;"
-        " : .word addr 2* + 1+ count type tab ;"
-        " : words last begin dup .word a@ while- ;"
-        " variable (regs) 9 cells allot"
-        " : reg cells (regs) + ;"
-        " : >src 0 reg ! ; : >dst 1 reg ! ;"
-        " : src 0 reg @ ; : src+ src dup 1+ >src ;"
-        " : dst 1 reg @ ; : dst+ dst dup 1+ >dst ;"
-        " : dump low->high for i c@ space .c next ;"
-        " : _t0 cr dup 8 .n ':' emit #16 over + dump ;"
-        " : _t1 dup _t0 #16 + ;"
-        " : dump-dict dict begin _t1 dup here < while drop ;"
-        " : elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;"
-        " variable (ch)  variable (cl)"
-        " : marker here (ch) ! last (cl) ! ;"
-        " : forget (ch) @ (here) ! (cl) @ (last) ! ;"
-        " : forget-1 last (here) ! last a@ (last) ! ;"
-        " marker");
+    parseLine(screen1);
+    parseLine(screen2);
+    parseLine(screen3);
 }
 
 void loadUserWords() {
-    parseLine(
-        " : auto-run-last last >body dict a! ;"
-        " : auto-run-off 0 dict a! ;"
-        " : k 1000 * ; : mil k k ;"
-        " : bm tick swap begin 1- while- elapsed ;"
-        " : bm2 >r tick 0 r> for next elapsed ;"
-        " variable (led) 13 (led) ! : led (led) @ ;"
-        " : led-on 1 led dp! ; : led-off 0 led dp! ;"
-        " : blink led-on dup ms led-off dup ms ;"
-        " : blinks 0 swap for blink next ;"
-        " variable (button)  6 (button) ! : button (button) @ ;  : button-val button dp@ ;"
-        " : button->led button-val if led-on else led-off then ;"
-        " variable (pot)  3 (pot) !  : pot (pot) @ ; : pot-val pot ap@ ;"
-        " variable pot-lastVal  variable sensitivity  4 sensitivity !"
-        " : pot-changed? pot-lastVal @ - abs sensitivity @ > ;"
-        " : .pot dup pot-lastVal ! . cr ;"
-        " : .pot? pot-val dup pot-changed? if .pot else drop then ;"
-        " : init led output-pin pot input-pin button input-pin ;"
-        " : go button->led .pot? ;"
-    );
+    parseLine(userWords);
     #ifdef __DEV_BOARD__
     // parseLine("init auto-run-last");
     #endif
@@ -1165,3 +1090,100 @@ int main()
     }
 }
 #endif
+
+char screen1[] = " : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
+" : tuck swap over ;"
+" : ?dup if- dup then ;"
+" : rot >r swap r> swap ; : -rot swap >r swap r> ;"
+" : 2dup over over ; : 2drop drop drop ;"
+" : mod /mod drop ; : / /mod nip ;"
+" : +! tuck @ + swap ! ;"
+" : negate 0 swap - ;"
+" : off 0 swap ! ; : on 1 swap ! ;"
+" : abs dup 0 < if negate then ;"
+" : hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+" : hex? base @ #16 = ; : decimal? base @ #10 = ;"
+" : bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
+" : pad here $40 + ; : (neg) here $44 + ; "
+" : hold pad @ 1- dup pad ! c! ; "
+" : <# pad dup ! ; "
+" : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
+" : #s begin # while- ; "
+" : #> (neg) @ if '-' emit then pad @ pad over - type ; "
+" : is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
+" : (.) is-neg? <# #s #> ; "
+" : (u.) (neg) off <# #s #> ; "
+" : . space (.) ; : u. space (u.) ; "
+" : .n >r is-neg? r> <# 0 for # next #> drop ;"
+" : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;";
+
+char screen2[] = " : ?dup if- dup then ;"
+" : rot >r swap r> swap ; : -rot swap >r swap r> ;"
+" : 2dup over over ; : 2drop drop drop ;"
+" : mod /mod drop ; : / /mod nip ;"
+" : +! tuck @ + swap ! ;"
+" : negate 0 swap - ;"
+" : off 0 swap ! ; : on 1 swap ! ;"
+" : abs dup 0 < if negate then ;"
+" : hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+" : hex? base @ #16 = ; : decimal? base @ #10 = ;"
+" : bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
+" : pad here $40 + ; : (neg) here $44 + ; "
+" : hold pad @ 1- dup pad ! c! ; "
+" : <# pad dup ! ; "
+" : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
+" : #s begin # while- ; "
+" : #> (neg) @ if '-' emit then pad @ pad over - type ; "
+" : is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
+" : (.) is-neg? <# #s #> ; "
+" : (u.) (neg) off <# #s #> ; "
+" : . space (.) ; : u. space (u.) ; "
+" : .n >r is-neg? r> <# 0 for # next #> drop ;"
+" : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;";
+
+char screen3[] = " : low->high 2dup > if swap then ;"
+" : high->low 2dup < if swap then ;"
+" : min low->high drop ;"
+" : max high->low drop ;"
+" : between rot dup >r min max r> = ;"
+" : allot here + (here) ! ;"
+" : >body addr + a@ ;"
+" : count dup 1+ swap c@ ;"
+" : .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
+" : wordsl last begin dup .wordl a@ while- ;"
+" : .word addr 2* + 1+ count type tab ;"
+" : words last begin dup .word a@ while- ;"
+" variable (regs) 9 cells allot"
+" : reg cells (regs) + ;"
+" : >src 0 reg ! ; : >dst 1 reg ! ;"
+" : src 0 reg @ ; : src+ src dup 1+ >src ;"
+" : dst 1 reg @ ; : dst+ dst dup 1+ >dst ;"
+" : dump low->high for i c@ space .c next ;"
+" : _t0 cr dup 8 .n ':' emit #16 over + dump ;"
+" : _t1 dup _t0 #16 + ;"
+" : dump-dict dict begin _t1 dup here < while drop ;"
+" : elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;"
+" variable (ch)  variable (cl)"
+" : marker here (ch) ! last (cl) ! ;"
+" : forget (ch) @ (here) ! (cl) @ (last) ! ;"
+" : forget-1 last (here) ! last a@ (last) ! ;"
+" marker";
+
+char userWords[] = " : auto-run-last last >body dict a! ;"
+" : auto-run-off 0 dict a! ;"
+" : k 1000 * ; : mil k k ;"
+" : bm tick swap begin 1- while- elapsed ;"
+" : bm2 >r tick 0 r> for next elapsed ;"
+" variable (led) 13 (led) ! : led (led) @ ;"
+" : led-on 1 led dp! ; : led-off 0 led dp! ;"
+" : blink led-on dup ms led-off dup ms ;"
+" : blinks 0 swap for blink next ;"
+" variable (button)  6 (button) ! : button (button) @ ;  : button-val button dp@ ;"
+" : button->led button-val if led-on else led-off then ;"
+" variable (pot)  3 (pot) !  : pot (pot) @ ; : pot-val pot ap@ ;"
+" variable pot-lastVal  variable sensitivity  4 sensitivity !"
+" : pot-changed? pot-lastVal @ - abs sensitivity @ > ;"
+" : .pot dup pot-lastVal ! . cr ;"
+" : .pot? pot-val dup pot-changed? if .pot else drop then ;"
+" : init led output-pin pot input-pin button input-pin ;"
+" : go button->led .pot? ;";
