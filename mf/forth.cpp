@@ -193,10 +193,15 @@ long millis() { return GetTickCount(); }
     X("TICK", TICK, push(millis())) \
     X("S\"", SQUOTE, doSQuote()) \
     X(".\"", DOTQUOTE, doDotQuote()) \
+    X("screen-1", SCREEN1, push((CELL)&screen1[0])) \
+    X("screen-2", SCREEN2, push((CELL)&screen2[0])) \
+    X("screen-3", SCREEN3, push((CELL)&screen3[0])) \
+    X("user-words", USER_WORDS, push((CELL)&userWords[0])) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
-    X("A,", ACOMMA, doAComma(A); DROP1)
+    X("A,", ACOMMA, doAComma(A); DROP1) \
+    X("ZCOUNT", ZCOUNT, push(T); T = strlen((char *)T)) \
 
 #ifndef __FILES__
 #define FILE_OPCODES
