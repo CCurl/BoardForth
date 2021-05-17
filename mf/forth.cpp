@@ -45,6 +45,12 @@ typedef BYTE* ADDR;
 #define TMP_SQUOTE   (HERE + 0x0100)
 #define TMP_DOTQUOTE (HERE + 0x0200)
 
+#define DBG_ALL   4
+#define DBG_TRACE 3
+#define DBG_INFO  2
+#define DBG_DEBUG 1
+#define DBG_OFF   0
+
 typedef struct {
     ADDR prev;
     ADDR XT;
@@ -119,7 +125,7 @@ DO_LOOP_T doStack[LOOP_STK_SZ];
 int loopSP = -1;
 int isBYE = 0, isError = 0;
 DICT_T tempWords[10];
-int debugOn = 0;
+CELL debugMode = DBG_OFF;
 extern char screen1[], screen2[], screen3[];
 
 #ifndef __DEV_BOARD__
@@ -205,6 +211,7 @@ long millis() { return GetTickCount(); }
     X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
     X("FILL", FILL, memset((void *)T, N, M); DROP3) \
     X("ZCOUNT", ZCOUNT, push(T); T = strlen((char *)T)) \
+    X("DEBUG-MODE", DEBUG_MODE, push((CELL)&debugMode)) \
 
 #ifndef __FILES__
 #define FILE_OPCODES
@@ -298,7 +305,7 @@ void run(ADDR start, CELL max_cycles) {
     PC = start;
     while (1) {
         IR = *(PC++);
-        if (debugOn) printOpcode(IR);
+        if (DBG_TRACE <= debugMode) { printOpcode(IR); }
         if ((IR == OP_RET) && (RSP < 1)) { return; }
         switch (IR) {
             OPCODES
@@ -519,7 +526,7 @@ DICT_T* isTempWord(const char* name) {
 }
 
 void doCreate(const char* name) {
-    // printf("-cw:%s(%lx)-", name, HERE);
+    if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%lx)-", name, HERE); }
     DICT_T* dp = isTempWord(name);
     if (dp) {
         dp->XT = HERE;
@@ -747,7 +754,7 @@ int doNumber(const char* w) {
 // ( a -- )
 void doParseWord() {
     char* w = (char*)pop();
-    //printf("-%s-", w);
+    if (DBG_INFO <= debugMode) { printStringF("-%s-", w); }
     //if (strCmp(w, "dump-dict") == 0) {
     //    int x = 1;
     //}
@@ -1081,15 +1088,10 @@ void setup() {
     mySerial.begin(19200);
     while (!mySerial) {}
     while (mySerial.available()) {}
-#else
-    printString("BoardForth v0.0.1 - Chris Curl\n");
-    printString("Source: https://github.com/CCurl/BoardForth \n");
-    printStringF("Dictionary size is %ld bytes.", DICT_SZ);
 #endif
     vmInit();
     loadBaseSystem();
     loadUserWords();
-    parseLine(": x cr .\" Hello.\" ; x forget-1");
     numTIB = 0;
     TIBEnd = TIB;
     *TIBEnd = 0;
