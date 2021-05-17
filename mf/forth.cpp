@@ -32,10 +32,12 @@ typedef BYTE* ADDR;
 
 #define T dstk[DSP]
 #define N dstk[DSP-1]
+#define M dstk[DSP-2]
 #define R rstk[RSP]
 #define A ((ADDR)dstk[DSP])
 #define DROP1 --DSP
 #define DROP2 DROP1; DROP1
+#define DROP3 DROP1; DROP1; DROP1
 
 #define TMP_RUNOP    (HERE + 0x0020)
 #define TMP_PAD      (HERE + 0x0040)
@@ -93,8 +95,8 @@ void doWComma(CELL);
 void doComma(CELL);
 void doAComma(ADDR);
 void dumpOpcodes();
-void doFileOpen();
-void doFileClose();
+CELL doFileOpen(const char *fn, const char *mode);
+void doFileClose(CELL fp);
 void doFileRead();
 void doFileWrite();
 int strCmp(const char*, const char*);
@@ -115,10 +117,10 @@ int numTIB = 0;
 int lastWasCall = 0;
 DO_LOOP_T doStack[LOOP_STK_SZ];
 int loopSP = -1;
-int isBYE = 0;
+int isBYE = 0, isError = 0;
 DICT_T tempWords[10];
 int debugOn = 0;
-extern char screen1[], screen2[], screen3[], userWords[];
+extern char screen1[], screen2[], screen3[];
 
 #ifndef __DEV_BOARD__
 #pragma warning(disable:4996)
@@ -196,19 +198,20 @@ long millis() { return GetTickCount(); }
     X("screen-1", SCREEN1, push((CELL)&screen1[0])) \
     X("screen-2", SCREEN2, push((CELL)&screen2[0])) \
     X("screen-3", SCREEN3, push((CELL)&screen3[0])) \
-    X("user-words", USER_WORDS, push((CELL)&userWords[0])) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
     X("A,", ACOMMA, doAComma(A); DROP1) \
+    X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
+    X("FILL", FILL, memset((void *)T, N, M); DROP3) \
     X("ZCOUNT", ZCOUNT, push(T); T = strlen((char *)T)) \
 
 #ifndef __FILES__
 #define FILE_OPCODES
 #else
 #define FILE_OPCODES \
-    X("FOPEN", FOPEN, doFileOpen()) \
-    X("FCLOSE", FCLOSE, doFileClose()) \
+    X("FOPEN", FOPEN, N = doFileOpen((char *)N+1, (char *)T+1); DROP1) \
+    X("FCLOSE", FCLOSE, doFileClose(T); DROP1) \
     X("FREAD", FREAD, doFileRead()) \
     X("FWRITE", FWRITE, doFileWrite())
 #endif
@@ -216,8 +219,8 @@ long millis() { return GetTickCount(); }
 #ifdef __LITTLEFS__
 #undef FILE_OPCODES
 #define FILE_OPCODES \
-    X("FOPEN", FOPEN, doFileOpen()) \
-    X("FCLOSE", FCLOSE, doFileClose()) \
+    X("FOPEN", FOPEN, N = doFileOpen((char *)N+1, (char *)T+1); DROP1) \
+    X("FCLOSE", FCLOSE, doFileClose(T); DROP1) \
     X("FREAD", FREAD, doFileRead()) \
     X("FWRITE", FWRITE, doFileWrite())
 #endif
@@ -437,22 +440,19 @@ void doWhile(int dropIt, int isUntil) {
 }
 
 #ifdef __FILES__
-void doFileOpen() {
-    char* mode = (char*)pop() + 1;
-    char* fn = (char*)pop() + 1;
+CELL doFileOpen(const char *fn, const char *mode) {
     FILE* fp = fopen(fn, mode);
-    push((CELL)fp);
+    return (CELL)fp;
 }
 
-void doFileClose() {
-    FILE* fp = (FILE*)pop();
-    fclose(fp);
+void doFileClose(CELL fp) {
+    fclose((FILE*)fp);
 }
 
 void doFileRead() {
     FILE* fp = (FILE *)pop();
-    BYTE* buf = (BYTE *)pop();
     CELL sz = pop();
+    BYTE* buf = (BYTE*)pop();
     CELL num = fread(buf, 1, sz, fp);
     push(num);
 }
@@ -467,13 +467,13 @@ void doFileWrite() {
 #endif
 
 #ifdef __LITTLEFS__
-void doFileOpen() {
-    char* fn = (char*)pop() + 1;
-    char* mode = (char *)pop() + 1;
+CELL doFileOpen(const char* fn, const char* mode) {
+    FILE* fp = fopen(fn, mode);
+    return (CELL)fp;
 }
 
-void doFileClose() {
-    FILE* fp = (FILE*)pop();
+void doFileClose(CELL fp) {
+    fclose(fp);
 }
 
 void doFileRead() {
@@ -561,6 +561,7 @@ CELL getNextWord(char* to, char sep) {
 }
 
 void doParse(char sep) {
+    isError = 0;
     toIN = (char*)pop();
     TIBEnd = toIN + strlen(toIN);
     // try {
@@ -570,6 +571,7 @@ void doParse(char sep) {
         if (len == 0) { return; }
         push((CELL)w);
         doParseWord();
+        if (isError) { return; }
     }
     // }
     // catch (...) {
@@ -743,7 +745,7 @@ int doNumber(const char* w) {
 }
 
 // ( a -- )
-void doParseWord() {    // opcode #59
+void doParseWord() {
     char* w = (char*)pop();
     //printf("-%s-", w);
     //if (strCmp(w, "dump-dict") == 0) {
@@ -933,6 +935,7 @@ void doParseWord() {    // opcode #59
     }
     STATE = 0;
     printStringF("[%s]??", w);
+    isError = 1;
     // throw(123);
 }
 
@@ -1053,10 +1056,18 @@ void loadBaseSystem() {
 }
 
 void loadUserWords() {
-    parseLine(userWords);
-    #ifdef __DEV_BOARD__
-    // parseLine("init auto-run-last");
-    #endif
+    CELL fp = doFileOpen("user-words.4th", "rb");
+    if (fp) {
+        char* fc = (char *)malloc(MAX_FILE_SZ);
+        if (fc) { memset(fc, 0, MAX_FILE_SZ); }
+        push((CELL)fc);
+        push(MAX_FILE_SZ);
+        push(fp);
+        doFileRead();
+        doFileClose(fp);
+        if (pop()) { parseLine(fc); }
+        free(fc);
+    }
 }
 
 void ok() {
@@ -1096,99 +1107,80 @@ int main()
 }
 #endif
 
-char screen1[] = " : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
-" : tuck swap over ;"
-" : ?dup if- dup then ;"
-" : rot >r swap r> swap ; : -rot swap >r swap r> ;"
-" : 2dup over over ; : 2drop drop drop ;"
-" : mod /mod drop ; : / /mod nip ;"
-" : +! tuck @ + swap ! ;"
-" : negate 0 swap - ;"
-" : off 0 swap ! ; : on 1 swap ! ;"
-" : abs dup 0 < if negate then ;"
-" : hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
-" : hex? base @ #16 = ; : decimal? base @ #10 = ;"
-" : bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
-" : pad here $40 + ; : (neg) here $44 + ; "
-" : hold pad @ 1- dup pad ! c! ; "
-" : <# pad dup ! ; "
-" : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
-" : #s begin # while- ; "
-" : #> (neg) @ if '-' emit then pad @ pad over - type ; "
-" : is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
-" : (.) is-neg? <# #s #> ; "
-" : (u.) (neg) off <# #s #> ; "
-" : . space (.) ; : u. space (u.) ; "
-" : .n >r is-neg? r> <# 0 for # next #> drop ;"
-" : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;";
+char screen1[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
+"\n: tuck swap over ;"
+"\n: ?dup if- dup then ;"
+"\n: rot >r swap r> swap ; : -rot swap >r swap r> ;"
+"\n: 2dup over over ; : 2drop drop drop ;"
+"\n: mod /mod drop ; : / /mod nip ;"
+"\n: +! tuck @ + swap ! ;"
+"\n: negate 0 swap - ;"
+"\n: off 0 swap ! ; : on 1 swap ! ;"
+"\n: abs dup 0 < if negate then ;"
+"\n: hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+"\n: hex? base @ #16 = ; : decimal? base @ #10 = ;"
+"\n: bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
+"\n: pad here $40 + ; : (neg) here $44 + ; "
+"\n: hold pad @ 1- dup pad ! c! ; "
+"\n: <# pad dup ! ; "
+"\n: # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
+"\n: #s begin # while- ; "
+"\n: #> (neg) @ if '-' emit then pad @ pad over - type ; "
+"\n: is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
+"\n: (.) is-neg? <# #s #> ; "
+"\n: (u.) (neg) off <# #s #> ; "
+"\n: . space (.) ; : u. space (u.) ; "
+"\n: .n >r is-neg? r> <# 0 for # next #> drop ;"
+"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;";
 
-char screen2[] = " : ?dup if- dup then ;"
-" : rot >r swap r> swap ; : -rot swap >r swap r> ;"
-" : 2dup over over ; : 2drop drop drop ;"
-" : mod /mod drop ; : / /mod nip ;"
-" : +! tuck @ + swap ! ;"
-" : negate 0 swap - ;"
-" : off 0 swap ! ; : on 1 swap ! ;"
-" : abs dup 0 < if negate then ;"
-" : hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
-" : hex? base @ #16 = ; : decimal? base @ #10 = ;"
-" : bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
-" : pad here $40 + ; : (neg) here $44 + ; "
-" : hold pad @ 1- dup pad ! c! ; "
-" : <# pad dup ! ; "
-" : # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
-" : #s begin # while- ; "
-" : #> (neg) @ if '-' emit then pad @ pad over - type ; "
-" : is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
-" : (.) is-neg? <# #s #> ; "
-" : (u.) (neg) off <# #s #> ; "
-" : . space (.) ; : u. space (u.) ; "
-" : .n >r is-neg? r> <# 0 for # next #> drop ;"
-" : .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;";
+char screen2[] = ": ?dup if- dup then ;"
+"\n: rot >r swap r> swap ; : -rot swap >r swap r> ;"
+"\n: 2dup over over ; : 2drop drop drop ;"
+"\n: mod /mod drop ; : / /mod nip ;"
+"\n: +! tuck @ + swap ! ;"
+"\n: negate 0 swap - ;"
+"\n: off 0 swap ! ; : on 1 swap ! ;"
+"\n: abs dup 0 < if negate then ;"
+"\n: hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
+"\n: hex? base @ #16 = ; : decimal? base @ #10 = ;"
+"\n: bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
+"\n: pad here $40 + ; : (neg) here $44 + ; "
+"\n: hold pad @ 1- dup pad ! c! ; "
+"\n: <# pad dup ! ; "
+"\n: # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
+"\n: #s begin # while- ; "
+"\n: #> (neg) @ if '-' emit then pad @ pad over - type ; "
+"\n: is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
+"\n: (.) is-neg? <# #s #> ; "
+"\n: (u.) (neg) off <# #s #> ; "
+"\n: . space (.) ; : u. space (u.) ; "
+"\n: .n >r is-neg? r> <# 0 for # next #> drop ;"
+"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;";
 
-char screen3[] = " : low->high 2dup > if swap then ;"
-" : high->low 2dup < if swap then ;"
-" : min low->high drop ;"
-" : max high->low drop ;"
-" : between rot dup >r min max r> = ;"
-" : allot here + (here) ! ;"
-" : >body addr + a@ ;"
-" : count dup 1+ swap c@ ;"
-" : .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
-" : wordsl last begin dup .wordl a@ while- ;"
-" : .word addr 2* + 1+ count type tab ;"
-" : words last begin dup .word a@ while- ;"
-" variable (regs) 9 cells allot"
-" : reg cells (regs) + ;"
-" : >src 0 reg ! ; : >dst 1 reg ! ;"
-" : src 0 reg @ ; : src+ src dup 1+ >src ;"
-" : dst 1 reg @ ; : dst+ dst dup 1+ >dst ;"
-" : dump low->high for i c@ space .c next ;"
-" : _t0 cr dup 8 .n ':' emit #16 over + dump ;"
-" : _t1 dup _t0 #16 + ;"
-" : dump-dict dict begin _t1 dup here < while drop ;"
-" : elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;"
-" variable (ch)  variable (cl)"
-" : marker here (ch) ! last (cl) ! ;"
-" : forget (ch) @ (here) ! (cl) @ (last) ! ;"
-" : forget-1 last (here) ! last a@ (last) ! ;"
-" marker";
-
-char userWords[] = " : auto-run-last last >body dict a! ;"
-" : auto-run-off 0 dict a! ;"
-" : k 1000 * ; : mil k k ;"
-" : bm tick swap begin 1- while- elapsed ;"
-" : bm2 >r tick 0 r> for next elapsed ;"
-" variable (led) 13 (led) ! : led (led) @ ;"
-" : led-on 1 led dp! ; : led-off 0 led dp! ;"
-" : blink led-on dup ms led-off dup ms ;"
-" : blinks 0 swap for blink next ;"
-" variable (button)  6 (button) ! : button (button) @ ;  : button-val button dp@ ;"
-" : button->led button-val if led-on else led-off then ;"
-" variable (pot)  3 (pot) !  : pot (pot) @ ; : pot-val pot ap@ ;"
-" variable pot-lastVal  variable sensitivity  4 sensitivity !"
-" : pot-changed? pot-lastVal @ - abs sensitivity @ > ;"
-" : .pot dup pot-lastVal ! . cr ;"
-" : .pot? pot-val dup pot-changed? if .pot else drop then ;"
-" : init led output-pin pot input-pin button input-pin ;"
-" : go button->led .pot? ;";
+char screen3[] = ": low->high 2dup > if swap then ;"
+"\n: high->low 2dup < if swap then ;"
+"\n: min low->high drop ;"
+"\n: max high->low drop ;"
+"\n: between rot dup >r min max r> = ;"
+"\n: allot here + (here) ! ;"
+"\n: >body addr + a@ ;"
+"\n: count dup 1+ swap c@ ;"
+"\n: .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
+"\n: wordsl last begin dup .wordl a@ while- ;"
+"\n: .word addr 2* + 1+ count type tab ;"
+"\n: words last begin dup .word a@ while- ;"
+"\nvariable (regs) 9 cells allot"
+"\n: reg cells (regs) + ;"
+"\n: >src 0 reg ! ; : >dst 1 reg ! ;"
+"\n: src 0 reg @ ; : src+ src dup 1+ >src ;"
+"\n: dst 1 reg @ ; : dst+ dst dup 1+ >dst ;"
+"\n: dump low->high for i c@ space .c next ;"
+"\n: _t0 cr dup 8 .n ':' emit #16 over + dump ;"
+"\n: _t1 dup _t0 #16 + ;"
+"\n: dump-dict dict begin _t1 dup here < while drop ;"
+"\n: elapsed tick swap - 1000 /mod . '.' emit 3 .n .\" seconds.\" ;"
+"\nvariable (ch)  variable (cl)"
+"\n: marker here (ch) ! last (cl) ! ;"
+"\n: forget (ch) @ (here) ! (cl) @ (last) ! ;"
+"\n: forget-1 last (here) ! last a@ (last) ! ;"
+"\nmarker";

@@ -164,6 +164,7 @@
   <ItemGroup>
     <None Include="make.bat" />
     <None Include="mf.ino" />
+    <None Include="user-words.4th" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

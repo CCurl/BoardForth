@@ -15,6 +15,7 @@
 	#define DICT_SZ (96*1024)
 	#define STK_SZ 32
 	#define TIB_SZ 0x0400
+	#define MAX_FILE_SZ 10*1024
 	#define PIN_INPUT INPUT
 	#define PIN_INPUT_PULLUP INPUT_PULLUP
 	#define PIN_OUTPUT OUTPUT
@@ -23,6 +24,7 @@
 	#define DICT_SZ (512*1024)
 	#define STK_SZ 64
 	#define TIB_SZ 0x0400
+	#define MAX_FILE_SZ 10*1024
 	#define __FILES__
 	void loadSource(const char* source);
 	typedef unsigned int uint;
