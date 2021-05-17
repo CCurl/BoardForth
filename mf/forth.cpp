@@ -209,6 +209,7 @@ long millis() { return GetTickCount(); }
     X(",",  COMMA, doComma(T); DROP1) \
     X("A,", ACOMMA, doAComma(A); DROP1) \
     X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
+    X("MFREE", MFREE, free((void *)T); DROP1) \
     X("FILL", FILL, memset((void *)T, N, M); DROP3) \
     X("ZCOUNT", ZCOUNT, push(T); T = strlen((char *)T)) \
     X("DEBUG-MODE", DEBUG_MODE, push((CELL)&debugMode)) \
