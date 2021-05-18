@@ -35,6 +35,7 @@ typedef BYTE* ADDR;
 #define M dstk[DSP-2]
 #define R rstk[RSP]
 #define A ((ADDR)dstk[DSP])
+
 #define DROP1 --DSP
 #define DROP2 DROP1; DROP1
 #define DROP3 DROP1; DROP1; DROP1
@@ -51,12 +52,13 @@ typedef BYTE* ADDR;
 #define DBG_DEBUG 1
 #define DBG_OFF   0
 
+#define NAME_LEN      25
+#define DICT_ENTRY_SZ 32
 typedef struct {
-    ADDR prev;
     ADDR XT;
     BYTE flags;
     BYTE len;
-    char name[32]; // not really 32 ... but we need a number
+    char name[NAME_LEN+1];
 } DICT_T;
 
 #define LOOP_STK_SZ 8
@@ -126,6 +128,7 @@ int loopSP = -1;
 int isBYE = 0, isError = 0;
 DICT_T tempWords[10];
 CELL debugMode = DBG_OFF;
+CELL numWords = 0;
 extern char bootStrap[];
 
 #ifndef __DEV_BOARD__
@@ -204,6 +207,7 @@ long millis() { return GetTickCount(); }
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
     X("A,", ACOMMA, doAComma(A); DROP1) \
+    X("(NUM-WORDS)", NUM_WORDS, push((CELL)&numWords)) \
     X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
     X("FREE", MFREE, free((void *)T); DROP1) \
     X("FILL", FILL, memset((void *)M, T, N); DROP3) \
@@ -524,21 +528,24 @@ DICT_T* isTempWord(const char* name) {
 }
 
 void doCreate(const char* name) {
-    if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%lx)-", name, HERE); }
     DICT_T* dp = isTempWord(name);
     if (dp) {
         dp->XT = HERE;
         return;
     }
 
-    HERE = align4(HERE);
-    dp = (DICT_T*)HERE;
-    dp->prev = (ADDR)LAST;
+    ++numWords;
+    LAST -= DICT_ENTRY_SZ;
+    dp = (DICT_T*)LAST;
+    if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%ld)-", name, LAST); }
     dp->flags = 0;
     dp->len = (BYTE)strlen(name);
-    strcpy(dp->name, name);
-    LAST = HERE;
-    HERE += (ADDR_SZ * 2) + dp->len + 3;
+    if (dp->len > NAME_LEN) {
+        printStringF("-name too long: %d-", dp->len);
+        dp->len = NAME_LEN;
+    }
+    strncpy(dp->name, name, NAME_LEN);
+    dp->name[NAME_LEN] = 0;
     dp->XT = HERE;
 }
 
@@ -705,12 +712,12 @@ int doFind(const char* name) {         // opcode #65
         return 1;
     }
     dp = (DICT_T*)LAST;
-    while (dp) {
+    for (int i = 0; i < numWords; i++) {
         if (strCmp(name, dp->name) == 0) {
             push((CELL)dp);
             return 1;
         }
-        dp = (DICT_T*)dp->prev;
+        dp++;
     }
     return 0;
 }
@@ -990,7 +997,7 @@ void toTIB(int c) {
 void vmInit() {
     // init_handlers();
     HERE = &dict[0];
-    LAST = 0;
+    LAST = HERE + (DICT_SZ-4);
     BASE = 10;
     STATE = 0;
     DSP = 0;
@@ -1130,29 +1137,6 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: . space (.) ; : u. space (u.) ; "
 "\n: .n >r is-neg? r> <# 0 for # next #> drop ;"
 "\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
-"\n: ?dup if- dup then ;"
-"\n: rot >r swap r> swap ; : -rot swap >r swap r> ;"
-"\n: 2dup over over ; : 2drop drop drop ;"
-"\n: mod /mod drop ; : / /mod nip ;"
-"\n: +! tuck @ + swap ! ;"
-"\n: negate 0 swap - ;"
-"\n: off 0 swap ! ; : on 1 swap ! ;"
-"\n: abs dup 0 < if negate then ;"
-"\n: hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
-"\n: hex? base @ #16 = ; : decimal? base @ #10 = ;"
-"\n: bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
-"\n: pad here $40 + ; : (neg) here $44 + ; "
-"\n: hold pad @ 1- dup pad ! c! ; "
-"\n: <# pad dup ! ; "
-"\n: # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
-"\n: #s begin # while- ; "
-"\n: #> (neg) @ if '-' emit then pad @ pad over - type ; "
-"\n: is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
-"\n: (.) is-neg? <# #s #> ; "
-"\n: (u.) (neg) off <# #s #> ; "
-"\n: . space (.) ; : u. space (u.) ; "
-"\n: .n >r is-neg? r> <# 0 for # next #> drop ;"
-"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
 "\n: low->high 2dup > if swap then ;"
 "\n: high->low 2dup < if swap then ;"
 "\n: min low->high drop ;"
@@ -1161,10 +1145,11 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: allot here + (here) ! ;"
 "\n: >body addr + a@ ;"
 "\n: count dup 1+ swap c@ ;"
-"\n: .wordl cr dup . space dup >body . addr 2* + dup c@ . 1+ space count type ;"
-"\n: wordsl last begin dup .wordl a@ while- ;"
-"\n: .word addr 2* + 1+ count type tab ;"
-"\n: words last begin dup .word a@ while- ;"
+"\n: num-words (num-words) @ ;"
+"\n: .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;"
+"\n: wordsl last num-words 1 for dup .wordl #32 + next drop ;"
+"\n: .word addr + 1+ count type tab ;"
+"\n: words last num-words 1 for dup .word #32 + next drop ;"
 "\nvariable (regs) 9 cells allot"
 "\n: reg cells (regs) + ;"
 "\n: >src 0 reg ! ; : >dst 1 reg ! ;"
@@ -1175,8 +1160,8 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: _t1 dup _t0 #16 + ;"
 "\n: dump-dict dict begin _t1 dup here < while drop ;"
 "\n: elapsed tick swap - 1000 /mod . '.' emit 3 .n .\" seconds.\" ;"
-"\nvariable (ch)  variable (cl)"
-"\n: marker here (ch) ! last (cl) ! ;"
-"\n: forget (ch) @ (here) ! (cl) @ (last) ! ;"
-"\n: forget-1 last (here) ! last a@ (last) ! ;"
+"\nvariable (ch)  variable (cl) variable (nw)"
+"\n: marker here (ch) ! last (cl) ! num-words (nw) ! ;"
+"\n: forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! ;"
+"\n: forget-1 last a@ (here) ! last 32 + (last) ! (num-words) @ 1- (num-words) ! ;"
 "\nmarker";
