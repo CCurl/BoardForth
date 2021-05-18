@@ -126,7 +126,7 @@ int loopSP = -1;
 int isBYE = 0, isError = 0;
 DICT_T tempWords[10];
 CELL debugMode = DBG_OFF;
-extern char screen1[], screen2[], screen3[];
+extern char bootStrap[];
 
 #ifndef __DEV_BOARD__
 #pragma warning(disable:4996)
@@ -194,23 +194,19 @@ long millis() { return GetTickCount(); }
     X("BEGIN", BEGIN, doBegin()) \
     X("AGAIN", AGAIN, doAgain()) \
     X("WHILE", WHILE, doWhile(1, 0)) \
-    X("UNTIL", UNTIL, doWhile(1, 1)) \
     X("WHILE-", WHILEN, doWhile(0, 0)) \
-    X("UNTIL-", UNTILN, doWhile(0, 1)) \
+    X("UNTIL", UNTIL, doWhile(1, 1)) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
     X("S\"", SQUOTE, doSQuote()) \
     X(".\"", DOTQUOTE, doDotQuote()) \
-    X("screen-1", SCREEN1, push((CELL)&screen1[0])) \
-    X("screen-2", SCREEN2, push((CELL)&screen2[0])) \
-    X("screen-3", SCREEN3, push((CELL)&screen3[0])) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
     X("A,", ACOMMA, doAComma(A); DROP1) \
     X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
-    X("MFREE", MFREE, free((void *)T); DROP1) \
-    X("FILL", FILL, memset((void *)T, N, M); DROP3) \
+    X("FREE", MFREE, free((void *)T); DROP1) \
+    X("FILL", FILL, memset((void *)M, T, N); DROP3) \
     X("ZCOUNT", ZCOUNT, push(T); T = strlen((char *)T)) \
     X("DEBUG-MODE", DEBUG_MODE, push((CELL)&debugMode)) \
 
@@ -269,6 +265,7 @@ void doJoyXYZ(int which, CELL val);
     ARDUINO_OPCODES \
     JOYSTICK_OPCODES \
     X("DUMP-OPCODES", DUMP_OPCODES, dumpOpcodes()) \
+    X("BOOT-STRAP", BOOT_STRAP, push((CELL)&bootStrap[0])) \
     X("BYE", BYE, printString(" bye."); isBYE = 1)
 
 #define X(name, op, code) OP_ ## op,
@@ -1058,9 +1055,7 @@ void loadBaseSystem() {
     loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
     loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
 
-    parseLine(screen1);
-    parseLine(screen2);
-    parseLine(screen3);
+    parseLine(bootStrap);
 }
 
 void loadUserWords() {
@@ -1110,7 +1105,7 @@ int main()
 }
 #endif
 
-char screen1[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
+char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: tuck swap over ;"
 "\n: ?dup if- dup then ;"
 "\n: rot >r swap r> swap ; : -rot swap >r swap r> ;"
@@ -1134,9 +1129,8 @@ char screen1[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: (u.) (neg) off <# #s #> ; "
 "\n: . space (.) ; : u. space (u.) ; "
 "\n: .n >r is-neg? r> <# 0 for # next #> drop ;"
-"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;";
-
-char screen2[] = ": ?dup if- dup then ;"
+"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
+"\n: ?dup if- dup then ;"
 "\n: rot >r swap r> swap ; : -rot swap >r swap r> ;"
 "\n: 2dup over over ; : 2drop drop drop ;"
 "\n: mod /mod drop ; : / /mod nip ;"
@@ -1158,9 +1152,8 @@ char screen2[] = ": ?dup if- dup then ;"
 "\n: (u.) (neg) off <# #s #> ; "
 "\n: . space (.) ; : u. space (u.) ; "
 "\n: .n >r is-neg? r> <# 0 for # next #> drop ;"
-"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;";
-
-char screen3[] = ": low->high 2dup > if swap then ;"
+"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
+"\n: low->high 2dup > if swap then ;"
 "\n: high->low 2dup < if swap then ;"
 "\n: min low->high drop ;"
 "\n: max high->low drop ;"
