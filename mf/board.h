@@ -7,7 +7,8 @@
 	#define mySerial SerialUSB
 	// #define mySerial Serial
 	// #define __ESP32__
-	#define __LITTLEFS__
+  #include <LittleFS.h>
+  #define __LITTLEFS__
 	#define __JOYSTICK__
 	void printSerial(const char*);
 	void loadSource(const char* source);

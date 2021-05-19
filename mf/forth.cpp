@@ -476,28 +476,32 @@ void doFileWrite() {
 #endif
 
 #ifdef __LITTLEFS__
-CELL doFileOpen(const char* fn, const char* mode) {
-    FILE* fp = fopen(fn, mode);
-    return (CELL)fp;
+LittleFS_Program myFS;
+File fp;
+CELL doFileOpen(const char* fn, const char *mode) {
+    int openMode = FILE_READ;
+    fp = myFS.open(fn, openMode);
+    return (CELL)&fp;
 }
 
-void doFileClose(CELL fp) {
-    fclose(fp);
+void doFileClose(CELL p) {
+    File *fp = (File *)p;
+    fp->close();
 }
 
 void doFileRead() {
-    FILE* fp = (FILE*)pop();
+    File* fp = (File*)pop();
     BYTE* buf = (BYTE*)pop();
     CELL sz = pop();
-    CELL num = fread(buf, 1, sz, fp);
+    CELL num = fp->read(buf, sz);
     push(num);
 }
 
 void doFileWrite() {
-    FILE* fp = (FILE*)pop();
+    File* fp = (File*)pop();
     BYTE* buf = (BYTE*)pop();
     CELL sz = pop();
-    CELL num = fwrite(buf, 1, sz, fp);
+    CELL num = fp->write(buf, sz);
     push(num);
 }
 #endif
@@ -1091,6 +1095,9 @@ void setup() {
     mySerial.begin(19200);
     while (!mySerial) {}
     while (mySerial.available()) {}
+#ifdef __LITTLEFS__
+    myFS.begin(1024*1024);
+#endif
 #endif
     vmInit();
     loadBaseSystem();
