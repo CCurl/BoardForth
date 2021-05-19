@@ -608,7 +608,7 @@ void printString(const char* str) {
 #ifdef __DEV_BOARD__
     printSerial(str);
 #else
-    printf("%s", str);
+    fputs(str, stdout);
 #endif
 }
 
