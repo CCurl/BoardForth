@@ -111,9 +111,10 @@ int strCmp(const char*, const char*);
 
 BYTE IR;
 ADDR PC;
-ADDR HERE;
+ADDR HERE, VHERE;
 ADDR LAST;
 BYTE dict[DICT_SZ];
+BYTE vars[VARS_SZ];
 char TIBBuf[TIB_SZ];
 char* TIB = TIBBuf;
 char* toIN, * TIBEnd;
@@ -861,9 +862,9 @@ void doParseWord() {
         if (getNextWord(w, ' ')) {
             doCreate(w);
             doCComma(OP_LIT);
-            doComma((CELL)HERE + CELL_SZ + 1);
+            doComma((CELL)VHERE);
             doCComma(OP_RET);
-            doComma(0);
+            VHERE += CELL_SZ;
         }
         return;
     }
@@ -997,6 +998,7 @@ void toTIB(int c) {
 void vmInit() {
     // init_handlers();
     HERE = &dict[0];
+    VHERE = &vars[0];
     LAST = HERE + (DICT_SZ-4);
     BASE = 10;
     STATE = 0;
@@ -1053,8 +1055,10 @@ void loadSourceF(const char* fmt, ...) {
 void loadBaseSystem() {
     loadSourceF(": cell %d ; : cells cell * ; : addr %d ;", CELL_SZ, ADDR_SZ);
     loadSourceF(": dict $%lx ; : dict-sz $%lx ;", (long)&dict[0], DICT_SZ);
+    loadSourceF(": vars $%lx ; : vars-sz $%lx ;", (long)&vars[0], VARS_SZ);
     loadSourceF(": (here) $%lx ; : here (here) @ ;", (long)&HERE);
     loadSourceF(": (last) $%lx ; : last (last) @ ;", (long)&LAST);
+    loadSourceF(": (vhere) $%lx ; : vhere (vhere) @ ;", (long)&VHERE);
     loadSourceF(": base $%lx ;", (long)&BASE);
     loadSourceF(": state $%lx ;", (long)&STATE);
     loadSourceF(": tib $%lx ;", (long)&TIB[0]);
@@ -1142,7 +1146,7 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: min low->high drop ;"
 "\n: max high->low drop ;"
 "\n: between rot dup >r min max r> = ;"
-"\n: allot here + (here) ! ;"
+"\n: allot vhere + (vhere) ! ;"
 "\n: >body addr + a@ ;"
 "\n: count dup 1+ swap c@ ;"
 "\n: num-words (num-words) @ ;"
