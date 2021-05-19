@@ -13,7 +13,8 @@
 	void printSerial(const char*);
 	void loadSource(const char* source);
 	#define __NEEDS_ALIGN__
-	#define DICT_SZ (96*1024)
+	#define DICT_SZ (80*1024)
+	#define VARS_SZ (32*1024)
 	#define STK_SZ 32
 	#define TIB_SZ 0x0400
 	#define MAX_FILE_SZ 10*1024
@@ -23,6 +24,7 @@
 #else
 	#include <windows.h>
 	#define DICT_SZ (512*1024)
+	#define VARS_SZ (64*1024)
 	#define STK_SZ 64
 	#define TIB_SZ 0x0400
 	#define MAX_FILE_SZ 10*1024
