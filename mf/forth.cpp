@@ -103,10 +103,6 @@ void doWComma(CELL);
 void doComma(CELL);
 void doAComma(ADDR);
 void dumpOpcodes();
-CELL doFileOpen(const char *fn, const char *mode);
-void doFileClose(CELL fp);
-void doFileRead();
-void doFileWrite();
 int strCmp(const char*, const char*);
 
 BYTE IR;
@@ -218,6 +214,10 @@ long millis() { return GetTickCount(); }
 #ifndef __FILES__
 #define FILE_OPCODES
 #else
+CELL doFileOpen(const char* fn, const char* mode);
+void doFileClose(CELL fp);
+void doFileRead();
+void doFileWrite();
 #define FILE_OPCODES \
     X("FOPEN", FOPEN, N = doFileOpen((char *)N+1, (char *)T+1); DROP1) \
     X("FCLOSE", FCLOSE, doFileClose(T); DROP1) \
@@ -225,9 +225,14 @@ long millis() { return GetTickCount(); }
     X("FWRITE", FWRITE, doFileWrite())
 #endif
 
-#ifdef __LITTLEFS__
-#undef FILE_OPCODES
-#define FILE_OPCODES \
+#ifndef __LITTLEFS__
+#define LITTLEFS_OPCODES
+#else
+CELL doFileOpen(const char* fn, const char* mode);
+void doFileClose(CELL fp);
+void doFileRead();
+void doFileWrite();
+#define LITTLEFS_OPCODES \
     X("FOPEN", FOPEN, N = doFileOpen((char *)N+1, (char *)T+1); DROP1) \
     X("FCLOSE", FCLOSE, doFileClose(T); DROP1) \
     X("FREAD", FREAD, doFileRead()) \
@@ -264,11 +269,27 @@ void doJoyXYZ(int which, CELL val);
     X("JOY-SENDNOW", JOY_SENDNOW, Joystick.send_now();)
 #endif
 
+#ifndef __COM_PORT__
+#define COMPORT_OPCODES
+#else
+CELL doComOpen(CELL portNum, CELL baud);
+CELL doComRead(CELL handle);
+CELL doComWrite(CELL handle, CELL ch);
+void doComClose(CELL handle);
+#define COMPORT_OPCODES \
+    X("COM-OPEN", COM_OPEN, N = doComOpen(T, N); DROP1) \
+    X("COM-READ", COM_READ, T = doComRead(T)) \
+    X("COM-WRITE", COM_WRITE, N = doComWrite(T, N); DROP1) \
+    X("COM-CLOSE", COM_CLOSE, doComClose(T); DROP1)
+#endif
+
 #define OPCODES \
     BASE_OPCODES \
     FILE_OPCODES \
+    LITTLEFS_OPCODES \
     ARDUINO_OPCODES \
     JOYSTICK_OPCODES \
+    COMPORT_OPCODES \
     X("DUMP-OPCODES", DUMP_OPCODES, dumpOpcodes()) \
     X("BOOT-STRAP", BOOT_STRAP, push((CELL)&bootStrap[0])) \
     X("BYE", BYE, printString(" bye."); isBYE = 1)
@@ -515,6 +536,50 @@ void doJoyXYZ(int which, CELL val) {
     case 3: Joystick.Z(val); break;
     }
 }
+#endif
+
+#ifdef __COM_PORT__
+CELL doComOpen(CELL portNum, CELL baud) {
+    char fn[32];
+    sprintf(fn, "\\\\.\\COM%d", (int)portNum);
+    DWORD access = (GENERIC_READ | GENERIC_WRITE);
+    HANDLE h = CreateFile(fn, access, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (h == INVALID_HANDLE_VALUE) return 0;
+    DCB dcb;
+    memset(&dcb, 0, sizeof(DCB));
+    dcb.DCBlength = sizeof(DCB);
+    GetCommState(h, &dcb);
+    dcb.BaudRate = baud;
+    dcb.ByteSize = 8;
+    dcb.Parity = NOPARITY;
+    dcb.StopBits = ONESTOPBIT;
+    SetCommState(h, &dcb);
+    COMMTIMEOUTS to = { 0 };
+    to.WriteTotalTimeoutConstant = 50;
+    to.ReadTotalTimeoutConstant = 50;
+    SetCommTimeouts(h, &to);
+    return (CELL)h;
+}
+
+CELL doComRead(CELL handle) {
+    char buf[2];
+    DWORD num = 0;
+    ReadFile((HANDLE)handle, buf, 1, &num, NULL);
+    return (CELL)(num > 0 ? buf[0] : 0);
+}
+
+CELL doComWrite(CELL handle, CELL ch) {
+    char buf[2];
+    DWORD num;
+    buf[0] = (char)ch;
+    BOOL x = WriteFile((HANDLE)handle, buf, 1, &num, NULL);
+    return num;
+}
+
+void doComClose(CELL handle) {
+    CloseHandle((HANDLE)handle);
+}
+
 #endif
 
 ADDR align4(ADDR x) {
@@ -1073,6 +1138,7 @@ void loadBaseSystem() {
     parseLine(bootStrap);
 }
 
+#ifdef __FILES__
 void loadUserWords() {
     CELL fp = doFileOpen("user-words.4th", "rb");
     if (fp) {
@@ -1087,9 +1153,18 @@ void loadUserWords() {
         free(fc);
     }
 }
+#elif __LITTLEFS__
+void loadUserWords() {}
+#else
+void loadUserWords() {}
+#endif
 
 void ok() {
-    printString(" ok. ");
+    #ifdef __DEV_BOARD__
+    printString(" OK ");
+    #else 
+    printString(" ok ");
+    #endif
     doDotS();
     printString("\r\n");
 }
@@ -1105,7 +1180,9 @@ void setup() {
 #endif
     vmInit();
     loadBaseSystem();
+    #ifndef __DEV_BOARD__
     loadUserWords();
+    #endif
     numTIB = 0;
     TIBEnd = TIB;
     *TIBEnd = 0;

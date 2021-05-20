@@ -7,8 +7,8 @@
 	#define mySerial SerialUSB
 	// #define mySerial Serial
 	// #define __ESP32__
-  #include <LittleFS.h>
-  #define __LITTLEFS__
+    #include <LittleFS.h>
+    #define __LITTLEFS__
 	#define __JOYSTICK__
 	void printSerial(const char*);
 	void loadSource(const char* source);
@@ -29,6 +29,7 @@
 	#define TIB_SZ 0x0400
 	#define MAX_FILE_SZ 10*1024
 	#define __FILES__
+	#define __COM_PORT__
 	void loadSource(const char* source);
 	typedef unsigned int uint;
 	typedef unsigned long ulong;
