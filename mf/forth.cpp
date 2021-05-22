@@ -97,7 +97,6 @@ void doJ();
 void doBegin();
 void doAgain();
 void doWhile(int, int);
-void doSQuote();
 void doDotQuote();
 void doWComma(CELL);
 void doComma(CELL);
@@ -185,7 +184,7 @@ long millis() { return GetTickCount(); }
     X("r@", RFETCH, push(R)) \
     X("r>", RTOD, push(rpop())) \
     X("TYPE", TYPE, doType() ) \
-    X("EMIT", EMIT, printStringF("%c", (char)pop())) \
+    X("EMIT", EMIT, buf[0] = (char)T; printString(buf); DROP1) \
     X(".S", DOTS, doDotS()) \
     X("FOR", FOR, doFor()) \
     X("I", I, doI()) \
@@ -198,7 +197,6 @@ long millis() { return GetTickCount(); }
     X("UNTIL", UNTIL, doWhile(1, 1)) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
-    X("S\"", SQUOTE, doSQuote()) \
     X(".\"", DOTQUOTE, doDotQuote()) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
@@ -296,6 +294,7 @@ void doComClose(CELL handle);
 
 #define X(name, op, code) OP_ ## op,
 typedef enum {
+    OP_NONE = 31,
     OPCODES
 } OPCODE_T;
 #undef X
@@ -310,7 +309,7 @@ void printOpcode(BYTE opcode) {
 }
 #undef X
 
-#define X(name, op, code) printStringF("\n%3d ($%02x): %s", OP_ ## op, OP_ ## op, name);
+#define X(name, op, code) printStringF("\n%3d ($%02x, %c): %s", OP_ ## op, OP_ ## op, OP_ ## op, name);
 void dumpOpcodes() {
     OPCODES
 }
@@ -326,6 +325,8 @@ BYTE getOpcode(char* w) {
 #define X(name, op, code) case OP_ ## op: code; break;
 
 void run(ADDR start, CELL max_cycles) {
+    char buf[2];
+    buf[1] = 0;
     PC = start;
     while (1) {
         IR = *(PC++);
@@ -392,12 +393,6 @@ void doUSlMod() {
     }
 }
 
-void doSQuote() {
-    BYTE len = *(PC);
-    push((CELL)PC);
-    PC += (len + 2);
-}
-
 void doDotQuote() {
     BYTE len = *(PC);
     push((CELL)(PC + 1));
@@ -439,12 +434,8 @@ void doNext() {
     if (0 <= loopSP) {
         DO_LOOP_T* dp = &doStack[loopSP];
         ++dp->index;
-        if (dp->index < dp->stop) {
-            PC = dp->startAddr;
-        }
-        else {
-            --loopSP;
-        }
+        if (dp->index < dp->stop) { PC = dp->startAddr; }
+        else { --loopSP; }
     }
 }
 
@@ -461,9 +452,7 @@ void doWhile(int dropIt, int isUntil) {
     if (loopSP < 0) { return; }
     CELL x = (dropIt) ? pop() : T;
     if (isUntil) x = (x) ? 0 : 1;
-    if (x) {
-        PC = doStack[loopSP].startAddr;
-    }
+    if (x) { PC = doStack[loopSP].startAddr; }
     else {
         if (!dropIt) pop();
         --loopSP;
@@ -582,12 +571,6 @@ void doComClose(CELL handle) {
 
 #endif
 
-ADDR align4(ADDR x) {
-    CELL y = (CELL)x;
-    while (y % 4) { ++y; }
-    return (ADDR)y;
-}
-
 DICT_T* isTempWord(const char* name) {
     if (strlen(name) != 3) return 0;
     if (name[0] != '_') return 0;
@@ -625,7 +608,7 @@ int matches(char ch, char sep) {
     return 0;
 }
 
-BYTE getNextChar() {
+inline BYTE getNextChar() {
     return (*toIN) ? *(toIN++) : 0;
 }
 
@@ -663,9 +646,7 @@ void doParse(char sep) {
 
 void autoRun() {
     ADDR addr = addrAt(&dict[0]);
-    if (addr) {
-        run(addr, 0);
-    }
+    if (addr) { run(addr, 0); }
 }
 
 // ---------------------------------------------------------------------
@@ -737,6 +718,7 @@ void addrStore(ADDR addr, ADDR v) {
     (ADDR_SZ == 2) ? wordStore(addr, (CELL)v) : cellStore(addr, (CELL)v);
 }
 
+inline void doVComma(BYTE v) { *(VHERE++) = v; }
 inline void doCComma(BYTE v) { *(HERE++) = v; }
 void doWComma(CELL v) { wordStore(HERE, v); HERE += WORD_SZ; }
 void doComma(CELL v) { cellStore(HERE, v); HERE += CELL_SZ; }
@@ -959,19 +941,48 @@ void doParseWord() {
             *x = (BYTE)len;
             return;
         }
-        doCComma(OP_SQUOTE);
-        ADDR la = HERE;
+        doCComma(OP_LIT);
+        doComma((CELL)VHERE);
+        ADDR la = VHERE;
         BYTE len = 0;
-        doCComma(0);
+        doVComma(0);
         char c = getNextChar();
         c = getNextChar();
         while (c && (c != '"')) {
-            doCComma(c);
+            doVComma(c);
             ++len;
             c = getNextChar();
         }
         *(la) = len;
-        doCComma(0);
+        doVComma(0);
+        return;
+    }
+
+    if (strCmp(w, "(") == 0) {
+        char c = getNextChar();
+        while (c && (c != ')')) {
+            c = getNextChar();
+        }
+        return;
+    }
+
+    if (strCmp(w, "z\"") == 0) {
+        if (STATE == 0) {
+            getNextChar();
+            push((CELL)TMP_SQUOTE);
+            getNextWord((char *)T, '"');
+            getNextChar();
+            return;
+        }
+        doCComma(OP_LIT);
+        doComma((CELL)VHERE);
+        char c = getNextChar();
+        c = getNextChar();
+        while (c && (c != '"')) {
+            doVComma(c);
+            c = getNextChar();
+        }
+        doVComma(0);
         return;
     }
 
