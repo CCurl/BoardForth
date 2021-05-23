@@ -142,9 +142,10 @@ long millis() { return GetTickCount(); }
     X("NOOP", NOOP, ) \
     X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
     X("RET", RET, PC = (ADDR)rpop()) \
-    X("JMP",    JMP,    PC = addrAt(PC)) \
-    X("JMPZ",   JMPZ,   PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ; DROP1) \
-    X("NJMPZ",  NJMPZ,  PC = (T == 0) ? addrAt(PC) : PC + ADDR_SZ) \
+    X("JMP", JMP, PC = addrAt(PC)) \
+    X("BRANCH", BRANCH, PC += *(PC)) \
+    X("ZBRANCH",  ZBRANCH,  PC += (T == 0) ? *(PC) : 1; DROP1) \
+    X("NZBRANCH", NZBRANCH, PC += (T == 0) ? *(PC) : 1) \
     X("BLIT", BLIT, push(*(PC++))) \
     X("WLIT", WLIT, push(wordAt(PC)); PC += WORD_SZ) \
     X("LIT",  LIT, push(cellAt(PC)); PC += CELL_SZ) \
@@ -860,34 +861,36 @@ void doParseWord() {
 
     if (strCmp(w, "if") == 0) {
         if (!compiling(w, 1)) { return; }
-        doCComma(OP_JMPZ);
+        doCComma(OP_ZBRANCH);
         push((CELL)HERE);
-        doAComma(0);
+        doCComma(0);
         return;
     }
 
     if (strCmp(w, "if-") == 0) {
         if (!compiling(w, 1)) { return; }
-        doCComma(OP_NJMPZ);
+        doCComma(OP_NZBRANCH);
         push((CELL)HERE);
-        doAComma(0);
+        doCComma(0);
         return;
     }
 
     if (strCmp(w, "else") == 0) {
         if (!compiling(w, 1)) { return; }
         ADDR tgt = (ADDR)pop();
-        doCComma(OP_JMP);
+        doCComma(OP_BRANCH);
         push((CELL)HERE);
-        doAComma(0);
-        addrStore(tgt, HERE);
+        doCComma(0);
+        BYTE offset = HERE - tgt;
+        *(tgt) = offset;
         return;
     }
 
     if (strCmp(w, "then") == 0) {
         if (!compiling(w, 1)) { return; }
         ADDR tgt = (ADDR)pop();
-        addrStore(tgt, HERE);
+        BYTE offset = HERE - tgt;
+        *(tgt) = offset;
         return;
     }
 
