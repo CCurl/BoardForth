@@ -89,6 +89,7 @@ void doCreate(const char* name);
 void doSlMod();
 void doUSlMod();
 void doType();
+void doTypeZ();
 void doDotS();
 void doFor();
 void doNext();
@@ -97,7 +98,6 @@ void doJ();
 void doBegin();
 void doAgain();
 void doWhile(int, int);
-void doDotQuote();
 void doWComma(CELL);
 void doComma(CELL);
 void doAComma(ADDR);
@@ -185,6 +185,7 @@ long millis() { return GetTickCount(); }
     X("r@", RFETCH, push(R)) \
     X("r>", RTOD, push(rpop())) \
     X("TYPE", TYPE, doType() ) \
+    X("TYPEZ", TYPEZ, doTypeZ() ) \
     X("EMIT", EMIT, buf[0] = (char)T; printString(buf); DROP1) \
     X(".S", DOTS, doDotS()) \
     X("FOR", FOR, doFor()) \
@@ -198,7 +199,6 @@ long millis() { return GetTickCount(); }
     X("UNTIL", UNTIL, doWhile(1, 1)) \
     X("MS", DELAY, delay(pop())) \
     X("TICK", TICK, push(millis())) \
-    X(".\"", DOTQUOTE, doDotQuote()) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
@@ -394,20 +394,22 @@ void doUSlMod() {
     }
 }
 
-void doDotQuote() {
-    BYTE len = *(PC);
-    push((CELL)(PC + 1));
-    push(len);
-    PC += (len + 2);
-    doType();
-}
-
 void doType() {
     CELL l = pop();
     ADDR a = (ADDR)pop();
     char x[2];
     x[1] = 0;
     for (int i = 0; i < l; i++) {
+        x[0] = *(a++);
+        printString(x);
+    }
+}
+
+void doTypeZ() {
+    ADDR a = (ADDR)pop();
+    char x[2];
+    x[1] = 0;
+    while (*a) {
         x[0] = *(a++);
         printString(x);
     }
@@ -1000,19 +1002,16 @@ void doParseWord() {
             doType();
             return;
         }
-        doCComma(OP_DOTQUOTE);
-        ADDR la = HERE;
-        BYTE len = 0;
-        doCComma(0);
+        doCComma(OP_LIT);
+        doComma((CELL)VHERE);
+        doCComma(OP_TYPEZ);
         char c = getNextChar();
         c = getNextChar();
         while (c && (c != '"')) {
-            doCComma(c);
-            ++len;
+            doVComma(c);
             c = getNextChar();
         }
-        *(la) = len;
-        doCComma(0);
+        doVComma(0);
         return;
     }
 
@@ -1226,7 +1225,7 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: abs dup 0 < if negate then ;"
 "\n: hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
 "\n: hex? base @ #16 = ; : decimal? base @ #10 = ;"
-"\n: bl #32 ; : space bl emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
+"\n: bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
 "\n: pad here $40 + ; : (neg) here $44 + ; "
 "\n: hold pad @ 1- dup pad ! c! ; "
 "\n: <# pad dup ! ; "
