@@ -89,7 +89,6 @@ void doCreate(const char* name);
 void doSlMod();
 void doUSlMod();
 void doType();
-void doTypeZ();
 void doDotS();
 void doFor();
 void doNext();
@@ -185,7 +184,6 @@ long millis() { return GetTickCount(); }
     X("r@", RFETCH, push(R)) \
     X("r>", RTOD, push(rpop())) \
     X("TYPE", TYPE, doType() ) \
-    X("TYPEZ", TYPEZ, doTypeZ() ) \
     X("EMIT", EMIT, buf[0] = (char)T; printString(buf); DROP1) \
     X(".S", DOTS, doDotS()) \
     X("FOR", FOR, doFor()) \
@@ -208,6 +206,7 @@ long millis() { return GetTickCount(); }
     X("FREE", MFREE, free((void *)T); DROP1) \
     X("FILL", FILL, memset((void *)M, T, N); DROP3) \
     X("ZCOUNT", ZCOUNT, push(T); T = strlen((char *)T)) \
+    X("ZTYPE", ZTYPE, printString((char *)T); DROP1 ) \
     X("DEBUG-MODE", DEBUG_MODE, push((CELL)&debugMode)) \
 
 #ifndef __FILES__
@@ -274,12 +273,11 @@ void doJoyXYZ(int which, CELL val);
 CELL doComOpen(CELL portNum, CELL baud);
 CELL doComRead(CELL handle);
 CELL doComWrite(CELL handle, CELL ch);
-void doComClose(CELL handle);
 #define COMPORT_OPCODES \
     X("COM-OPEN", COM_OPEN, N = doComOpen(T, N); DROP1) \
     X("COM-READ", COM_READ, T = doComRead(T)) \
     X("COM-WRITE", COM_WRITE, N = doComWrite(T, N); DROP1) \
-    X("COM-CLOSE", COM_CLOSE, doComClose(T); DROP1)
+    X("COM-CLOSE", COM_CLOSE, CloseHandle((HANDLE)T); DROP1)
 #endif
 
 #define OPCODES \
@@ -400,16 +398,6 @@ void doType() {
     char x[2];
     x[1] = 0;
     for (int i = 0; i < l; i++) {
-        x[0] = *(a++);
-        printString(x);
-    }
-}
-
-void doTypeZ() {
-    ADDR a = (ADDR)pop();
-    char x[2];
-    x[1] = 0;
-    while (*a) {
         x[0] = *(a++);
         printString(x);
     }
@@ -566,10 +554,6 @@ CELL doComWrite(CELL handle, CELL ch) {
     buf[0] = (char)ch;
     BOOL x = WriteFile((HANDLE)handle, buf, 1, &num, NULL);
     return num;
-}
-
-void doComClose(CELL handle) {
-    CloseHandle((HANDLE)handle);
 }
 
 #endif
@@ -1004,7 +988,7 @@ void doParseWord() {
         }
         doCComma(OP_LIT);
         doComma((CELL)VHERE);
-        doCComma(OP_TYPEZ);
+        doCComma(OP_ZTYPE);
         char c = getNextChar();
         c = getNextChar();
         while (c && (c != '"')) {
