@@ -1,8 +1,8 @@
 @echo off
 
-if exist bf.exe ( del bf.exe )
-gcc -Ofast -o bf.exe forth.cpp main.cpp
+if exist mf.exe ( del mf.exe )
+gcc -Ofast -o mf.exe forth.cpp main.cpp
 if xx%1xx == xxxx goto :done
-if exist bf.exe ( bf.exe )
+if exist mf.exe ( mf.exe )
 
 :done
