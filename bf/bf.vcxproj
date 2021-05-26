@@ -164,7 +164,7 @@
   <ItemGroup>
     <None Include="board-words.4th" />
     <None Include="make.bat" />
-    <None Include="mf.ino" />
+    <None Include="bf.ino" />
     <None Include="user-words.4th" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
