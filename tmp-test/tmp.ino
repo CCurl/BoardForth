@@ -23,7 +23,7 @@ CELL doFileOpen(const char* fn, const char *mode) {
     if (0 <= fileNum) {
         int openMode = FILE_READ;
         if (mode[0] == 'w') { openMmode = FILE_WRITE; }
-        files[fileNum] = myFS.open(fn, openMode);
+        files[fileNum].the_file = myFS.open(fn, openMode);
         if (files[fileNum].something) {
             files[fp].is_inuse = 1;
         }
@@ -40,10 +40,13 @@ void doFileClose(CELL fp) {
 
 CELL doFileRead(CELL fp, char *buf, int sz) {
     if ((0 <= fp) && (fp < NUM_FILES)) {
+		if (files[fp].the_file.available() == 0) {
+			return 0;
+		}
         CELL num = files[fp].read(buf, sz);
         return num;
     }
-    return 0;
+    return -1;
 }
 
 CELL doFileWrite(CELL fp, char *buf, int sz) {
@@ -72,6 +75,15 @@ int doFileReadTest(CELL num) {
     CELL fp = doFileOpen(buf, "rb");
     if (0 <= fp) {
         SerialUSB.print("file opened!\n");
+		while (files[fp].the_file.available()) {
+			int num = doFileRead(fp, buf, 64);
+			if (0 < num) {
+				SerialUSB.print("read succeeded\n");
+			} else {
+				if (num < 0) { SerialUSB.print("failed!\n"); }
+				break;
+			}
+		}
         doFileClose(fp);
         return 1;
     }
