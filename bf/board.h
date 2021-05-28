@@ -3,6 +3,7 @@
 
 #ifndef _WIN32
 	#define __DEV_BOARD__
+	#define __SERIAL__
 	#include <Arduino.h>
 	#define mySerial SerialUSB
 	// #define mySerial Serial
@@ -22,6 +23,7 @@
 	#define PIN_INPUT_PULLUP INPUT_PULLUP
 	#define PIN_OUTPUT OUTPUT
 #else
+	#define __IS_PC__
 	#include <windows.h>
 	#define DICT_SZ (512*1024)
 	#define VARS_SZ (64*1024)

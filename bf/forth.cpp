@@ -8,12 +8,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#ifdef __DEV_BOARD__
-void printSerial(const char* str) {
-    mySerial.print(str);
-}
-#endif
-
 #ifdef __ESP32__
 void printStringF(const char *, ...);
 void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
@@ -32,9 +26,13 @@ typedef BYTE* ADDR;
 
 #define T dstk[DSP]
 #define N dstk[DSP-1]
-#define M dstk[DSP-2]
 #define R rstk[RSP]
 #define A ((ADDR)dstk[DSP])
+#define N0 dstk[DSP]
+#define N1 dstk[DSP-1]
+#define N2 dstk[DSP-2]
+#define N3 dstk[DSP-3]
+#define N4 dstk[DSP-4]
 
 #define DROP1 --DSP
 #define DROP2 DROP1; DROP1
@@ -63,27 +61,23 @@ typedef struct {
 
 #define LOOP_STK_SZ 8
 typedef struct {
-    ADDR startAddr;
+    ADDR loopStart;
     CELL start;
     CELL index;
     CELL stop;
 } DO_LOOP_T;
 
-void push(CELL);
-CELL pop();
-void rpush(CELL);
-CELL rpop();
-void printString(const char*);
-void printStringF(const char*, ...);
-void ok();
 CELL cellAt(ADDR);
 CELL wordAt(ADDR);
 ADDR addrAt(ADDR);
-void doParse(char sep);
-int doNumber(const char*);
 void cellStore(ADDR addr, CELL val);
 void wordStore(ADDR addr, CELL val);
 void addrStore(ADDR addr, ADDR val);
+void printString(const char*);
+void printStringF(const char*, ...);
+void ok();
+void doParse(char sep);
+int doNumber(const char*);
 void doParseWord();
 void doCreate(const char* name);
 void doSlMod();
@@ -92,8 +86,6 @@ void doType();
 void doDotS();
 void doFor();
 void doNext();
-void doI();
-void doJ();
 void doBegin();
 void doAgain();
 void doWhile(int, int);
@@ -126,7 +118,7 @@ CELL debugMode = DBG_OFF;
 CELL numWords = 0;
 extern char bootStrap[];
 
-#ifndef __DEV_BOARD__
+#ifdef __IS_PC__
 #pragma warning(disable:4996)
 void pinMode(int pin, int mode) {}
 int digitalRead(int pin) { return pin + 1; }
@@ -136,6 +128,24 @@ void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
 void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
 #endif
+
+void push(CELL v) {
+    if (DSP < STK_SZ) ++DSP;
+    T = v;
+}
+CELL pop() {
+    if (0 < DSP) --DSP;
+    return dstk[DSP + 1];
+}
+
+void rpush(CELL v) {
+    if (RSP < STK_SZ) ++RSP;
+    R = v;
+}
+CELL rpop() {
+    if (0 < RSP) --RSP;
+    return rstk[RSP + 1];
+}
 
 #define BASE_OPCODES \
     X("NOOP", NOOP, ) \
@@ -187,8 +197,9 @@ long millis() { return GetTickCount(); }
     X("EMIT", EMIT, buf[0] = (char)T; printString(buf); DROP1) \
     X(".S", DOTS, doDotS()) \
     X("FOR", FOR, doFor()) \
-    X("I", I, doI()) \
-    X("J", J, doJ()) \
+    X("I", I, if (0 <= loopSP) push(doStack[loopSP].index)) \
+    X("J", J, if (1 <= loopSP) push(doStack[loopSP-1].index)) \
+    X("K", K, if (2 <= loopSP) push(doStack[loopSP-2].index)) \
     X("NEXT", NEXT, doNext()) \
     X("BEGIN", BEGIN, doBegin()) \
     X("AGAIN", AGAIN, doAgain()) \
@@ -204,7 +215,7 @@ long millis() { return GetTickCount(); }
     X("(NUM-WORDS)", NUM_WORDS, push((CELL)&numWords)) \
     X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
     X("FREE", MFREE, free((void *)T); DROP1) \
-    X("FILL", FILL, memset((void *)M, T, N); DROP3) \
+    X("FILL", FILL, memset((void *)N2, N0, N1); DROP3) \
     X("ZCOUNT", ZCOUNT, push(T); T = strlen((char *)T)) \
     X("ZTYPE", ZTYPE, printString((char *)T); DROP1 ) \
     X("DEBUG-MODE", DEBUG_MODE, push((CELL)&debugMode)) \
@@ -342,24 +353,6 @@ void run(ADDR start, CELL max_cycles) {
 }
 #undef X
 
-void push(CELL v) {
-    if (DSP < STK_SZ) ++DSP;
-    T = v;
-}
-CELL pop() {
-    if (0 < DSP) --DSP;
-    return dstk[DSP + 1];
-}
-
-void rpush(CELL v) {
-    if (RSP < STK_SZ) ++RSP;
-    R = v;
-}
-CELL rpop() {
-    if (0 < RSP) --RSP;
-    return rstk[RSP + 1];
-}
-
 void doDotS() {
     printString("(");
     for (int i = 1; i <= DSP; i++) {
@@ -406,26 +399,19 @@ void doType() {
 void doFor() {
     if (loopSP < LOOP_STK_SZ) {
         DO_LOOP_T* dp = &doStack[++loopSP];
-        dp->startAddr = PC;
-        dp->stop = T;
-        dp->start = N;
-        if (dp->stop < dp->start) {
-            dp->stop = N;
-            dp->start = T;
-        }
+        dp->loopStart = PC;
+        dp->start = (N < T) ? N : T;
+        dp->stop =  (N < T) ? T : N;
         dp->index = dp->start;
         DROP2;
     }
 }
 
-void doI() { if (0 <= loopSP) { push(doStack[loopSP].index); } }
-void doJ() { if (1 <= loopSP) { push(doStack[loopSP - 1].index); } }
-
 void doNext() {
     if (0 <= loopSP) {
         DO_LOOP_T* dp = &doStack[loopSP];
         ++dp->index;
-        if (dp->index < dp->stop) { PC = dp->startAddr; }
+        if (dp->index <= dp->stop) { PC = dp->loopStart; }
         else { --loopSP; }
     }
 }
@@ -433,17 +419,17 @@ void doNext() {
 void doBegin() {
     if (loopSP < LOOP_STK_SZ) {
         DO_LOOP_T* dp = &doStack[++loopSP];
-        dp->startAddr = PC;
+        dp->loopStart = PC;
     }
 }
 
-void doAgain() { if (0 <= loopSP) { PC = doStack[loopSP].startAddr; } }
+void doAgain() { if (0 <= loopSP) { PC = doStack[loopSP].loopStart; } }
 
 void doWhile(int dropIt, int isUntil) {
     if (loopSP < 0) { return; }
     CELL x = (dropIt) ? pop() : T;
     if (isUntil) x = (x) ? 0 : 1;
-    if (x) { PC = doStack[loopSP].startAddr; }
+    if (x) { PC = doStack[loopSP].loopStart; }
     else {
         if (!dropIt) pop();
         --loopSP;
@@ -637,13 +623,12 @@ void autoRun() {
 }
 
 // ---------------------------------------------------------------------
-void printString(const char* str) {
-#ifdef __DEV_BOARD__
-    printSerial(str);
-#else
-    fputs(str, stdout);
+#ifdef __SERIAL__
+void printString(const char* str) { mySerial.print(str); }
 #endif
-}
+#ifdef __IS_PC__
+void printString(const char* str) { fputs(str, stdout); }
+#endif
 
 // ---------------------------------------------------------------------
 void printStringF(const char* fmt, ...) {
@@ -708,22 +693,16 @@ void addrStore(ADDR addr, ADDR v) {
 inline void doVComma(BYTE v) { *(VHERE++) = v; }
 inline void doCComma(BYTE v) { *(HERE++) = v; }
 void doWComma(CELL v) { wordStore(HERE, v); HERE += WORD_SZ; }
-void doComma(CELL v) { cellStore(HERE, v); HERE += CELL_SZ; }
-void doAComma(ADDR v) {
-    (ADDR_SZ == 2) ? doWComma((CELL)v) : doComma((CELL)v);
-}
+void doComma(CELL v)  { cellStore(HERE, v); HERE += CELL_SZ; }
+void doAComma(ADDR v) { (ADDR_SZ == 2) ? doWComma((CELL)v) : doComma((CELL)v); }
 
 int compiling(char* w, int errIfNot) {
-    if ((STATE == 0) && (errIfNot)) {
-        printStringF("[%s]: Compile only.", w);
-    }
+    if ((STATE == 0) && (errIfNot)) { printStringF("[%s]: Compile only.", w); }
     return (STATE == 1) ? 1 : 0;
 }
 
 int interpreting(char* w, int errIfNot) {
-    if ((STATE != 0) && (errIfNot)) {
-        printStringF("[%s]: Interpreting only.", w);
-    }
+    if ((STATE != 0) && (errIfNot)) { printStringF("[%s]: Interpreting only.", w); }
     return (STATE == 0) ? 1 : 0;
 }
 
@@ -774,10 +753,7 @@ int doNumber(const char* w) {
         push(*(w + 1));
         return 1;
     }
-    CELL num = 0;
-    int base = BASE;
-    int isNeg = 0;
-    int valid = 0;
+    CELL num = 0, base = BASE, isNeg = 0, valid = 0;
     if (*w == '#') { base = 10; ++w; }
     if (*w == '$') { base = 16; ++w; }
     if (*w == '%') { base = 2; ++w; }
@@ -1027,7 +1003,6 @@ void parseLine(const char* line) {
 #pragma warning(disable:4996)
 
 void toTIB(int c) {
-    if (c == 0) { return; }
     if (c == 8) {
         if (0 < numTIB) {
             numTIB--;
@@ -1035,6 +1010,8 @@ void toTIB(int c) {
         }
         return;
     }
+    if (c == 9) { c = 32; }
+    if (c == 10) { c = 32; }
     if (c == 13) {
         parseLine(TIB);
         ok();
@@ -1047,9 +1024,7 @@ void toTIB(int c) {
         printString("-TIB full-");
         return;
     }
-    if (c == 9) { c = 32; }
-    if (c == 10) { c = 32; }
-    if (32 <= c) {
+    if ((' ' <= c) && (c <= '~')) {
         *(TIBEnd++) = c;
         *(TIBEnd) = 0;
 #ifdef __DEV_BOARD__
@@ -1062,7 +1037,6 @@ void toTIB(int c) {
 }
 
 void vmInit() {
-    // init_handlers();
     HERE = &dict[0];
     VHERE = &vars[0];
     LAST = HERE + (DICT_SZ-4);
@@ -1078,13 +1052,16 @@ void vmInit() {
 
 #ifdef __DEV_BOARD__
 void loop() {
+#ifdef __SERIAL__
     while (mySerial.available()) {
         int c = mySerial.read();
         toTIB(c);
     }
+#endif
     autoRun();
 }
-#else
+#endif
+#ifdef __IS_PC__
 void doHistory(char* l) {
     FILE* fp = fopen("history.txt", "at");
     if (fp) {
@@ -1136,6 +1113,7 @@ void loadBaseSystem() {
 }
 
 #ifdef __FILES__
+#define __USER_WORDS__
 void loadUserWords() {
     CELL fp = doFileOpen("user-words.4th", "rb");
     if (fp) {
@@ -1150,10 +1128,6 @@ void loadUserWords() {
         free(fc);
     }
 }
-#endif
-
-#ifdef __LITTLEFS__
-void loadUserWords() {}
 #else
 void loadUserWords() {}
 #endif
@@ -1169,17 +1143,17 @@ void ok() {
 }
 
 void setup() {
-#ifdef __DEV_BOARD__
+#ifdef __SERIAL__
     mySerial.begin(19200);
     while (!mySerial) {}
     while (mySerial.available()) {}
-#ifdef __LITTLEFS__
-    myFS.begin(1024*1024);
 #endif
+#ifdef __LITTLEFS__
+    myFS.begin(1024 * 1024);
 #endif
     vmInit();
     loadBaseSystem();
-    #ifndef __DEV_BOARD__
+    #ifdef __USER_WORDS__
     loadUserWords();
     #endif
     numTIB = 0;
@@ -1188,7 +1162,7 @@ void setup() {
     ok();
 }
 
-#ifndef __DEV_BOARD__
+#ifdef __IS_PC__
 int main()
 {
     setup();
@@ -1222,7 +1196,7 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: (.) is-neg? <# #s #> ; "
 "\n: (u.) (neg) off <# #s #> ; "
 "\n: . space (.) ; : u. space (u.) ; "
-"\n: .n >r is-neg? r> <# 0 for # next #> drop ;"
+"\n: .n >r is-neg? r> <# 1 for # next #> drop ;"
 "\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
 "\n: low->high 2dup > if swap then ;"
 "\n: high->low 2dup < if swap then ;"
@@ -1248,8 +1222,8 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: _t1 dup _t0 #16 + ;"
 "\n: dump-dict dict begin _t1 dup here < while drop ;"
 "\n: elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;"
-"\nvariable (ch)  variable (cl) variable (nw) variable (vh)"
+"\nvariable (ch) variable (cl) variable (nw) variable (vh)"
 "\n: marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;"
 "\n: forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;"
-"\n: forget-1 last a@ (here) ! last 32 + (last) ! (num-words) @ 1- (num-words) ! ;"
+"\n: forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;"
 "\nmarker";
