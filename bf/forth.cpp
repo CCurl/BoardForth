@@ -1150,7 +1150,9 @@ void loadUserWords() {
         free(fc);
     }
 }
-#elif __LITTLEFS__
+#endif
+
+#ifdef __LITTLEFS__
 void loadUserWords() {}
 #else
 void loadUserWords() {}
@@ -1228,7 +1230,8 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: max high->low drop ;"
 "\n: between rot dup >r min max r> = ;"
 "\n: allot vhere + (vhere) ! ;"
-"\n: >body addr + a@ ;"
+"\n: >body @ ; : auto-run dict ! ;"
+"\n: auto-run-last last >body auto-run ; : auto-run-off 0 auto-run ;"
 "\n: count dup 1+ swap c@ ;"
 "\n: num-words (num-words) @ ;"
 "\n: .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;"
