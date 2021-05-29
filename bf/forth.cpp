@@ -85,7 +85,7 @@ void doCreate(const char* name);
 void doSlMod();
 void doUSlMod();
 void doType();
-void doDot(CELL num, int space);
+void doDot(CELL num, int inUnsigned, int space, int width);
 void doDotS();
 void doFor();
 void doNext();
@@ -199,8 +199,10 @@ CELL rpop() {
     X("COUNT", COUNT, push(T); N += 1; T = (*A)) \
     X("TYPE", TYPE, doType() ) \
     X("EMIT", EMIT, buf[0] = (char)T; printString(buf); DROP1) \
-    X("(.)", PDOT, doDot(T, 0); DROP1) \
-    X(".", DOT, doDot(T, 1); DROP1) \
+    X("(.)", PDOT, doDot(T, 0, 0, 0); DROP1) \
+    X(".", DOT,    doDot(T, 0, 1, 0); DROP1) \
+    X("U.", UDOT,  doDot(T, 1, 1, 0); DROP1) \
+    X(".N", NDOT,  doDot(N, 1, 0, T); DROP2) \
     X(".S", DOTS, doDotS()) \
     X("FOR", FOR, doFor()) \
     X("I", I, if (0 <= loopSP) push(doStack[loopSP].index)) \
@@ -304,7 +306,7 @@ CELL doComWrite(CELL handle, CELL ch);
     ARDUINO_OPCODES \
     JOYSTICK_OPCODES \
     COMPORT_OPCODES \
-    X("DUMP-OPCODES", DUMP_OPCODES, dumpOpcodes()) \
+    X("OPCODES", DUMP_OPCODES, dumpOpcodes()) \
     X("BOOT-STRAP", BOOT_STRAP, push((CELL)&bootStrap[0])) \
     X("BYE", BYE, printString(" bye."); isBYE = 1)
 
@@ -325,8 +327,9 @@ void printOpcode(BYTE opcode) {
 }
 #undef X
 
-#define X(name, op, code) printStringF("\n%3d ($%02x, %c): %s", OP_ ## op, OP_ ## op, OP_ ## op, name);
+#define X(name, op, code) x = OP_ ## op; printStringF("\n%3d ($%02x, %c): %s", x, x, (char)x, name);
 void dumpOpcodes() {
+    int x;
     OPCODES
 }
 #undef X
@@ -359,18 +362,32 @@ void run(ADDR start, CELL max_cycles) {
 }
 #undef X
 
-void doDot(CELL num, int space) {
+void doDot(CELL num, int isUnsigned, int space, int width) {
+    int len  = 0;
+    if ((!isUnsigned) && (num < 0)) {
+        printString("-");
+        num = -num;
+    }
+    UCELL n = (UCELL)num;
+    char x[36], *cp = &x[35];
+    *(cp) = 0;
+    do {
+        char c = (char)(n % BASE);
+        if (9 < c) { c += 7; }
+        *(--cp) = c + '0';
+        n /= BASE;
+        ++len;
+    } while (0 < n);
+    while (len < width) { *(--cp) = '0'; len++; }
     if (space) { printString(" "); }
-    if (BASE == 10) { printStringF("%ld", num); }
-    else if (BASE == 16) { printStringF("%lx", num); }
-    else { printStringF("(%ld in %d)", num, BASE); }
+    printString(cp);
 }
 
 void doDotS() {
     printString("(");
     for (int i = 1; i <= DSP; i++) {
         if (1 < i) { printString(" "); }
-        doDot(dstk[i], 0);
+        doDot(dstk[i], 0, 0, 0);
     }
     printString(")");
 }
@@ -1221,17 +1238,6 @@ int main()
     X(1019, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;") \
     X(1020, ": hex? base @ #16 = ; : decimal? base @ #10 = ;") \
     X(1021, ": bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;") \
-    X(1022, ": pad here $40 + ; : (neg) here $44 + ; ") \
-    X(1023, ": hold pad @ 1- dup pad ! c! ; ") \
-    X(1024, ": <# pad dup ! ; ") \
-    X(1025, ": # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; ") \
-    X(1026, ": #s begin # while- ; ") \
-    X(1027, ": #> (neg) @ if '-' emit then pad @ pad over - type ; ") \
-    X(1028, ": is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;") \
-    X(1029, ": (.) is-neg? <# #s #> ; ") \
-    X(1030, ": (u.) (neg) off <# #s #> ; ") \
-    X(1031, ": x. space (.) ; : u. space (u.) ; ") \
-    X(1032, ": .n >r is-neg? r> <# 1 for # next #> drop ;") \
     X(1033, ": .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;") \
     X(1034, ": high->low 2dup < if swap then ;") \
     X(1035, ": min low->high drop ;") \
@@ -1240,7 +1246,6 @@ int main()
     X(1038, ": allot vhere + (vhere) ! ;") \
     X(1039, ": >body @ ; : auto-run dict ! ;") \
     X(1040, ": auto-run-last last >body auto-run ; : auto-run-off 0 auto-run ;") \
-    X(1041, ": count dup 1+ swap c@ ;") \
     X(1042, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
     X(1043, ": wordsl last num-words 1 for dup .wordl #24 + next drop ;") \
     X(1044, "variable (regs) 9 cells allot") \
