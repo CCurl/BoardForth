@@ -38,11 +38,11 @@ typedef BYTE* ADDR;
 #define DROP2 DROP1; DROP1
 #define DROP3 DROP1; DROP1; DROP1
 
-#define TMP_RUNOP    (HERE + 0x0020)
-#define TMP_PAD      (HERE + 0x0040)
-#define TMP_WORD     (HERE + 0x0080)
-#define TMP_SQUOTE   (HERE + 0x0100)
-#define TMP_DOTQUOTE (HERE + 0x0200)
+#define TMP_RUNOP    (VHERE + 0x0002)
+#define TMP_PAD      (VHERE + 0x0024)
+#define TMP_WORD     (VHERE + 0x0004)
+#define TMP_SQUOTE   (VHERE + 0x0020)
+#define TMP_DOTQUOTE (VHERE + 0x0020)
 
 #define DBG_ALL   4
 #define DBG_TRACE 3
@@ -50,8 +50,8 @@ typedef BYTE* ADDR;
 #define DBG_DEBUG 1
 #define DBG_OFF   0
 
-#define NAME_LEN      25
-#define DICT_ENTRY_SZ 32
+#define NAME_LEN      13
+#define DICT_ENTRY_SZ 20
 typedef struct {
     ADDR XT;
     BYTE flags;
@@ -83,6 +83,7 @@ void doCreate(const char* name);
 void doSlMod();
 void doUSlMod();
 void doType();
+void doDot(CELL num, int space);
 void doDotS();
 void doFor();
 void doNext();
@@ -116,7 +117,7 @@ int isBYE = 0, isError = 0;
 DICT_T tempWords[10];
 CELL debugMode = DBG_OFF;
 CELL numWords = 0;
-extern char bootStrap[];
+extern PROGMEM const char *bootStrap[];
 
 #ifdef __IS_PC__
 #pragma warning(disable:4996)
@@ -193,8 +194,11 @@ CELL rpop() {
     X(">r", DTOR, rpush(pop())) \
     X("r@", RFETCH, push(R)) \
     X("r>", RTOD, push(rpop())) \
+    X("COUNT", COUNT, push(T); N += 1; T = (*A)) \
     X("TYPE", TYPE, doType() ) \
     X("EMIT", EMIT, buf[0] = (char)T; printString(buf); DROP1) \
+    X("(.)", PDOT, doDot(T, 0); DROP1) \
+    X(".", DOT, doDot(T, 1); DROP1) \
     X(".S", DOTS, doDotS()) \
     X("FOR", FOR, doFor()) \
     X("I", I, if (0 <= loopSP) push(doStack[loopSP].index)) \
@@ -352,6 +356,13 @@ void run(ADDR start, CELL max_cycles) {
     }
 }
 #undef X
+
+void doDot(CELL num, int space) {
+    if (space) { printString(" "); }
+    if (BASE == 10) { printStringF("%ld", num); }
+    else if (BASE == 16) { printStringF("%lx", num); }
+    else { printStringF("(%ld in %d)", num, BASE); }
+}
 
 void doDotS() {
     printString("(");
@@ -562,12 +573,16 @@ void doCreate(const char* name) {
 
     ++numWords;
     LAST -= DICT_ENTRY_SZ;
+    if (LAST < (HERE+0x40)) {
+        printString("***OUT OF MEMORY***");
+        return;
+    }
     dp = (DICT_T*)LAST;
     if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%ld)-", name, LAST); }
     dp->flags = 0;
     dp->len = (BYTE)strlen(name);
     if (dp->len > NAME_LEN) {
-        printStringF("-name too long: %d-", dp->len);
+        printStringF("-name [%s] too long (%d)-", name, NAME_LEN);
         dp->len = NAME_LEN;
     }
     strncpy(dp->name, name, NAME_LEN);
@@ -1096,7 +1111,7 @@ void loadSourceF(const char* fmt, ...) {
 }
 
 void loadBaseSystem() {
-    loadSourceF(": cell %d ; : cells cell * ; : addr %d ;", CELL_SZ, ADDR_SZ);
+    loadSourceF(": cell %d ; : cells cell * ; : addr %d ; ", CELL_SZ, ADDR_SZ);
     loadSourceF(": dict $%lx ; : dict-sz $%lx ;", (long)&dict[0], DICT_SZ);
     loadSourceF(": vars $%lx ; : vars-sz $%lx ;", (long)&vars[0], VARS_SZ);
     loadSourceF(": (here) $%lx ; : here (here) @ ;", (long)&HERE);
@@ -1109,7 +1124,13 @@ void loadBaseSystem() {
     loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
     loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
 
-    parseLine(bootStrap);
+    for (int i = 0;; i++) {
+        if (bootStrap[i]) {
+            parseLine(bootStrap[i]);
+        } else {
+            break;
+        }
+    }
 }
 
 #ifdef __FILES__
@@ -1172,13 +1193,33 @@ int main()
     }
 }
 #endif
+#define PM(num, val) PROGMEM const char *str ## num = val;
+PM(1, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;")
+
+PROGMEM const char *bootStrap[] = {
+    str1
+    , ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
+    , 0
+};
+/*
+
+    ": tuck swap drop ;"
+    , ": ?dup if- dup then ;"
+    , ": num-words (num-words) @ ;"
+    , ": mod /mod drop ; : / /mod nip ;"
+    , ": .word addr + 1+ count type #9 emit ;"
+    , ": words last num-words 1 for dup .word #20 + next drop ;"
+    , ": low->high over over > if swap then ;"
+    , "variable (ch) variable (cl) variable (nw) variable (vh)"
+    , ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;"
+    , ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;"
+    , ": forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;"
+
+
 
 char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
-"\n: tuck swap over ;"
-"\n: ?dup if- dup then ;"
 "\n: rot >r swap r> swap ; : -rot swap >r swap r> ;"
 "\n: 2dup over over ; : 2drop drop drop ;"
-"\n: mod /mod drop ; : / /mod nip ;"
 "\n: +! tuck @ + swap ! ;"
 "\n: negate 0 swap - ;"
 "\n: off 0 swap ! ; : on 1 swap ! ;"
@@ -1198,7 +1239,6 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: . space (.) ; : u. space (u.) ; "
 "\n: .n >r is-neg? r> <# 1 for # next #> drop ;"
 "\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
-"\n: low->high 2dup > if swap then ;"
 "\n: high->low 2dup < if swap then ;"
 "\n: min low->high drop ;"
 "\n: max high->low drop ;"
@@ -1207,11 +1247,8 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: >body @ ; : auto-run dict ! ;"
 "\n: auto-run-last last >body auto-run ; : auto-run-off 0 auto-run ;"
 "\n: count dup 1+ swap c@ ;"
-"\n: num-words (num-words) @ ;"
 "\n: .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;"
-"\n: wordsl last num-words 1 for dup .wordl #32 + next drop ;"
-"\n: .word addr + 1+ count type tab ;"
-"\n: words last num-words 1 for dup .word #32 + next drop ;"
+"\n: wordsl last num-words 1 for dup .wordl #24 + next drop ;"
 "\nvariable (regs) 9 cells allot"
 "\n: reg cells (regs) + ;"
 "\n: >src 0 reg ! ; : >dst 1 reg ! ;"
@@ -1227,3 +1264,4 @@ char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
 "\n: forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;"
 "\n: forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;"
 "\nmarker";
+*/
