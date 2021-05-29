@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdarg.h>
 
+const PROGMEM char xxx[] = "yyy";
+
 #ifdef __ESP32__
 void printStringF(const char *, ...);
 void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
@@ -15,7 +17,7 @@ void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
 
 //typedef void (*FP)();
 typedef long CELL;
-typedef ulong UCELL;
+typedef unsigned long UCELL;
 typedef unsigned short WORD;
 typedef unsigned char  BYTE;
 typedef BYTE* ADDR;
@@ -117,7 +119,7 @@ int isBYE = 0, isError = 0;
 DICT_T tempWords[10];
 CELL debugMode = DBG_OFF;
 CELL numWords = 0;
-extern PROGMEM const char *bootStrap[];
+extern const char *bootStrap[];
 
 #ifdef __IS_PC__
 #pragma warning(disable:4996)
@@ -367,9 +369,10 @@ void doDot(CELL num, int space) {
 void doDotS() {
     printString("(");
     for (int i = 1; i <= DSP; i++) {
-        printStringF(" #%d/$%lx", dstk[i], dstk[i]);
+        if (1 < i) { printString(" "); }
+        doDot(dstk[i], 0);
     }
-    printString(" )");
+    printString(")");
 }
 
 void doSlMod() {
@@ -638,11 +641,14 @@ void autoRun() {
 }
 
 // ---------------------------------------------------------------------
-#ifdef __SERIAL__
-void printString(const char* str) { mySerial.print(str); }
-#endif
 #ifdef __IS_PC__
-void printString(const char* str) { fputs(str, stdout); }
+    void printString(const char* str) { fputs(str, stdout); }
+#else
+    #ifdef __SERIAL__
+    void printString(const char* str) { theSerial.print(str); }
+    #else 
+    void printString(const char* str) {}
+    #endif
 #endif
 
 // ---------------------------------------------------------------------
@@ -1068,8 +1074,8 @@ void vmInit() {
 #ifdef __DEV_BOARD__
 void loop() {
 #ifdef __SERIAL__
-    while (mySerial.available()) {
-        int c = mySerial.read();
+    while (theSerial.available()) {
+        int c = theSerial.read();
         toTIB(c);
     }
 #endif
@@ -1165,9 +1171,9 @@ void ok() {
 
 void setup() {
 #ifdef __SERIAL__
-    mySerial.begin(19200);
-    while (!mySerial) {}
-    while (mySerial.available()) {}
+    theSerial.begin(19200);
+    while (!theSerial) {}
+    while (theSerial.available()) {}
 #endif
 #ifdef __LITTLEFS__
     myFS.begin(1024 * 1024);
@@ -1193,75 +1199,135 @@ int main()
     }
 }
 #endif
-#define PM(num, val) PROGMEM const char *str ## num = val;
-PM(1, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;")
+#define SOURCE_BASE \
+    X(1001, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
+    X(1002, ": tuck swap drop ;") \
+    X(1003, ": ?dup if- dup then ;") \
+    X(1004, ": num-words (num-words) @ ;") \
+    X(1005, ": mod /mod drop ; : / /mod nip ;") \
+    X(1006, ": .word addr + 1+ count type #9 emit ;") \
+    X(1007, ": words last num-words 1 for dup .word #20 + next drop ;") \
+    X(1008, ": low->high over over > if swap then ;") \
+    X(1009, "variable (ch) variable (cl) variable (nw) variable (vh)") \
+    X(1010, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
+    X(1011,  ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
+    X(1012, ": forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;") \
+    X(1013, ": rot >r swap r> swap ; : -rot swap >r swap r> ;") \
+    X(1014, ": 2dup over over ; : 2drop drop drop ;") \
+    X(1015, ": +! tuck @ + swap ! ;") \
+    X(1016, ": negate 0 swap - ;") \
+    X(1017, ": off 0 swap ! ; : on 1 swap ! ;") \
+    X(1018, ": abs dup 0 < if negate then ;") \
+    X(1019, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;") \
+    X(1020, ": hex? base @ #16 = ; : decimal? base @ #10 = ;") \
+    X(1021, ": bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;") \
+    X(1022, ": pad here $40 + ; : (neg) here $44 + ; ") \
+    X(1023, ": hold pad @ 1- dup pad ! c! ; ") \
+    X(1024, ": <# pad dup ! ; ") \
+    X(1025, ": # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; ") \
+    X(1026, ": #s begin # while- ; ") \
+    X(1027, ": #> (neg) @ if '-' emit then pad @ pad over - type ; ") \
+    X(1028, ": is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;") \
+    X(1029, ": (.) is-neg? <# #s #> ; ") \
+    X(1030, ": (u.) (neg) off <# #s #> ; ") \
+    X(1031, ": x. space (.) ; : u. space (u.) ; ") \
+    X(1032, ": .n >r is-neg? r> <# 1 for # next #> drop ;") \
+    X(1033, ": .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;") \
+    X(1034, ": high->low 2dup < if swap then ;") \
+    X(1035, ": min low->high drop ;") \
+    X(1036, ": max high->low drop ;") \
+    X(1037, ": between rot dup >r min max r> = ;") \
+    X(1038, ": allot vhere + (vhere) ! ;") \
+    X(1039, ": >body @ ; : auto-run dict ! ;") \
+    X(1040, ": auto-run-last last >body auto-run ; : auto-run-off 0 auto-run ;") \
+    X(1041, ": count dup 1+ swap c@ ;") \
+    X(1042, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
+    X(1043, ": wordsl last num-words 1 for dup .wordl #24 + next drop ;") \
+    X(1044, "variable (regs) 9 cells allot") \
+    X(1045, ": reg cells (regs) + ;") \
+    X(1046, ": >src 0 reg ! ; : >dst 1 reg ! ;") \
+    X(1047, ": src 0 reg @ ; : src+ src dup 1+ >src ;") \
+    X(1048, ": dst 1 reg @ ; : dst+ dst dup 1+ >dst ;") \
+    X(1049, ": dump low->high for i c@ space .c next ;") \
+    X(1050, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \
+    X(1051, ": _t1 dup _t0 #16 + ;") \
+    X(1052, ": dump-dict dict begin _t1 dup here < while drop ;") \
+    X(1053, ": elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;") \
+    X(1054, "variable (ch) variable (cl) variable (nw) variable (vh)") \
+    X(1055, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
+    X(1056, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
+    X(1057, ": forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;") \
 
-PROGMEM const char *bootStrap[] = {
-    str1
-    , ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
-    , 0
+#define SOURCE_PC X(2000, ": is-pc 0 ;")
+#ifdef __IS_PC__
+#undef SOURCE_PC
+#define SOURCE_PC \
+    X(2000, ": is-pc 1 ;")
+#endif
+
+#define SOURCE_USER \
+X(5000, "marker")
+
+#define SOURCES SOURCE_BASE SOURCE_PC SOURCE_USER
+
+#undef X
+#define X(num, val) const PROGMEM char str ## num[] = val;
+SOURCES
+
+#undef X
+#define X(num, val) str ## num,
+const char *bootStrap[] = {
+    SOURCES
+    NULL
 };
 /*
 
-    ": tuck swap drop ;"
-    , ": ?dup if- dup then ;"
-    , ": num-words (num-words) @ ;"
-    , ": mod /mod drop ; : / /mod nip ;"
-    , ": .word addr + 1+ count type #9 emit ;"
-    , ": words last num-words 1 for dup .word #20 + next drop ;"
-    , ": low->high over over > if swap then ;"
-    , "variable (ch) variable (cl) variable (nw) variable (vh)"
-    , ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;"
-    , ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;"
-    , ": forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;"
 
-
-
-char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
-"\n: rot >r swap r> swap ; : -rot swap >r swap r> ;"
-"\n: 2dup over over ; : 2drop drop drop ;"
-"\n: +! tuck @ + swap ! ;"
-"\n: negate 0 swap - ;"
-"\n: off 0 swap ! ; : on 1 swap ! ;"
-"\n: abs dup 0 < if negate then ;"
-"\n: hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
-"\n: hex? base @ #16 = ; : decimal? base @ #10 = ;"
-"\n: bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
-"\n: pad here $40 + ; : (neg) here $44 + ; "
-"\n: hold pad @ 1- dup pad ! c! ; "
-"\n: <# pad dup ! ; "
-"\n: # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
-"\n: #s begin # while- ; "
-"\n: #> (neg) @ if '-' emit then pad @ pad over - type ; "
-"\n: is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
-"\n: (.) is-neg? <# #s #> ; "
-"\n: (u.) (neg) off <# #s #> ; "
-"\n: . space (.) ; : u. space (u.) ; "
-"\n: .n >r is-neg? r> <# 1 for # next #> drop ;"
-"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
-"\n: high->low 2dup < if swap then ;"
-"\n: min low->high drop ;"
-"\n: max high->low drop ;"
-"\n: between rot dup >r min max r> = ;"
-"\n: allot vhere + (vhere) ! ;"
-"\n: >body @ ; : auto-run dict ! ;"
-"\n: auto-run-last last >body auto-run ; : auto-run-off 0 auto-run ;"
-"\n: count dup 1+ swap c@ ;"
-"\n: .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;"
-"\n: wordsl last num-words 1 for dup .wordl #24 + next drop ;"
-"\nvariable (regs) 9 cells allot"
-"\n: reg cells (regs) + ;"
-"\n: >src 0 reg ! ; : >dst 1 reg ! ;"
-"\n: src 0 reg @ ; : src+ src dup 1+ >src ;"
-"\n: dst 1 reg @ ; : dst+ dst dup 1+ >dst ;"
-"\n: dump low->high for i c@ space .c next ;"
-"\n: _t0 cr dup 8 .n ':' emit #16 over + dump ;"
-"\n: _t1 dup _t0 #16 + ;"
-"\n: dump-dict dict begin _t1 dup here < while drop ;"
-"\n: elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;"
-"\nvariable (ch) variable (cl) variable (nw) variable (vh)"
-"\n: marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;"
-"\n: forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;"
-"\n: forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;"
-"\nmarker";
+char bootStrap[] = 
+, ": rot >r swap r> swap ; : -rot swap >r swap r> ;")
+, ": 2dup over over ; : 2drop drop drop ;")
+, ": +! tuck @ + swap ! ;"
+, ": negate 0 swap - ;")
+, ": off 0 swap ! ; : on 1 swap ! ;")
+, ": abs dup 0 < if negate then ;")
+, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;")
+, ": hex? base @ #16 = ; : decimal? base @ #10 = ;")
+, ": bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;")
+, ": pad here $40 + ; : (neg) here $44 + ; ")
+, ": hold pad @ 1- dup pad ! c! ; ")
+, ": <# pad dup ! ; ")
+, ": # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; ")
+, ": #s begin # while- ; ")
+, ": #> (neg) @ if '-' emit then pad @ pad over - type ; ")
+, ": is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;")
+, ": (.) is-neg? <# #s #> ; ")
+, ": (u.) (neg) off <# #s #> ; ")
+, ": . space (.) ; : u. space (u.) ; ")
+, ": .n >r is-neg? r> <# 1 for # next #> drop ;")
+, ": .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;")
+, ": high->low 2dup < if swap then ;")
+, ": min low->high drop ;")
+, ": max high->low drop ;")
+, ": between rot dup >r min max r> = ;")
+, ": allot vhere + (vhere) ! ;")
+, ": >body @ ; : auto-run dict ! ;")
+, ": auto-run-last last >body auto-run ; : auto-run-off 0 auto-run ;")
+, ": count dup 1+ swap c@ ;")
+, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;")
+, ": wordsl last num-words 1 for dup .wordl #24 + next drop ;")
+, "variable (regs) 9 cells allot")
+, ": reg cells (regs) + ;")
+, ": >src 0 reg ! ; : >dst 1 reg ! ;")
+, ": src 0 reg @ ; : src+ src dup 1+ >src ;")
+, ": dst 1 reg @ ; : dst+ dst dup 1+ >dst ;")
+, ": dump low->high for i c@ space .c next ;")
+, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;")
+, ": _t1 dup _t0 #16 + ;")
+, ": dump-dict dict begin _t1 dup here < while drop ;")
+, ": elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;")
+, "variable (ch) variable (cl) variable (nw) variable (vh)")
+, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;")
+, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;")
+, ": forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;")
+, "marker")
 */
