@@ -12,11 +12,11 @@
   // #include <LittleFS.h>
 	// #define __JOYSTICK__
 	#define __NEEDS_ALIGN__
-	#define DICT_SZ (4*1024)
-	#define VARS_SZ (1024/2)
-	#define STK_SZ 16
-	#define TIB_SZ 0x0040
-	#define MAX_FILE_SZ 10*1024
+	#define DICT_SZ (1024*20)
+	#define VARS_SZ (1024*4)
+	#define STK_SZ 32
+	#define TIB_SZ (128)
+	#define MAX_FILE_SZ (1024*10)
 	#define PIN_INPUT INPUT
 	#define PIN_INPUT_PULLUP INPUT_PULLUP
 	#define PIN_OUTPUT OUTPUT

@@ -220,7 +220,6 @@ CELL rpop() {
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
     X("A,", ACOMMA, doAComma(A); DROP1) \
-    X("(NUM-WORDS)", NUM_WORDS, push((CELL)&numWords)) \
     X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
     X("FREE", MFREE, free((void *)T); DROP1) \
     X("FILL", FILL, memset((void *)N2, N0, N1); DROP3) \
@@ -307,7 +306,7 @@ CELL doComWrite(CELL handle, CELL ch);
     JOYSTICK_OPCODES \
     COMPORT_OPCODES \
     X("OPCODES", DUMP_OPCODES, dumpOpcodes()) \
-    X("BOOT-STRAP", BOOT_STRAP, push((CELL)&bootStrap[0])) \
+    X("FORTH-SOURCE", BOOT_STRAP, push((CELL)&bootStrap[0])) \
     X("BYE", BYE, printString(" bye."); isBYE = 1)
 
 #define X(name, op, code) OP_ ## op,
@@ -1135,25 +1134,17 @@ void loadSourceF(const char* fmt, ...) {
 
 void loadBaseSystem() {
     loadSourceF(": cell %d ; : cells cell * ; : addr %d ; ", CELL_SZ, ADDR_SZ);
-    loadSourceF(": dict $%lx ; : dict-sz $%lx ;", (long)&dict[0], DICT_SZ);
+    loadSourceF(": dict $%lx ; : dict-sz $%lx ; : entry-sz %d ;", (long)&dict[0], DICT_SZ, DICT_ENTRY_SZ);
     loadSourceF(": vars $%lx ; : vars-sz $%lx ;", (long)&vars[0], VARS_SZ);
+    loadSourceF(": (num-words) $%lx ; : num-words (num-words) @ ;", (long)&numWords);
     loadSourceF(": (here) $%lx ; : here (here) @ ;", (long)&HERE);
     loadSourceF(": (last) $%lx ; : last (last) @ ;", (long)&LAST);
     loadSourceF(": (vhere) $%lx ; : vhere (vhere) @ ;", (long)&VHERE);
-    loadSourceF(": base $%lx ;", (long)&BASE);
-    loadSourceF(": state $%lx ;", (long)&STATE);
+    loadSourceF(": base $%lx ; : state $%lx ;", (long)&BASE, (long)&STATE);
     loadSourceF(": tib $%lx ;", (long)&TIB[0]);
-    loadSourceF(": (dsp) $%lx ; : (rsp) $%lx ;", (long)&DSP, (long)&RSP);
-    loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
-    loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
+    loadSourceF(": (dsp) $%lx ; : dstack $%lx ;", (long)&DSP, (long)&dstk[0]);
 
-    for (int i = 0;; i++) {
-        if (bootStrap[i]) {
-            parseLine(bootStrap[i]);
-        } else {
-            break;
-        }
-    }
+    for (int i = 0; bootStrap[i]; i++) { parseLine(bootStrap[i]); }
 }
 
 #ifdef __FILES__
@@ -1217,51 +1208,47 @@ int main()
 }
 #endif
 #define SOURCE_BASE \
-    X(1001, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
-    X(1002, ": tuck swap drop ;") \
-    X(1003, ": ?dup if- dup then ;") \
-    X(1004, ": num-words (num-words) @ ;") \
-    X(1005, ": mod /mod drop ; : / /mod nip ;") \
-    X(1006, ": .word addr + 1+ count type #9 emit ;") \
-    X(1007, ": words last num-words 1 for dup .word #20 + next drop ;") \
-    X(1008, ": low->high over over > if swap then ;") \
-    X(1009, "variable (ch) variable (cl) variable (nw) variable (vh)") \
-    X(1010, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
-    X(1011,  ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
-    X(1012, ": forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;") \
-    X(1013, ": rot >r swap r> swap ; : -rot swap >r swap r> ;") \
-    X(1014, ": 2dup over over ; : 2drop drop drop ;") \
-    X(1015, ": +! tuck @ + swap ! ;") \
-    X(1016, ": negate 0 swap - ;") \
-    X(1017, ": off 0 swap ! ; : on 1 swap ! ;") \
-    X(1018, ": abs dup 0 < if negate then ;") \
-    X(1019, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;") \
-    X(1020, ": hex? base @ #16 = ; : decimal? base @ #10 = ;") \
-    X(1021, ": bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;") \
-    X(1033, ": .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;") \
-    X(1034, ": high->low 2dup < if swap then ;") \
-    X(1035, ": min low->high drop ;") \
-    X(1036, ": max high->low drop ;") \
-    X(1037, ": between rot dup >r min max r> = ;") \
-    X(1038, ": allot vhere + (vhere) ! ;") \
-    X(1039, ": >body @ ; : auto-run dict ! ;") \
-    X(1040, ": auto-run-last last >body auto-run ; : auto-run-off 0 auto-run ;") \
-    X(1042, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
-    X(1043, ": wordsl last num-words 1 for dup .wordl #24 + next drop ;") \
-    X(1044, "variable (regs) 9 cells allot") \
-    X(1045, ": reg cells (regs) + ;") \
-    X(1046, ": >src 0 reg ! ; : >dst 1 reg ! ;") \
-    X(1047, ": src 0 reg @ ; : src+ src dup 1+ >src ;") \
-    X(1048, ": dst 1 reg @ ; : dst+ dst dup 1+ >dst ;") \
-    X(1049, ": dump low->high for i c@ space .c next ;") \
-    X(1050, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \
-    X(1051, ": _t1 dup _t0 #16 + ;") \
-    X(1052, ": dump-dict dict begin _t1 dup here < while drop ;") \
-    X(1053, ": elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;") \
-    X(1054, "variable (ch) variable (cl) variable (nw) variable (vh)") \
-    X(1055, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
-    X(1056, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
-    X(1057, ": forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;") \
+    X(1000, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
+    X(1001, ": tuck swap drop ;") \
+    X(1002, ": ?dup if- dup then ;") \
+    X(1003, ": mod /mod drop ; : / /mod nip ;") \
+    X(1004, ": bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;") \
+    X(1005, ": rot >r swap r> swap ; : -rot swap >r swap r> ;") \
+    X(1006, ": 2dup over over ; : 2drop drop drop ;") \
+    X(1007, ": +! tuck @ + swap ! ;") \
+    X(1008, ": negate 0 swap - ;") \
+    X(1009, ": off 0 swap ! ; : on 1 swap ! ;") \
+    X(1010, ": abs dup 0 < if negate then ;") \
+    X(1011, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;") \
+    X(1012, ": hex? base @ #16 = ; : decimal? base @ #10 = ;") \
+    X(1013, ": low->high over over > if swap then ;") \
+    X(1014, ": high->low over over < if swap then ;") \
+    X(1015, ": min low->high drop ;") \
+    X(1016, ": max high->low drop ;") \
+    X(1017, ": between rot dup >r min max r> = ;") \
+    X(1018, ": allot vhere + (vhere) ! ;") \
+    X(1019, ": >body @ ; : auto-run dict ! ;") \
+    X(1020, ": auto-last last >body auto-run ; : auto-off 0 auto-run ;") \
+    X(1021, ": .word addr + 1+ count type tab ;") \
+    X(1022, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
+    X(1023, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
+    X(1024, ": wordsl last num-words 1 for dup .wordl entry-sz + next drop ;") \
+    X(1025, "variable (regs) 9 cells allot") \
+    X(1026, ": reg cells (regs) + ;") \
+    X(1027, ": >src 0 reg ! ; : >dst 1 reg ! ;") \
+    X(1028, ": src 0 reg @ ; : src+ src dup 1+ >src ;") \
+    X(1029, ": dst 1 reg @ ; : dst+ dst dup 1+ >dst ;") \
+    X(1030, ": .b decimal? if 3 .n else hex? if 2 .n else (.) then then ;") \
+    X(1031, ": dump low->high for i c@ space .b next ;") \
+    X(1032, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \
+    X(1033, ": _t1 dup _t0 #16 + ;") \
+    X(1034, ": dump-dict dict begin _t1 dup here < while drop ;") \
+    X(1035, ": elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds\" ;") \
+    X(1036, "variable (ch) variable (cl) variable (nw) variable (vh)") \
+    X(1037, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
+    X(1038, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
+    X(1039, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
+
 
 #define SOURCE_PC X(2000, ": is-pc 0 ;")
 #ifdef __IS_PC__
