@@ -151,7 +151,7 @@ CELL rpop() {
 }
 
 #define BASE_OPCODES \
-    X("NOOP", NOOP, ) \
+    X("NOP", NOP, ) \
     X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
     X("RET", RET, PC = (ADDR)rpop()) \
     X("JMP", JMP, PC = addrAt(PC)) \
@@ -351,6 +351,7 @@ void run(ADDR start, CELL max_cycles) {
         if (DBG_TRACE <= debugMode) { printOpcode(IR); }
         if ((IR == OP_RET) && (RSP < 1)) { return; }
         switch (IR) {
+        case 0: RSP = 0;  return;
             OPCODES
         default:
             printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC - 1);
@@ -822,16 +823,21 @@ void doParseWord() {
         ADDR xt = dp->XT;
         // 1 => IMMEDIATE?
         if (compiling(w, 0)) {
-            if (dp->flags == 1) {
+            if ((dp->flags & 1) == 1) {
                 run(xt, 0);
+            } else {
+                if ((dp->flags & 2) == 2) {
+                    ADDR xt2 = (dp-1)->XT-1;
+                    for (ADDR a = xt; a < xt2; a++) {
+                        doCComma(*a);
+                    }
+                } else {
+                    doCComma(OP_CALL);
+                    doAComma((ADDR)xt);
+                    lastWasCall = 1;
+                }
             }
-            else {
-                doCComma(OP_CALL);
-                doAComma((ADDR)xt);
-                lastWasCall = 1;
-            }
-        }
-        else {
+        } else {
             run(xt, 0);
         }
         return;
@@ -845,12 +851,10 @@ void doParseWord() {
             if ((0x0000 <= v) && (v < 0x0100)) {
                 doCComma(OP_BLIT);
                 doCComma((BYTE)v);
-            }
-            else if ((0x0100 <= v) && (v < 0x010000)) {
+            } else if ((0x0100 <= v) && (v < 0x010000)) {
                 doCComma(OP_WLIT);
                 doWComma((WORD)v);
-            }
-            else {
+            } else {
                 doCComma(OP_LIT);
                 doComma(v);
             }
@@ -1209,25 +1213,26 @@ int main()
 #endif
 #define SOURCE_BASE \
     X(1000, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
-    X(1001, ": tuck swap drop ;") \
+    X(1001, ": tuck swap over ; inline") \
     X(1002, ": ?dup if- dup then ;") \
-    X(1003, ": mod /mod drop ; : / /mod nip ;") \
-    X(1004, ": bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;") \
+    X(1003, ": mod /mod drop ; inline : / /mod nip ; inline") \
+    X(1401, ": bl #32 ; inline : space bl emit ; inline") \
+    X(1402, ": cr #13 emit #10 emit ; inline : tab #9 emit ; inline") \
     X(1005, ": rot >r swap r> swap ; : -rot swap >r swap r> ;") \
-    X(1006, ": 2dup over over ; : 2drop drop drop ;") \
-    X(1007, ": +! tuck @ + swap ! ;") \
-    X(1008, ": negate 0 swap - ;") \
-    X(1009, ": off 0 swap ! ; : on 1 swap ! ;") \
+    X(1006, ": 2dup over over ; inline : 2drop drop drop ; inline") \
+    X(1007, ": +! tuck @ + swap ! ; inline") \
+    X(1008, ": negate 0 swap - ; inline") \
+    X(1009, ": off 0 swap ! ; inline : on 1 swap ! ; inline") \
     X(1010, ": abs dup 0 < if negate then ;") \
     X(1011, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;") \
     X(1012, ": hex? base @ #16 = ; : decimal? base @ #10 = ;") \
-    X(1013, ": low->high over over > if swap then ;") \
-    X(1014, ": high->low over over < if swap then ;") \
+    X(1013, ": low->high 2dup > if swap then ;") \
+    X(1014, ": high->low 2dup < if swap then ;") \
     X(1015, ": min low->high drop ;") \
     X(1016, ": max high->low drop ;") \
     X(1017, ": between rot dup >r min max r> = ;") \
     X(1018, ": allot vhere + (vhere) ! ;") \
-    X(1019, ": >body @ ; : auto-run dict ! ;") \
+    X(1019, ": >body @ ; inline : auto-run dict ! ;") \
     X(1020, ": auto-last last >body auto-run ; : auto-off 0 auto-run ;") \
     X(1021, ": .word addr + 1+ count type tab ;") \
     X(1022, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
