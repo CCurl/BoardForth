@@ -15,7 +15,6 @@ void printStringF(const char *, ...);
 void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
 #endif
 
-//typedef void (*FP)();
 typedef long CELL;
 typedef unsigned long UCELL;
 typedef unsigned short WORD;
@@ -255,9 +254,9 @@ void doFileWrite();
     X("FWRITE", FWRITE, doFileWrite())
 #endif
 
-#ifndef __ARDUINO__
 #define ARDUINO_OPCODES
-#else
+#ifdef __ARDUINO__
+#undef ARDUINO_OPCODES
 #define ARDUINO_OPCODES \
     X("INPUT-PIN", INPUT_PIN, pinMode(T, PIN_INPUT);        DROP1) \
     X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
@@ -268,10 +267,10 @@ void doFileWrite();
     X("dp@", DPIN_FETCH, T = digitalRead((int)T); )
 #endif
 
-// NB: This is for the Joystick library in the Teensy
-#ifndef __JOYSTICK__
+// NB: These are for the Joystick library in the Teensy
 #define JOYSTICK_OPCODES
-#else
+#ifdef __JOYSTICK__
+#undef JOYSTICK_OPCODES
 void doJoyXYZ(int which, CELL val);
 #define JOYSTICK_OPCODES \
     X("JOY-X", JOY_X, doJoyXYZ(1, T); DROP1) \
@@ -283,6 +282,35 @@ void doJoyXYZ(int which, CELL val);
     X("JOY-BUTTON", JOY_BUTTON, Joystick.button(T, N); DROP2) \
     X("JOY-USEMANUAL", JOY_USEMANUAL, Joystick.useManualSend(T); DROP1) \
     X("JOY-SENDNOW", JOY_SENDNOW, Joystick.send_now();)
+#endif
+
+// NB: These are for the HID library from NicoHood
+#define GAMEPAD_OPCODES
+#ifdef __GAMEPAD_FAKE__
+#undef GAMEPAD_OPCODES
+#define GAMEPAD_OPCODES \
+    X("GP-X", GP_X, printStringF("GP(X, %ld)", T); DROP1) \
+    X("GP-Y", GP_Y, printStringF("GP(Y, %ld)", T); DROP1) \
+    X("GP-BD", GP_BD, printStringF("GP(button-dn, %ld)", T); DROP1) \
+    X("GP-BU", GP_BU, printStringF("GP(button-up, %ld)", T); DROP1) \
+    X("GP-P1", GP_P1, printStringF("GP(P1, %ld)", T); DROP1) \
+    X("GP-P2", GP_P2, printStringF("GP(P2, %ld)", T); DROP1) \
+    X("GP-RA", GP_RA, printStringF("GP(release-all)")) \
+    X("GP-WR", GP_WR, printStringF("GP(write)"))
+#endif
+
+#ifdef __GAMEPAD__
+#undef GAMEPAD_OPCODES
+void doGamepadXYZ(int which, CELL val);
+#define GAMEPAD_OPCODES \
+    X("GP-X", GP_X, Gamepad.xAxis(T); DROP1) \
+    X("GP-Y", GP_Y, Gamepad.yAxis(T); DROP1) \
+    X("GP-BD", GP_BD, Gamepad.press(T); DROP1) \
+    X("GP-BU", GP_BU, Gamepad.release(T); DROP1) \
+    X("GP-P1", GP_P1, Gamepad.dPad1(T); DROP1) \
+    X("GP-P2", GP_P2, Gamepad.dPad2(T); DROP1) \
+    X("GP-RA", GP_RA, Gamepad.releaseAll()) \
+    X("GP-WR", GP_WR, Gamepad.write())
 #endif
 
 #ifndef __COM_PORT__
@@ -304,6 +332,7 @@ CELL doComWrite(CELL handle, CELL ch);
     LITTLEFS_OPCODES \
     ARDUINO_OPCODES \
     JOYSTICK_OPCODES \
+    GAMEPAD_OPCODES \
     COMPORT_OPCODES \
     X("OPCODES", DUMP_OPCODES, dumpOpcodes()) \
     X("FORTH-SOURCE", BOOT_STRAP, push((CELL)&bootStrap[0])) \
@@ -527,11 +556,11 @@ void doFileWrite() {
 
 #ifdef __JOYSTICK__
 void doJoyXYZ(int which, CELL val) {
-    switch (which) {
-    case 1: Joystick.X(val); break;
-    case 2: Joystick.Y(val); break;
-    case 3: Joystick.Z(val); break;
-    }
+//    switch (which) {
+//    case 1: Joystick.X(val); break;
+//    case 2: Joystick.Y(val); break;
+//    case 3: Joystick.Z(val); break;
+//    }
 }
 #endif
 
@@ -1189,6 +1218,9 @@ void setup() {
 #endif
 #ifdef __LITTLEFS__
     myFS.begin(1024 * 1024);
+#endif
+#ifdef __GAMEPAD__
+    Gamepad.begin();
 #endif
     vmInit();
     loadBaseSystem();
