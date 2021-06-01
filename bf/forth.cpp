@@ -351,11 +351,11 @@ void printOpcode(BYTE opcode) {
     sprintf(buf, "%d", opcode);
     buf[0] = 0;
     OPCODES;
-    printf("\n-op:%s(PC:%lx,T:%lx,N:%lx)-", buf, (UCELL)PC, T, N);
+    printf("\r\n-op:%s(PC:%lx,T:%lx,N:%lx)-", buf, (UCELL)PC, T, N);
 }
 #undef X
 
-#define X(name, op, code) x = OP_ ## op; printStringF("\n%3d ($%02x, %c): %s", x, x, (char)x, name);
+#define X(name, op, code) x = OP_ ## op; printStringF("\r\n%3d ($%02x, %c): %s", x, x, (char)x, name);
 void dumpOpcodes() {
     int x;
     OPCODES
@@ -1073,13 +1073,16 @@ void parseLine(const char* line) {
 #pragma warning(disable:4996)
 
 void toTIB(int c) {
-    if (c == 8) {
+#ifdef __DEV_BOARD__
+    if (c == 127) {
         if (0 < numTIB) {
             numTIB--;
             *(--TIBEnd) = 0;
+            printStringF("%c %c", 8, 8);
         }
         return;
     }
+#endif
     if (c == 9) { c = 32; }
     if (c == 10) { c = 32; }
     if (c == 13) {
@@ -1097,6 +1100,7 @@ void toTIB(int c) {
     if ((' ' <= c) && (c <= '~')) {
         *(TIBEnd++) = c;
         *(TIBEnd) = 0;
+        ++numTIB;
 #ifdef __DEV_BOARD__
         char x[2];
         x[0] = c;
