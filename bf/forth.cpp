@@ -8,14 +8,15 @@
 #include <string.h>
 #include <stdarg.h>
 
+const PROGMEM char xxx[] = "yyy";
+
 #ifdef __ESP32__
 void printStringF(const char *, ...);
 void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
 #endif
 
-//typedef void (*FP)();
 typedef long CELL;
-typedef ulong UCELL;
+typedef unsigned long UCELL;
 typedef unsigned short WORD;
 typedef unsigned char  BYTE;
 typedef BYTE* ADDR;
@@ -38,11 +39,11 @@ typedef BYTE* ADDR;
 #define DROP2 DROP1; DROP1
 #define DROP3 DROP1; DROP1; DROP1
 
-#define TMP_RUNOP    (HERE + 0x0020)
-#define TMP_PAD      (HERE + 0x0040)
-#define TMP_WORD     (HERE + 0x0080)
-#define TMP_SQUOTE   (HERE + 0x0100)
-#define TMP_DOTQUOTE (HERE + 0x0200)
+#define TMP_RUNOP    (VHERE + 0x0002)
+#define TMP_PAD      (VHERE + 0x0024)
+#define TMP_WORD     (VHERE + 0x0004)
+#define TMP_SQUOTE   (VHERE + 0x0020)
+#define TMP_DOTQUOTE (VHERE + 0x0020)
 
 #define DBG_ALL   4
 #define DBG_TRACE 3
@@ -50,8 +51,8 @@ typedef BYTE* ADDR;
 #define DBG_DEBUG 1
 #define DBG_OFF   0
 
-#define NAME_LEN      25
-#define DICT_ENTRY_SZ 32
+#define NAME_LEN      13
+#define DICT_ENTRY_SZ 20
 typedef struct {
     ADDR XT;
     BYTE flags;
@@ -83,6 +84,7 @@ void doCreate(const char* name);
 void doSlMod();
 void doUSlMod();
 void doType();
+void doDot(CELL num, int inUnsigned, int space, int width);
 void doDotS();
 void doFor();
 void doNext();
@@ -116,7 +118,7 @@ int isBYE = 0, isError = 0;
 DICT_T tempWords[10];
 CELL debugMode = DBG_OFF;
 CELL numWords = 0;
-extern char bootStrap[];
+extern const char *bootStrap[];
 
 #ifdef __IS_PC__
 #pragma warning(disable:4996)
@@ -148,7 +150,7 @@ CELL rpop() {
 }
 
 #define BASE_OPCODES \
-    X("NOOP", NOOP, ) \
+    X("NOP", NOP, ) \
     X("CALL", CALL, rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
     X("RET", RET, PC = (ADDR)rpop()) \
     X("JMP", JMP, PC = addrAt(PC)) \
@@ -193,8 +195,13 @@ CELL rpop() {
     X(">r", DTOR, rpush(pop())) \
     X("r@", RFETCH, push(R)) \
     X("r>", RTOD, push(rpop())) \
+    X("COUNT", COUNT, push(T); N += 1; T = (*A)) \
     X("TYPE", TYPE, doType() ) \
     X("EMIT", EMIT, buf[0] = (char)T; printString(buf); DROP1) \
+    X("(.)", PDOT, doDot(T, 0, 0, 0); DROP1) \
+    X(".", DOT,    doDot(T, 0, 1, 0); DROP1) \
+    X("U.", UDOT,  doDot(T, 1, 1, 0); DROP1) \
+    X(".N", NDOT,  doDot(N, 1, 0, T); DROP2) \
     X(".S", DOTS, doDotS()) \
     X("FOR", FOR, doFor()) \
     X("I", I, if (0 <= loopSP) push(doStack[loopSP].index)) \
@@ -212,7 +219,6 @@ CELL rpop() {
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
     X("A,", ACOMMA, doAComma(A); DROP1) \
-    X("(NUM-WORDS)", NUM_WORDS, push((CELL)&numWords)) \
     X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
     X("FREE", MFREE, free((void *)T); DROP1) \
     X("FILL", FILL, memset((void *)N2, N0, N1); DROP3) \
@@ -248,9 +254,9 @@ void doFileWrite();
     X("FWRITE", FWRITE, doFileWrite())
 #endif
 
-#ifndef __ARDUINO__
 #define ARDUINO_OPCODES
-#else
+#ifdef __ARDUINO__
+#undef ARDUINO_OPCODES
 #define ARDUINO_OPCODES \
     X("INPUT-PIN", INPUT_PIN, pinMode(T, PIN_INPUT);        DROP1) \
     X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
@@ -261,10 +267,10 @@ void doFileWrite();
     X("dp@", DPIN_FETCH, T = digitalRead((int)T); )
 #endif
 
-// NB: This is for the Joystick library in the Teensy
-#ifndef __JOYSTICK__
+// NB: These are for the Joystick library in the Teensy
 #define JOYSTICK_OPCODES
-#else
+#ifdef __JOYSTICK__
+#undef JOYSTICK_OPCODES
 void doJoyXYZ(int which, CELL val);
 #define JOYSTICK_OPCODES \
     X("JOY-X", JOY_X, doJoyXYZ(1, T); DROP1) \
@@ -276,6 +282,35 @@ void doJoyXYZ(int which, CELL val);
     X("JOY-BUTTON", JOY_BUTTON, Joystick.button(T, N); DROP2) \
     X("JOY-USEMANUAL", JOY_USEMANUAL, Joystick.useManualSend(T); DROP1) \
     X("JOY-SENDNOW", JOY_SENDNOW, Joystick.send_now();)
+#endif
+
+// NB: These are for the HID library from NicoHood
+#define GAMEPAD_OPCODES
+#ifdef __GAMEPAD_FAKE__
+#undef GAMEPAD_OPCODES
+#define GAMEPAD_OPCODES \
+    X("GP-X", GP_X, printStringF("GP(X, %ld)", T); DROP1) \
+    X("GP-Y", GP_Y, printStringF("GP(Y, %ld)", T); DROP1) \
+    X("GP-BD", GP_BD, printStringF("GP(button-dn, %ld)", T); DROP1) \
+    X("GP-BU", GP_BU, printStringF("GP(button-up, %ld)", T); DROP1) \
+    X("GP-P1", GP_P1, printStringF("GP(P1, %ld)", T); DROP1) \
+    X("GP-P2", GP_P2, printStringF("GP(P2, %ld)", T); DROP1) \
+    X("GP-RA", GP_RA, printStringF("GP(release-all)")) \
+    X("GP-WR", GP_WR, printStringF("GP(write)"))
+#endif
+
+#ifdef __GAMEPAD__
+#undef GAMEPAD_OPCODES
+void doGamepadXYZ(int which, CELL val);
+#define GAMEPAD_OPCODES \
+    X("GP-X", GP_X, Gamepad.xAxis(T); DROP1) \
+    X("GP-Y", GP_Y, Gamepad.yAxis(T); DROP1) \
+    X("GP-BD", GP_BD, Gamepad.press(T); DROP1) \
+    X("GP-BU", GP_BU, Gamepad.release(T); DROP1) \
+    X("GP-P1", GP_P1, Gamepad.dPad1(T); DROP1) \
+    X("GP-P2", GP_P2, Gamepad.dPad2(T); DROP1) \
+    X("GP-RA", GP_RA, Gamepad.releaseAll()) \
+    X("GP-WR", GP_WR, Gamepad.write())
 #endif
 
 #ifndef __COM_PORT__
@@ -297,9 +332,10 @@ CELL doComWrite(CELL handle, CELL ch);
     LITTLEFS_OPCODES \
     ARDUINO_OPCODES \
     JOYSTICK_OPCODES \
+    GAMEPAD_OPCODES \
     COMPORT_OPCODES \
-    X("DUMP-OPCODES", DUMP_OPCODES, dumpOpcodes()) \
-    X("BOOT-STRAP", BOOT_STRAP, push((CELL)&bootStrap[0])) \
+    X("OPCODES", DUMP_OPCODES, dumpOpcodes()) \
+    X("FORTH-SOURCE", BOOT_STRAP, push((CELL)&bootStrap[0])) \
     X("BYE", BYE, printString(" bye."); isBYE = 1)
 
 #define X(name, op, code) OP_ ## op,
@@ -315,12 +351,13 @@ void printOpcode(BYTE opcode) {
     sprintf(buf, "%d", opcode);
     buf[0] = 0;
     OPCODES;
-    printf("\n-op:%s(PC:%lx,T:%lx,N:%lx)-", buf, (UCELL)PC, T, N);
+    printf("\r\n-op:%s(PC:%lx,T:%lx,N:%lx)-", buf, (UCELL)PC, T, N);
 }
 #undef X
 
-#define X(name, op, code) printStringF("\n%3d ($%02x, %c): %s", OP_ ## op, OP_ ## op, OP_ ## op, name);
+#define X(name, op, code) x = OP_ ## op; printStringF("\r\n%3d ($%02x, %c): %s", x, x, (char)x, name);
 void dumpOpcodes() {
+    int x;
     OPCODES
 }
 #undef X
@@ -343,6 +380,7 @@ void run(ADDR start, CELL max_cycles) {
         if (DBG_TRACE <= debugMode) { printOpcode(IR); }
         if ((IR == OP_RET) && (RSP < 1)) { return; }
         switch (IR) {
+        case 0: RSP = 0;  return;
             OPCODES
         default:
             printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC - 1);
@@ -353,12 +391,34 @@ void run(ADDR start, CELL max_cycles) {
 }
 #undef X
 
+void doDot(CELL num, int isUnsigned, int space, int width) {
+    int len  = 0;
+    if ((!isUnsigned) && (num < 0)) {
+        printString("-");
+        num = -num;
+    }
+    UCELL n = (UCELL)num;
+    char x[36], *cp = &x[35];
+    *(cp) = 0;
+    do {
+        char c = (char)(n % BASE);
+        if (9 < c) { c += 7; }
+        *(--cp) = c + '0';
+        n /= BASE;
+        ++len;
+    } while (0 < n);
+    while (len < width) { *(--cp) = '0'; len++; }
+    if (space) { printString(" "); }
+    printString(cp);
+}
+
 void doDotS() {
     printString("(");
     for (int i = 1; i <= DSP; i++) {
-        printStringF(" #%d/$%lx", dstk[i], dstk[i]);
+        if (1 < i) { printString(" "); }
+        doDot(dstk[i], 0, 0, 0);
     }
-    printString(" )");
+    printString(")");
 }
 
 void doSlMod() {
@@ -496,11 +556,11 @@ void doFileWrite() {
 
 #ifdef __JOYSTICK__
 void doJoyXYZ(int which, CELL val) {
-    switch (which) {
-    case 1: Joystick.X(val); break;
-    case 2: Joystick.Y(val); break;
-    case 3: Joystick.Z(val); break;
-    }
+//    switch (which) {
+//    case 1: Joystick.X(val); break;
+//    case 2: Joystick.Y(val); break;
+//    case 3: Joystick.Z(val); break;
+//    }
 }
 #endif
 
@@ -562,12 +622,16 @@ void doCreate(const char* name) {
 
     ++numWords;
     LAST -= DICT_ENTRY_SZ;
+    if (LAST < (HERE+0x40)) {
+        printString("***OUT OF MEMORY***");
+        return;
+    }
     dp = (DICT_T*)LAST;
     if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%ld)-", name, LAST); }
     dp->flags = 0;
     dp->len = (BYTE)strlen(name);
     if (dp->len > NAME_LEN) {
-        printStringF("-name too long: %d-", dp->len);
+        printStringF("-name [%s] too long (%d)-", name, NAME_LEN);
         dp->len = NAME_LEN;
     }
     strncpy(dp->name, name, NAME_LEN);
@@ -623,11 +687,14 @@ void autoRun() {
 }
 
 // ---------------------------------------------------------------------
-#ifdef __SERIAL__
-void printString(const char* str) { mySerial.print(str); }
-#endif
 #ifdef __IS_PC__
-void printString(const char* str) { fputs(str, stdout); }
+    void printString(const char* str) { fputs(str, stdout); }
+#else
+    #ifdef __SERIAL__
+    void printString(const char* str) { theSerial.print(str); }
+    #else 
+    void printString(const char* str) {}
+    #endif
 #endif
 
 // ---------------------------------------------------------------------
@@ -785,16 +852,21 @@ void doParseWord() {
         ADDR xt = dp->XT;
         // 1 => IMMEDIATE?
         if (compiling(w, 0)) {
-            if (dp->flags == 1) {
+            if ((dp->flags & 1) == 1) {
                 run(xt, 0);
+            } else {
+                if ((dp->flags & 2) == 2) {
+                    ADDR xt2 = (dp-1)->XT-1;
+                    for (ADDR a = xt; a < xt2; a++) {
+                        doCComma(*a);
+                    }
+                } else {
+                    doCComma(OP_CALL);
+                    doAComma((ADDR)xt);
+                    lastWasCall = 1;
+                }
             }
-            else {
-                doCComma(OP_CALL);
-                doAComma((ADDR)xt);
-                lastWasCall = 1;
-            }
-        }
-        else {
+        } else {
             run(xt, 0);
         }
         return;
@@ -808,12 +880,10 @@ void doParseWord() {
             if ((0x0000 <= v) && (v < 0x0100)) {
                 doCComma(OP_BLIT);
                 doCComma((BYTE)v);
-            }
-            else if ((0x0100 <= v) && (v < 0x010000)) {
+            } else if ((0x0100 <= v) && (v < 0x010000)) {
                 doCComma(OP_WLIT);
                 doWComma((WORD)v);
-            }
-            else {
+            } else {
                 doCComma(OP_LIT);
                 doComma(v);
             }
@@ -1003,13 +1073,16 @@ void parseLine(const char* line) {
 #pragma warning(disable:4996)
 
 void toTIB(int c) {
-    if (c == 8) {
+#ifdef __DEV_BOARD__
+    if (c == 127) {
         if (0 < numTIB) {
             numTIB--;
             *(--TIBEnd) = 0;
+            printStringF("%c %c", 8, 8);
         }
         return;
     }
+#endif
     if (c == 9) { c = 32; }
     if (c == 10) { c = 32; }
     if (c == 13) {
@@ -1027,6 +1100,7 @@ void toTIB(int c) {
     if ((' ' <= c) && (c <= '~')) {
         *(TIBEnd++) = c;
         *(TIBEnd) = 0;
+        ++numTIB;
 #ifdef __DEV_BOARD__
         char x[2];
         x[0] = c;
@@ -1053,8 +1127,8 @@ void vmInit() {
 #ifdef __DEV_BOARD__
 void loop() {
 #ifdef __SERIAL__
-    while (mySerial.available()) {
-        int c = mySerial.read();
+    while (theSerial.available()) {
+        int c = theSerial.read();
         toTIB(c);
     }
 #endif
@@ -1096,20 +1170,18 @@ void loadSourceF(const char* fmt, ...) {
 }
 
 void loadBaseSystem() {
-    loadSourceF(": cell %d ; : cells cell * ; : addr %d ;", CELL_SZ, ADDR_SZ);
-    loadSourceF(": dict $%lx ; : dict-sz $%lx ;", (long)&dict[0], DICT_SZ);
+    loadSourceF(": cell %d ; : cells cell * ; : addr %d ; ", CELL_SZ, ADDR_SZ);
+    loadSourceF(": dict $%lx ; : dict-sz $%lx ; : entry-sz %d ;", (long)&dict[0], DICT_SZ, DICT_ENTRY_SZ);
     loadSourceF(": vars $%lx ; : vars-sz $%lx ;", (long)&vars[0], VARS_SZ);
+    loadSourceF(": (num-words) $%lx ; : num-words (num-words) @ ;", (long)&numWords);
     loadSourceF(": (here) $%lx ; : here (here) @ ;", (long)&HERE);
     loadSourceF(": (last) $%lx ; : last (last) @ ;", (long)&LAST);
     loadSourceF(": (vhere) $%lx ; : vhere (vhere) @ ;", (long)&VHERE);
-    loadSourceF(": base $%lx ;", (long)&BASE);
-    loadSourceF(": state $%lx ;", (long)&STATE);
+    loadSourceF(": base $%lx ; : state $%lx ;", (long)&BASE, (long)&STATE);
     loadSourceF(": tib $%lx ;", (long)&TIB[0]);
-    loadSourceF(": (dsp) $%lx ; : (rsp) $%lx ;", (long)&DSP, (long)&RSP);
-    loadSourceF(": dstack $%lx ;", (long)&dstk[0]);
-    loadSourceF(": rstack $%lx ;", (long)&rstk[0]);
+    loadSourceF(": (dsp) $%lx ; : dstack $%lx ;", (long)&DSP, (long)&dstk[0]);
 
-    parseLine(bootStrap);
+    for (int i = 0; bootStrap[i]; i++) { parseLine(bootStrap[i]); }
 }
 
 #ifdef __FILES__
@@ -1144,12 +1216,15 @@ void ok() {
 
 void setup() {
 #ifdef __SERIAL__
-    mySerial.begin(19200);
-    while (!mySerial) {}
-    while (mySerial.available()) {}
+    theSerial.begin(19200);
+    while (!theSerial) {}
+    while (theSerial.available()) {}
 #endif
 #ifdef __LITTLEFS__
     myFS.begin(1024 * 1024);
+#endif
+#ifdef __GAMEPAD__
+    Gamepad.begin();
 #endif
     vmInit();
     loadBaseSystem();
@@ -1172,58 +1247,69 @@ int main()
     }
 }
 #endif
+#define SOURCE_BASE \
+    X(1000, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
+    X(1001, ": tuck swap over ; inline") \
+    X(1002, ": ?dup if- dup then ;") \
+    X(1003, ": mod /mod drop ; inline : / /mod nip ; inline") \
+    X(1401, ": bl #32 ; inline : space bl emit ; inline") \
+    X(1402, ": cr #13 emit #10 emit ; inline : tab #9 emit ; inline") \
+    X(1005, ": rot >r swap r> swap ; : -rot swap >r swap r> ;") \
+    X(1006, ": 2dup over over ; inline : 2drop drop drop ; inline") \
+    X(1007, ": +! tuck @ + swap ! ; inline") \
+    X(1008, ": negate 0 swap - ; inline") \
+    X(1009, ": off 0 swap ! ; inline : on 1 swap ! ; inline") \
+    X(1010, ": abs dup 0 < if negate then ;") \
+    X(1011, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;") \
+    X(1012, ": hex? base @ #16 = ; : decimal? base @ #10 = ;") \
+    X(1013, ": low->high 2dup > if swap then ;") \
+    X(1014, ": high->low 2dup < if swap then ;") \
+    X(1015, ": min low->high drop ;") \
+    X(1016, ": max high->low drop ;") \
+    X(1017, ": between rot dup >r min max r> = ;") \
+    X(1018, ": allot vhere + (vhere) ! ;") \
+    X(1019, ": >body @ ; inline : auto-run dict ! ;") \
+    X(1020, ": auto-last last >body auto-run ; : auto-off 0 auto-run ;") \
+    X(1021, ": .word addr + 1+ count type tab ;") \
+    X(1022, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
+    X(1023, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
+    X(1024, ": wordsl last num-words 1 for dup .wordl entry-sz + next drop ;") \
+    X(1025, "variable (regs) 9 cells allot") \
+    X(1026, ": reg cells (regs) + ;") \
+    X(1027, ": >src 0 reg ! ; : >dst 1 reg ! ;") \
+    X(1028, ": src 0 reg @ ; : src+ src dup 1+ >src ;") \
+    X(1029, ": dst 1 reg @ ; : dst+ dst dup 1+ >dst ;") \
+    X(1030, ": .b decimal? if 3 .n else hex? if 2 .n else (.) then then ;") \
+    X(1031, ": dump low->high for i c@ space .b next ;") \
+    X(1032, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \
+    X(1033, ": _t1 dup _t0 #16 + ;") \
+    X(1034, ": dump-dict dict begin _t1 dup here < while drop ;") \
+    X(1035, ": elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds\" ;") \
+    X(1036, "variable (ch) variable (cl) variable (nw) variable (vh)") \
+    X(1037, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
+    X(1038, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
+    X(1039, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
 
-char bootStrap[] = ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;"
-"\n: tuck swap over ;"
-"\n: ?dup if- dup then ;"
-"\n: rot >r swap r> swap ; : -rot swap >r swap r> ;"
-"\n: 2dup over over ; : 2drop drop drop ;"
-"\n: mod /mod drop ; : / /mod nip ;"
-"\n: +! tuck @ + swap ! ;"
-"\n: negate 0 swap - ;"
-"\n: off 0 swap ! ; : on 1 swap ! ;"
-"\n: abs dup 0 < if negate then ;"
-"\n: hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;"
-"\n: hex? base @ #16 = ; : decimal? base @ #10 = ;"
-"\n: bl #32 ; : space #32 emit ; : cr #13 emit #10 emit ; : tab #9 emit ;"
-"\n: pad here $40 + ; : (neg) here $44 + ; "
-"\n: hold pad @ 1- dup pad ! c! ; "
-"\n: <# pad dup ! ; "
-"\n: # base @ u/mod swap abs '0' + dup '9' > if 7 + then hold ; "
-"\n: #s begin # while- ; "
-"\n: #> (neg) @ if '-' emit then pad @ pad over - type ; "
-"\n: is-neg? (neg) off base @ #10 = if dup 0 < if (neg) on negate then then ;"
-"\n: (.) is-neg? <# #s #> ; "
-"\n: (u.) (neg) off <# #s #> ; "
-"\n: . space (.) ; : u. space (u.) ; "
-"\n: .n >r is-neg? r> <# 1 for # next #> drop ;"
-"\n: .c decimal? if 3 .n else hex? if 2 .n else (.) then then ;"
-"\n: low->high 2dup > if swap then ;"
-"\n: high->low 2dup < if swap then ;"
-"\n: min low->high drop ;"
-"\n: max high->low drop ;"
-"\n: between rot dup >r min max r> = ;"
-"\n: allot vhere + (vhere) ! ;"
-"\n: >body @ ; : auto-run dict ! ;"
-"\n: auto-run-last last >body auto-run ; : auto-run-off 0 auto-run ;"
-"\n: count dup 1+ swap c@ ;"
-"\n: num-words (num-words) @ ;"
-"\n: .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;"
-"\n: wordsl last num-words 1 for dup .wordl #32 + next drop ;"
-"\n: .word addr + 1+ count type tab ;"
-"\n: words last num-words 1 for dup .word #32 + next drop ;"
-"\nvariable (regs) 9 cells allot"
-"\n: reg cells (regs) + ;"
-"\n: >src 0 reg ! ; : >dst 1 reg ! ;"
-"\n: src 0 reg @ ; : src+ src dup 1+ >src ;"
-"\n: dst 1 reg @ ; : dst+ dst dup 1+ >dst ;"
-"\n: dump low->high for i c@ space .c next ;"
-"\n: _t0 cr dup 8 .n ':' emit #16 over + dump ;"
-"\n: _t1 dup _t0 #16 + ;"
-"\n: dump-dict dict begin _t1 dup here < while drop ;"
-"\n: elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds.\" ;"
-"\nvariable (ch) variable (cl) variable (nw) variable (vh)"
-"\n: marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;"
-"\n: forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;"
-"\n: forget-1 last a@ (here) ! last 32 + (last) ! num-words 1- (num-words) ! ;"
-"\nmarker";
+
+#define SOURCE_PC X(2000, ": is-pc 0 ;")
+#ifdef __IS_PC__
+#undef SOURCE_PC
+#define SOURCE_PC \
+    X(2000, ": is-pc 1 ;")
+#endif
+
+#define SOURCE_USER \
+X(5000, "marker")
+
+#define SOURCES SOURCE_BASE SOURCE_PC SOURCE_USER
+
+#undef X
+#define X(num, val) const PROGMEM char str ## num[] = val;
+SOURCES
+
+#undef X
+#define X(num, val) str ## num,
+const char *bootStrap[] = {
+    SOURCES
+    NULL
+};
