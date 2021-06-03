@@ -12,7 +12,7 @@ const PROGMEM char xxx[] = "yyy";
 
 #ifdef __ESP32__
 void printStringF(const char *, ...);
-void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
+void analogWrite(int pin, int val) { printStringF("-apin!:%d/%d-", pin, val); }
 #endif
 
 typedef long CELL;
@@ -125,8 +125,8 @@ extern const char *bootStrap[];
 void pinMode(int pin, int mode) {}
 int digitalRead(int pin) { return pin + 1; }
 int analogRead(int pin) { return pin + 1; }
-void digitalWrite(int pin, int val) { printStringF("-dp!:%d/%d-", pin, val); }
-void analogWrite(int pin, int val) { printStringF("-ap!:%d/%d-", pin, val); }
+void digitalWrite(int pin, int val) { printStringF("-pin!:%d/%d-", pin, val); }
+void analogWrite(int pin, int val) { printStringF("-apin!:%d/%d-", pin, val); }
 void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
 #endif
@@ -261,10 +261,10 @@ void doFileWrite();
     X("INPUT-PIN", INPUT_PIN, pinMode(T, PIN_INPUT);        DROP1) \
     X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
     X("OUTPUT-PIN", OUTPUT_PIN, pinMode(T, PIN_OUTPUT);       DROP1) \
-    X("ap!", APIN_STORE, analogWrite((int)T, (int)N);  DROP2) \
-    X("dp!", DPIN_STORE, digitalWrite((int)T, (int)N); DROP2) \
-    X("ap@", APIN_FETCH, T = analogRead((int)T); ) \
-    X("dp@", DPIN_FETCH, T = digitalRead((int)T); )
+    X("pin@", DPIN_FETCH, T = digitalRead((int)T); ) \
+    X("pin!", DPIN_STORE, digitalWrite((int)T, (int)N); DROP2) \
+    X("apin@", APIN_FETCH, T = analogRead((int)T); ) \
+    X("apin!", APIN_STORE, analogWrite((int)T, (int)N);  DROP2)
 #endif
 
 // NB: These are for the Joystick library in the Teensy
@@ -1295,13 +1295,58 @@ int main()
 #ifdef __IS_PC__
 #undef SOURCE_PC
 #define SOURCE_PC \
-    X(2000, ": is-pc 1 ;")
+    X(2000, ": is-pc 1 ;") \
+    X(2001, ": _t0 27 emit '[' emit ;") \
+    X(2002, ": gotoXY ( x y -- )  _t0 (.) ';' emit (.) 'H' emit ;") \
+    X(2003, ": cls _t0 .\" 2J\" 0 dup gotoXY ;") \
+    X(2004, ": .ch dup #32 < if drop '.' then dup $7e > if drop '.' then emit ;") \
+    X(2005, ": dump-ch low->high for i c@ .ch next ;") \
+    X(2006, "variable (comport) 0 (comport) !") \
+    X(2007, "variable (comhandle) 0 (comhandle) !") \
+    X(2008, ": comhandle (comhandle) @ ;") \
+    X(2009, ": comport (comport) @ ;") \
+    X(2010, ": comopen ( n -- ) dup (comport) ! com-open (comhandle) ! ;") \
+    X(2011, ": comclose ( -- ) comhandle com-close 0 (comhandle) ! ;") \
+    X(2012, ": comread ( -- c ) comhandle com-read ;") \
+    X(2013, ": comwrite ( c -- ) comhandle com-write 0= if .\" -err-\" then ;") \
+    X(2014, ": comall ( -- ) begin comread dup if emit 1 then while ;") \
+    X(2015, ": comstring ( a n -- ) over + for i c@ comwrite next ;") \
+    X(2016, ": comcr ( -- ) 13 comwrite ;") \
+    X(2017, ": comline ( cs -- )   count comstring comcr comall ;") \
+    X(2018, ": comlinez ( zs -- ) zcount comstring comcr comall ;") \
+    X(2099, "marker") 
 #endif
 
-#define SOURCE_USER \
-X(5000, "marker")
+#define SOURCE_ARDUINO \
+    X(4001, "variable (mux)") \
+    X(4002, ": mux (mux) @ ; : mux! (mux) ! ;") \
+    X(4003, ": (s0) mux ;     : s0 (s0) c@ ; ") \
+    X(4004, ": (s1) mux 1+ ;  : s1 (s1) c@ ;") \
+    X(4005, ": (s2) mux 2 + ; : s2 (s2) c@ ; ") \
+    X(4006, ": (s3) mux 3 + ; : s3 (s3) c@ ;") \
+    X(4007, ": (z)  mux 4 + ; : z  (z)  c@ ;") \
+    X(4008, ": _t1 ( channel s# bit -- ) rot and 0= 0= swap if- swap pin! else 2drop then ;") \
+    X(4009, ": mux-select ( mux channel -- ) mux!") \
+    X(4010, "    dup s0 %0001 _t1 ") \
+    X(4011, "    dup s1 %0010 _t1 ") \
+    X(4012, "    dup s2 %0100 _t1 ") \
+    X(4013, "        s3 %1000 _t1 ;") \
+    X(4014, ": mux-init ( s0 s1 s2 s3 z mux -- ) mux! (z) c! (s3) c! (s2) c! (s1) c! (s0) c! ;") \
+    X(4015, ": mux-read ( mux -- n ) mux! z pin@ ; ") \
+    X(4016, ": mux-query ( channel mux -- n ) mux-select mux mux-read ; ") \
+    X(4017, ": mux? ( channel mux -- )  mux-query . ;") \
+    X(4999, "marker")
 
-#define SOURCES SOURCE_BASE SOURCE_PC SOURCE_USER
+#define SOURCE_USER \
+    X(5001, "variable mux1 1 allot") \
+    X(5002, "variable mux2 1 allot") \
+    X(5003, "variable mux3 1 allot") \
+    X(5991, ".\" BoardForth v0.0.1 - by Chris Curl\" cr") \
+    X(5992, ".\" Source at https://github.com/CCurl\" cr") \
+    X(5993, ".\" Hello.\"") \
+    X(5999, "marker")
+
+#define SOURCES SOURCE_BASE SOURCE_PC SOURCE_ARDUINO SOURCE_USER
 
 #undef X
 #define X(num, val) const PROGMEM char str ## num[] = val;
