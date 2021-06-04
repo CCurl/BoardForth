@@ -122,11 +122,11 @@ extern const char *bootStrap[];
 
 #ifdef __IS_PC__
 #pragma warning(disable:4996)
-void pinMode(int pin, int mode) {}
-int digitalRead(int pin) { return pin + 1; }
-int analogRead(int pin) { return pin + 1; }
-void digitalWrite(int pin, int val) { printStringF("-pin!:%d/%d-", pin, val); }
-void analogWrite(int pin, int val) { printStringF("-apin!:%d/%d-", pin, val); }
+void pinMode(int pin, int mode) { printStringF("-pinMode(%d,%d)-", pin, mode); }
+int digitalRead(int pin) { printStringF("-dread(%d)-", pin); return pin + 1; }
+int analogRead(int pin) { printStringF("-aread(%d)-", pin); return pin + 1; }
+void digitalWrite(int pin, int val) { printStringF("-dwrite(%d,%d)-", pin, val); }
+void analogWrite(int pin, int val) { printStringF("-awrite(%d,%d)-", pin, val); }
 void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
 #endif
@@ -258,13 +258,13 @@ void doFileWrite();
 #ifdef __ARDUINO__
 #undef ARDUINO_OPCODES
 #define ARDUINO_OPCODES \
-    X("INPUT-PIN", INPUT_PIN, pinMode(T, PIN_INPUT);        DROP1) \
-    X("INPUT-PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
-    X("OUTPUT-PIN", OUTPUT_PIN, pinMode(T, PIN_OUTPUT);       DROP1) \
-    X("pin@", DPIN_FETCH, T = digitalRead((int)T); ) \
-    X("pin!", DPIN_STORE, digitalWrite((int)T, (int)N); DROP2) \
-    X("apin@", APIN_FETCH, T = analogRead((int)T); ) \
-    X("apin!", APIN_STORE, analogWrite((int)T, (int)N);  DROP2)
+    X("INPUT",  INPUT_PIN,        pinMode(T, PIN_INPUT);        DROP1) \
+    X("PULLUP", INPUT_PIN_PULLUP, pinMode(T, PIN_INPUT_PULLUP); DROP1) \
+    X("OUTPUT", OUTPUT_PIN,       pinMode(T, PIN_OUTPUT);       DROP1) \
+    X("pin@",   DPIN_FETCH,       T = digitalRead((int)T); ) \
+    X("pin!",   DPIN_STORE,       digitalWrite((int)T, (int)N); DROP2) \
+    X("apin@",  APIN_FETCH,       T = analogRead((int)T); ) \
+    X("apin!",  APIN_STORE,       analogWrite((int)T, (int)N);  DROP2)
 #endif
 
 // NB: These are for the Joystick library in the Teensy
@@ -273,15 +273,15 @@ void doFileWrite();
 #undef JOYSTICK_OPCODES
 void doJoyXYZ(int which, CELL val);
 #define JOYSTICK_OPCODES \
-    X("JOY-X", JOY_X, doJoyXYZ(1, T); DROP1) \
-    X("JOY-Y", JOY_Y, doJoyXYZ(2, T); DROP1) \
-    X("JOY-Z", JOY_Z, doJoyXYZ(3, T); DROP1) \
-    X("JOY-ZROTATE", JOY_ZROTATE, Joystick.Zrotate(T); DROP1) \
-    X("JOY-SLIDERLEFT", JOY_SLIDERLEFT, Joystick.sliderLeft(T); DROP1) \
-    X("JOY-SLIDERRIGHT", JOY_SLIDERRIGHT, Joystick.sliderRight(T); DROP1) \
-    X("JOY-BUTTON", JOY_BUTTON, Joystick.button(T, N); DROP2) \
-    X("JOY-USEMANUAL", JOY_USEMANUAL, Joystick.useManualSend(T); DROP1) \
-    X("JOY-SENDNOW", JOY_SENDNOW, Joystick.send_now();)
+    X("JOY.X", JOY_X, doJoyXYZ(1, T); DROP1) \
+    X("JOY.Y", JOY_Y, doJoyXYZ(2, T); DROP1) \
+    X("JOY.Z", JOY_Z, doJoyXYZ(3, T); DROP1) \
+    X("JOY.ZROTATE", JOY_ZROTATE, Joystick.Zrotate(T); DROP1) \
+    X("JOY.SLIDERLEFT", JOY_SLIDERLEFT, Joystick.sliderLeft(T); DROP1) \
+    X("JOY.SLIDERRIGHT", JOY_SLIDERRIGHT, Joystick.sliderRight(T); DROP1) \
+    X("JOY.BUTTON", JOY_BUTTON, Joystick.button(T, N); DROP2) \
+    X("JOY.USEMANUAL", JOY_USEMANUAL, Joystick.useManualSend(T); DROP1) \
+    X("JOY.SENDNOW", JOY_SENDNOW, Joystick.send_now();)
 #endif
 
 // NB: These are for the HID library from NicoHood
@@ -289,28 +289,27 @@ void doJoyXYZ(int which, CELL val);
 #ifdef __GAMEPAD_FAKE__
 #undef GAMEPAD_OPCODES
 #define GAMEPAD_OPCODES \
-    X("GP-X", GP_X, printStringF("GP(X, %ld)", T); DROP1) \
-    X("GP-Y", GP_Y, printStringF("GP(Y, %ld)", T); DROP1) \
-    X("GP-BD", GP_BD, printStringF("GP(button-dn, %ld)", T); DROP1) \
-    X("GP-BU", GP_BU, printStringF("GP(button-up, %ld)", T); DROP1) \
-    X("GP-P1", GP_P1, printStringF("GP(P1, %ld)", T); DROP1) \
-    X("GP-P2", GP_P2, printStringF("GP(P2, %ld)", T); DROP1) \
-    X("GP-RA", GP_RA, printStringF("GP(release-all)")) \
-    X("GP-WR", GP_WR, printStringF("GP(write)"))
+    X("GP.X",          GP_XA, printStringF("GP.x(%ld)", T); DROP1) \
+    X("GP.Y",          GP_YA, printStringF("GP.y(%ld)", T); DROP1) \
+    X("GP.PRESS",      GP_BD, printStringF("GP.press(%ld)", T); DROP1) \
+    X("GP.RELEASE",    GP_BU, printStringF("GP.release(%ld)", T); DROP1) \
+    X("GP.PAD1",       GP_P1, printStringF("GP.p1(%ld)", T); DROP1) \
+    X("GP.PAD2",       GP_P2, printStringF("GP.p2(%ld)", T); DROP1) \
+    X("GP.RELEASEALL", GP_RA, printStringF("GP.releaseAll()")) \
+    X("GP.WRITE",      GP_WR, printStringF("GP.write()"))
 #endif
 
 #ifdef __GAMEPAD__
 #undef GAMEPAD_OPCODES
-void doGamepadXYZ(int which, CELL val);
 #define GAMEPAD_OPCODES \
-    X("GP-X", GP_X, Gamepad.xAxis(T); DROP1) \
-    X("GP-Y", GP_Y, Gamepad.yAxis(T); DROP1) \
-    X("GP-BD", GP_BD, Gamepad.press(T); DROP1) \
-    X("GP-BU", GP_BU, Gamepad.release(T); DROP1) \
-    X("GP-P1", GP_P1, Gamepad.dPad1(T); DROP1) \
-    X("GP-P2", GP_P2, Gamepad.dPad2(T); DROP1) \
-    X("GP-RA", GP_RA, Gamepad.releaseAll()) \
-    X("GP-WR", GP_WR, Gamepad.write())
+    X("GP.X",          GP_XA, Gamepad.xAxis(T); DROP1) \
+    X("GP.Y",          GP_YA, Gamepad.yAxis(T); DROP1) \
+    X("GP.PRESS",      GP_BD, Gamepad.press(T); DROP1) \
+    X("GP.RELEASE",    GP_BU, Gamepad.release(T); DROP1) \
+    X("GP.PAD1",       GP_P1, Gamepad.dPad1(T); DROP1) \
+    X("GP.PAD2",       GP_P2, Gamepad.dPad2(T); DROP1) \
+    X("GP.RELEASEALL", GP_RA, Gamepad.releaseAll()) \
+    X("GP.WRITE",      GP_WR, Gamepad.write())
 #endif
 
 #ifndef __COM_PORT__
@@ -1325,13 +1324,14 @@ int main()
     X(4005, ": (s2) mux 2 + ; : s2 (s2) c@ ; ") \
     X(4006, ": (s3) mux 3 + ; : s3 (s3) c@ ;") \
     X(4007, ": (z)  mux 4 + ; : z  (z)  c@ ;") \
-    X(4008, ": _t1 ( channel s# bit -- ) rot and 0= 0= swap if- swap pin! else 2drop then ;") \
+    X(4008, ": _t1 ( channel s# bit -- ) rot and 0= 0= swap if- pin! else 2drop then ;") \
     X(4009, ": mux-select ( mux channel -- ) mux!") \
     X(4010, "    dup s0 %0001 _t1 ") \
     X(4011, "    dup s1 %0010 _t1 ") \
     X(4012, "    dup s2 %0100 _t1 ") \
     X(4013, "        s3 %1000 _t1 ;") \
-    X(4014, ": mux-init ( s0 s1 s2 s3 z mux -- ) mux! (z) c! (s3) c! (s2) c! (s1) c! (s0) c! ;") \
+    X(40140, ": mux-init ( s0 s1 s2 s3 z mux -- ) mux! (z) c! (s3) c! (s2) c! (s1) c! (s0) c! ") \
+    X(40141, "    z pullup s0 output s1 output s2 output s3 if s3 output then ;") \
     X(4015, ": mux-read ( mux -- n ) mux! z pin@ ; ") \
     X(4016, ": mux-query ( channel mux -- n ) mux-select mux mux-read ; ") \
     X(4017, ": mux? ( channel mux -- )  mux-query . ;") \
