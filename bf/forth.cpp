@@ -1342,8 +1342,9 @@ int main()
     X(5002, "variable mux2 1 allot") \
     X(5003, "variable mux3 1 allot") \
     X(5991, ".\" BoardForth v0.0.1 - by Chris Curl\" cr") \
-    X(5992, ".\" Source at https://github.com/CCurl\" cr") \
-    X(5993, ".\" Hello.\"") \
+    X(5992, ".\" Source: https://github.com/CCurl/BoardForth\" cr") \
+    X(5993, ".\" Dictionary size:\" dict-sz . .\" , free:\" last here - . cr") \
+    X(5998, ".\" Hello.\"") \
     X(5999, "marker")
 
 #define SOURCES SOURCE_BASE SOURCE_PC SOURCE_ARDUINO SOURCE_USER
