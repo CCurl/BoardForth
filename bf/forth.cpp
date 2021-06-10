@@ -374,7 +374,7 @@ void run(ADDR start, CELL max_cycles) {
 
 void doDot(CELL num, int isUnsigned, int space, int width) {
     int len  = 0;
-    if ((!isUnsigned) && (num < 0)) {
+    if ((!isUnsigned) && (BASE == 10) && (num < 0)) {
         printString("-");
         num = -num;
     }
