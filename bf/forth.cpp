@@ -1312,15 +1312,18 @@ int main()
     X(4011, "    dup s1 %0010 _t1 ") \
     X(4012, "    dup s2 %0100 _t1 ") \
     X(4013, "        s3 %1000 _t1 ;") \
-    X(40140, ": mux-init ( s0 s1 s2 s3 z mux -- ) mux! (z) c! (s3) c! (s2) c! (s1) c! (s0) c! ") \
-    X(40141, "    z pullup s0 output s1 output s2 output s3 if s3 output then ;") \
-    X(4015, ": mux-read ( mux -- n ) mux! z pin@ ; ") \
-    X(4016, ": mux-query ( channel mux -- n ) mux-select mux mux-read ; ") \
-    X(4017, ": mux? ( channel mux -- )  mux-query . ;") \
-    X(4018, "variable (pin-vals) 50 2* allot") \
-    X(4019, ": _t7 ( pin -- addr) 2* (pin-vals) + ;") \
-    X(4020, ": pin-val@ ( pin -- val) _t7 @ ;") \
-    X(4021, ": pin-val! ( val pin -- ) _t7 ! ;") \
+    X(4014, ": mux-init ( s0 s1 s2 s3 z mux -- ) mux! (z) c! (s3) c! (s2) c! (s1) c! (s0) c! ") \
+    X(4015, "    z pullup s0 output s1 output s2 output s3 if s3 output then ;") \
+    X(4016, ": _t0 ( mux -- z-pin ) mux! z ;") \
+    X(4017, ": mux-output ( mux -- ) _t0 output ;") \
+    X(4018, ": mux@  ( mux -- n ) _t0 pin@ ;") \
+    X(4019, ": mux@A ( mux -- n ) _t0 apin@ ;") \
+    X(4020, ": mux!  ( n mux -- ) _t0 pin! ;") \
+    X(4021, ": mux!A ( n mux -- ) _t0 apin! ;") \
+    X(4022, "variable (pin-vals) 50 2* allot") \
+    X(4023, ": _t1 ( pin -- addr) 2* (pin-vals) + ;") \
+    X(4024, ": pin-val@ ( pin -- val) _t1 @ ;") \
+    X(4025, ": pin-val! ( val pin -- ) _t1 ! ;") \
     X(4999, "marker")
 
 #define SOURCE_USER \
