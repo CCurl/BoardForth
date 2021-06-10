@@ -10,9 +10,8 @@
 	// #define __ESP32__
 	// #define __LITTLEFS__
 	// #include <LittleFS.h>
-	//#define __JOYSTICK__
-	#define __GAMEPAD__
-	#include <HID-Project.h>
+	//#define __GAMEPAD__
+	//#include <HID-Project.h>
 	#define __NEEDS_ALIGN__
 	#define DICT_SZ (1024*20)
 	#define VARS_SZ (1024*4)

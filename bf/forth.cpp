@@ -78,7 +78,7 @@ void printString(const char*);
 void printStringF(const char*, ...);
 void ok();
 void doParse(char sep);
-int doNumber(const char*);
+int isNumber(const char*);
 void doParseWord();
 void doCreate(const char* name);
 void doSlMod();
@@ -267,23 +267,6 @@ void doFileWrite();
     X("apin!",  APIN_STORE,       analogWrite((int)T, (int)N);  DROP2)
 #endif
 
-// NB: These are for the Joystick library in the Teensy
-#define JOYSTICK_OPCODES
-#ifdef __JOYSTICK__
-#undef JOYSTICK_OPCODES
-void doJoyXYZ(int which, CELL val);
-#define JOYSTICK_OPCODES \
-    X("JOY.X", JOY_X, doJoyXYZ(1, T); DROP1) \
-    X("JOY.Y", JOY_Y, doJoyXYZ(2, T); DROP1) \
-    X("JOY.Z", JOY_Z, doJoyXYZ(3, T); DROP1) \
-    X("JOY.ZROTATE", JOY_ZROTATE, Joystick.Zrotate(T); DROP1) \
-    X("JOY.SLIDERLEFT", JOY_SLIDERLEFT, Joystick.sliderLeft(T); DROP1) \
-    X("JOY.SLIDERRIGHT", JOY_SLIDERRIGHT, Joystick.sliderRight(T); DROP1) \
-    X("JOY.BUTTON", JOY_BUTTON, Joystick.button(T, N); DROP2) \
-    X("JOY.USEMANUAL", JOY_USEMANUAL, Joystick.useManualSend(T); DROP1) \
-    X("JOY.SENDNOW", JOY_SENDNOW, Joystick.send_now();)
-#endif
-
 // NB: These are for the HID library from NicoHood
 #define GAMEPAD_OPCODES
 #ifdef __GAMEPAD_FAKE__
@@ -330,12 +313,11 @@ CELL doComWrite(CELL handle, CELL ch);
     FILE_OPCODES \
     LITTLEFS_OPCODES \
     ARDUINO_OPCODES \
-    JOYSTICK_OPCODES \
     GAMEPAD_OPCODES \
     COMPORT_OPCODES \
     X("OPCODES", DUMP_OPCODES, dumpOpcodes()) \
     X("FORTH-SOURCE", BOOT_STRAP, push((CELL)&bootStrap[0])) \
-    X("BYE", BYE, printString(" bye."); isBYE = 1)
+    X("BYE", BYE, printString(" goodbye."); isBYE = 1)
 
 #define X(name, op, code) OP_ ## op,
 typedef enum {
@@ -347,8 +329,7 @@ typedef enum {
 #define X(name, op, code) if (opcode == OP_ ## op) { strcpy(buf, #op); }
 void printOpcode(BYTE opcode) {
     char buf[32];
-    sprintf(buf, "%d", opcode);
-    buf[0] = 0;
+    sprintf(buf, "#%d", opcode);
     OPCODES;
     printf("\r\n-op:%s(PC:%lx,T:%lx,N:%lx)-", buf, (UCELL)PC, T, N);
 }
@@ -385,6 +366,7 @@ void run(ADDR start, CELL max_cycles) {
             printStringF("-unknown opcode: %d ($%02x) at %04lx-", IR, IR, PC - 1);
             return;
         }
+        if (DSP < 1) { DSP = 0; }
         if ((max_cycles) && (--max_cycles < 1)) { return; }
     }
 }
@@ -814,7 +796,7 @@ int isDigit(char c, int base) {
     return -1;
 }
 
-int doNumber(const char* w) {
+int isNumber(const char* w) {
     if ((*(w) == '\'') && (*(w + 2) == '\'') && (*(w + 3) == 0)) {
         push(*(w + 1));
         return 1;
@@ -849,12 +831,12 @@ void doParseWord() {
     if (doFind(w)) {
         DICT_T* dp = (DICT_T*)pop();
         ADDR xt = dp->XT;
-        // 1 => IMMEDIATE?
+        // 1 => IMMEDIATE, 2 => INLINE
         if (compiling(w, 0)) {
-            if ((dp->flags & 1) == 1) {
+            if (dp->flags & 0x01) {
                 run(xt, 0);
             } else {
-                if ((dp->flags & 2) == 2) {
+                if (dp->flags & 0x02) {
                     ADDR xt2 = (dp-1)->XT-1;
                     for (ADDR a = xt; a < xt2; a++) {
                         doCComma(*a);
@@ -873,7 +855,7 @@ void doParseWord() {
 
     if (isInlineWord(w)) { return; }
 
-    if (doNumber(w)) {
+    if (isNumber(w)) {
         if (compiling(w, 0)) {
             CELL v = pop();
             if ((0x0000 <= v) && (v < 0x0100)) {
@@ -1335,6 +1317,10 @@ int main()
     X(4015, ": mux-read ( mux -- n ) mux! z pin@ ; ") \
     X(4016, ": mux-query ( channel mux -- n ) mux-select mux mux-read ; ") \
     X(4017, ": mux? ( channel mux -- )  mux-query . ;") \
+    X(4018, "variable (pin-vals) 50 2* allot") \
+    X(4019, ": _t7 ( pin -- addr) 2* (pin-vals) + ;") \
+    X(4020, ": pin-val@ ( pin -- val) _t7 @ ;") \
+    X(4021, ": pin-val! ( val pin -- ) _t7 ! ;") \
     X(4999, "marker")
 
 #define SOURCE_USER \
