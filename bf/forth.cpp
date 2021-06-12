@@ -1247,37 +1247,35 @@ int main()
     X(1009, ": off 0 swap ! ; inline : on 1 swap ! ; inline") \
     X(1010, ": abs dup 0 < if negate then ;") \
     X(1011, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;") \
-    X(1012, ": hex? base @ #16 = ; : decimal? base @ #10 = ;") \
-    X(1013, ": low->high 2dup > if swap then ;") \
-    X(1014, ": high->low 2dup < if swap then ;") \
-    X(1015, ": min low->high drop ;") \
-    X(1016, ": max high->low drop ;") \
-    X(1017, ": between rot dup >r min max r> = ;") \
-    X(1018, ": allot vhere + (vhere) ! ;") \
-    X(1019, ": >body @ ; inline : auto-run dict ! ;") \
-    X(1020, ": auto-last last >body auto-run ; : auto-off 0 auto-run ;") \
-    X(1021, ": .word addr + 1+ count type tab ;") \
-    X(1022, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
-    X(1023, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
-    X(1024, ": wordsl last num-words 1 for dup .wordl entry-sz + next drop ;") \
-    X(1025, "variable (regs) 9 cells allot") \
-    X(1026, ": reg cells (regs) + ;") \
-    X(1027, ": >src 0 reg ! ; : >dst 1 reg ! ;") \
-    X(1028, ": src 0 reg @ ; : src+ src dup 1+ >src ;") \
-    X(1029, ": dst 1 reg @ ; : dst+ dst dup 1+ >dst ;") \
-    X(1030, ": .b decimal? if 3 .n else hex? if 2 .n else (.) then then ;") \
-    X(1031, ": dump low->high for i c@ space .b next ;") \
-    X(1032, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \
-    X(1033, ": _t1 dup _t0 #16 + ;") \
-    X(1034, ": dump-dict dict begin _t1 dup here < while drop ;") \
-    X(1035, ": elapsed timer swap - 1000 /mod . '.' emit 3 .n .\"  seconds\" ;") \
-    X(1036, "variable (ch) variable (cl) variable (nw) variable (vh)") \
-    X(1037, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
-    X(1038, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
-    X(1039, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
-    X(1040, ": pad last #128 - ; : ' pad nextword if- drop pad find then ;") \
+    X(1012, ": low->high 2dup > if swap then ;") \
+    X(1013, ": high->low 2dup < if swap then ;") \
+    X(1014, ": min low->high drop ;") \
+    X(1015, ": max high->low drop ;") \
+    X(1016, ": between rot dup >r min max r> = ;") \
+    X(1017, ": allot vhere + (vhere) ! ;") \
+    X(1018, ": >body @ ; inline : auto-run dict ! ;") \
+    X(1019, ": auto-last last >body auto-run ; : auto-off 0 auto-run ;") \
+    X(1020, ": .word addr + 1+ count type tab ;") \
+    X(1021, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
+    X(1022, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
+    X(1023, ": wordsl last num-words 1 for dup .wordl entry-sz + next drop ;") \
+    X(1024, "variable (regs) 9 cells allot") \
+    X(1025, ": reg cells (regs) + ;") \
+    X(1026, ": >src 0 reg ! ; : >dst 1 reg ! ;") \
+    X(1027, ": src 0 reg @ ; : src+ src dup 1+ >src ;") \
+    X(1028, ": dst 1 reg @ ; : dst+ dst dup 1+ >dst ;") \
+    X(1029, ": .b 3 base @ #16 = if 1- then .n ;") \
+    X(1030, ": dump low->high for i c@ space .b next ;") \
+    X(1031, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \
+    X(1032, ": _t1 dup _t0 #16 + ;") \
+    X(1033, ": dump-dict dict begin _t1 dup here < while drop ;") \
+    X(1034, ": elapsed timer swap - 1000 /mod . '.' emit 3 .n .\"  seconds\" ;") \
+    X(1035, "variable (ch) variable (cl) variable (nw) variable (vh)") \
+    X(1036, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
+    X(1037, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
+    X(1038, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
+    X(1039, ": pad last #128 - ; : ' pad nextword if- drop pad find then ;") \
     X(1499, "marker")
-
 
 #define SOURCE_PC X(2000, ": is-pc 0 ;")
 #ifdef __IS_PC__
