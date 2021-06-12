@@ -29,6 +29,7 @@ typedef BYTE* ADDR;
 #define N dstk[DSP-1]
 #define R rstk[RSP]
 #define A ((ADDR)dstk[DSP])
+#define C ((char *)dstk[DSP])
 #define N0 dstk[DSP]
 #define N1 dstk[DSP-1]
 #define N2 dstk[DSP-2]
@@ -40,10 +41,10 @@ typedef BYTE* ADDR;
 #define DROP3 DROP1; DROP1; DROP1
 
 #define TMP_RUNOP    (VHERE + 0x0002)
-#define TMP_PAD      (VHERE + 0x0024)
 #define TMP_WORD     (VHERE + 0x0004)
-#define TMP_SQUOTE   (VHERE + 0x0020)
-#define TMP_DOTQUOTE (VHERE + 0x0020)
+#define TMP_SQUOTE   (VHERE + 0x0030)
+#define TMP_DOTQUOTE (VHERE + 0x0030)
+#define TMP_PAD      (LAST  - 0x0004)
 
 #define DBG_ALL   4
 #define DBG_TRACE 3
@@ -84,6 +85,8 @@ void doCreate(const char* name);
 void doSlMod();
 void doUSlMod();
 void doType();
+CELL getNextWord(char *to, char sep);
+int doFind(char *to);
 void doDot(CELL num, int inUnsigned, int space, int width);
 void doDotS();
 void doFor();
@@ -214,16 +217,18 @@ CELL rpop() {
     X("WHILE-", WHILEN, doWhile(0, 0)) \
     X("UNTIL", UNTIL, doWhile(1, 1)) \
     X("MS", DELAY, delay(pop())) \
-    X("TICK", TICK, push(millis())) \
+    X("TIMER", TIMER, push(millis())) \
     X("C,", CCOMMA, *(HERE++) = (BYTE)T; DROP1) \
     X("W,", WCOMMA, doWComma((WORD)T); DROP1) \
     X(",",  COMMA, doComma(T); DROP1) \
     X("A,", ACOMMA, doAComma(A); DROP1) \
+    X("NEXTWORD", NEXTWORD, T = getNextWord(C, ' ')) \
+    X("FIND", FIND, push(doFind((char *)pop()))) \
     X("MALLOC", MALLOC, T = (CELL)malloc(T)) \
     X("FREE", MFREE, free((void *)T); DROP1) \
     X("FILL", FILL, memset((void *)N2, N0, N1); DROP3) \
-    X("ZCOUNT", ZCOUNT, push(T); T = strlen((char *)T)) \
-    X("ZTYPE", ZTYPE, printString((char *)T); DROP1 ) \
+    X("ZCOUNT", ZCOUNT, push(T); T = strlen(C)) \
+    X("ZTYPE", ZTYPE, printString(C); DROP1 ) \
     X("DEBUG-MODE", DEBUG_MODE, push((CELL)&debugMode)) \
 
 #ifndef __FILES__
@@ -234,7 +239,7 @@ void doFileClose(CELL fp);
 void doFileRead();
 void doFileWrite();
 #define FILE_OPCODES \
-    X("FOPEN", FOPEN, N = doFileOpen((char *)N+1, (char *)T+1); DROP1) \
+    X("FOPEN", FOPEN, N = doFileOpen((char *)N+1, C+1); DROP1) \
     X("FCLOSE", FCLOSE, doFileClose(T); DROP1) \
     X("FREAD", FREAD, doFileRead()) \
     X("FWRITE", FWRITE, doFileWrite())
@@ -248,7 +253,7 @@ void doFileClose(CELL fp);
 void doFileRead();
 void doFileWrite();
 #define LITTLEFS_OPCODES \
-    X("FOPEN", FOPEN, N = doFileOpen((char *)N+1, (char *)T+1); DROP1) \
+    X("FOPEN", FOPEN, N = doFileOpen((char *)N+1, C+1); DROP1) \
     X("FCLOSE", FCLOSE, doFileClose(T); DROP1) \
     X("FREAD", FREAD, doFileRead()) \
     X("FWRITE", FWRITE, doFileWrite())
@@ -379,7 +384,7 @@ void doDot(CELL num, int isUnsigned, int space, int width) {
         num = -num;
     }
     UCELL n = (UCELL)num;
-    char x[36], *cp = &x[35];
+    char *cp = (char *)TMP_PAD;
     *(cp) = 0;
     do {
         char c = (char)(n % BASE);
@@ -771,7 +776,7 @@ int isInlineWord(char* w) {
     return 0;
 }
 
-int doFind(const char* name) {         // opcode #65
+int doFind(char* name) {
     DICT_T* dp = isTempWord(name);
     if (dp) {
         push((CELL)dp);
@@ -986,7 +991,7 @@ void doParseWord() {
         if (STATE == 0) {
             getNextChar();
             push((CELL)TMP_SQUOTE);
-            getNextWord((char *)T, '"');
+            getNextWord(C, '"');
             getNextChar();
             return;
         }
@@ -1006,7 +1011,7 @@ void doParseWord() {
         if (STATE == 0) {
             getNextChar();
             push((CELL)TMP_DOTQUOTE);
-            char* x = (char *)T;
+            char* x = C;
             CELL len = getNextWord(x, '"');
             getNextChar();
             push(len);
@@ -1265,11 +1270,13 @@ int main()
     X(1032, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \
     X(1033, ": _t1 dup _t0 #16 + ;") \
     X(1034, ": dump-dict dict begin _t1 dup here < while drop ;") \
-    X(1035, ": elapsed tick swap - 1000 /mod . '.' emit 3 .n .\"  seconds\" ;") \
+    X(1035, ": elapsed timer swap - 1000 /mod . '.' emit 3 .n .\"  seconds\" ;") \
     X(1036, "variable (ch) variable (cl) variable (nw) variable (vh)") \
     X(1037, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
     X(1038, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
     X(1039, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
+    X(1040, ": pad last #128 - ; : ' pad nextword if- drop pad find then ;") \
+    X(1499, "marker")
 
 
 #define SOURCE_PC X(2000, ": is-pc 0 ;")

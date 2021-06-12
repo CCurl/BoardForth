@@ -24,10 +24,10 @@
 #else
 	#define __IS_PC__
 	#include <windows.h>
-	#define DICT_SZ (512*1024)
-	#define VARS_SZ (64*1024)
-	#define STK_SZ 64
-	#define TIB_SZ 0x0400
+	#define DICT_SZ (1024*512)
+	#define VARS_SZ (1024*64)
+	#define STK_SZ 32
+	#define TIB_SZ (128)
 	#define MAX_FILE_SZ 10*1024
 	#define __FILES__
 	#define __GAMEPAD_FAKE__
