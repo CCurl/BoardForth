@@ -64,10 +64,11 @@ typedef struct {
 #define LOOP_STK_SZ 8
 typedef struct {
     ADDR loopStart;
+    ADDR loopEnd;
     CELL start;
     CELL index;
     CELL stop;
-} DO_LOOP_T;
+} LOOP_T;
 
 CELL cellAt(ADDR);
 CELL wordAt(ADDR);
@@ -91,6 +92,7 @@ void doDot(CELL num, int inUnsigned, int space, int width);
 void doDotS();
 void doFor();
 void doNext();
+void doBreak();
 void doBegin();
 void doAgain();
 void doWhile(int, int);
@@ -115,7 +117,7 @@ CELL rstk[STK_SZ + 1];
 CELL loopDepth, t1;
 int numTIB = 0;
 int lastWasCall = 0;
-DO_LOOP_T doStack[LOOP_STK_SZ];
+LOOP_T doStack[LOOP_STK_SZ];
 int loopSP = -1;
 int isBYE = 0, isError = 0;
 DICT_T tempWords[10];
@@ -211,6 +213,7 @@ CELL rpop() {
     X("J", J, if (1 <= loopSP) push(doStack[loopSP-1].index)) \
     X("K", K, if (2 <= loopSP) push(doStack[loopSP-2].index)) \
     X("NEXT", NEXT, doNext()) \
+    X("BREAK", BREAK, doBreak()) \
     X("BEGIN", BEGIN, doBegin()) \
     X("AGAIN", AGAIN, doAgain()) \
     X("WHILE", WHILE, doWhile(1, 0)) \
@@ -444,8 +447,9 @@ void doType() {
 
 void doFor() {
     if (loopSP < LOOP_STK_SZ) {
-        DO_LOOP_T* dp = &doStack[++loopSP];
+        LOOP_T* dp = &doStack[++loopSP];
         dp->loopStart = PC;
+        dp->loopEnd = 0;
         dp->start = (N < T) ? N : T;
         dp->stop =  (N < T) ? T : N;
         dp->index = dp->start;
@@ -455,27 +459,51 @@ void doFor() {
 
 void doNext() {
     if (0 <= loopSP) {
-        DO_LOOP_T* dp = &doStack[loopSP];
+        LOOP_T* dp = &doStack[loopSP];
+        dp->loopEnd = PC;
         ++dp->index;
         if (dp->index <= dp->stop) { PC = dp->loopStart; }
         else { --loopSP; }
     }
 }
 
-void doBegin() {
-    if (loopSP < LOOP_STK_SZ) {
-        DO_LOOP_T* dp = &doStack[++loopSP];
-        dp->loopStart = PC;
+void doBreak() {
+    if (0 <= loopSP) {
+        LOOP_T* dp = &doStack[loopSP];
+        if (dp->loopEnd) {
+            --loopSP;
+            PC = dp->loopEnd;
+        } else {
+            printString("-cant-break-1st-");
+        }
     }
 }
 
-void doAgain() { if (0 <= loopSP) { PC = doStack[loopSP].loopStart; } }
+void doBegin() {
+    if (loopSP < LOOP_STK_SZ) {
+        LOOP_T* dp = &doStack[++loopSP];
+        dp->loopStart = PC;
+        dp->loopEnd = 0;
+    }
+}
+
+void doAgain() { 
+    if (0 <= loopSP) { 
+        LOOP_T* dp = &doStack[loopSP];
+        dp->loopEnd = PC;
+        PC = dp->loopStart; 
+    } 
+}
 
 void doWhile(int dropIt, int isUntil) {
     if (loopSP < 0) { return; }
+    LOOP_T* dp = &doStack[loopSP];
+    dp->loopEnd = PC;
     CELL x = (dropIt) ? pop() : T;
     if (isUntil) x = (x) ? 0 : 1;
-    if (x) { PC = doStack[loopSP].loopStart; }
+    if (x) { 
+        PC = dp->loopStart; 
+    }
     else {
         if (!dropIt) pop();
         --loopSP;
