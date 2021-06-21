@@ -1,14 +1,14 @@
 # BoardForth
 A Forth VM for development boards and the PC, written in C.
 
-It supports automatically running a user-defined word during the loop() phase of the arduino interface.
+BoardForth supports automatically running a user-defined word during the loop() phase of the arduino interface.
 
     - Of course, that 'word' can be as complex as needed.
-    - This is done by setting address [0:1] to the (16-bit) BODY (XT) of the desired word.
-    - Similarly, setting address [0:1] to 0 will disable automatic running.
+    - This is done by setting DICT to the XT of the desired word.
+    - Similarly, setting DICT to 0 will disable automatic running.
     - The easiest way to do this is to use the 'auto-run-last' and 'auto-run-off' words:
-        - e.g. ... : auto-run-last LAST >BODY 0 A! ;
-        - e.g. ... : auto-run-off 0 0 A! ;
+        - e.g. ... : auto-run-last LAST >BODY dict A! ;
+        - e.g. ... : auto-run-off 0 dict A! ;
     - The only rule is that the stacks need to end up with the same depth when done.
 
 To build this VM for a given board:
@@ -20,63 +20,64 @@ To build this VM for a given board:
         - #define DICT_SZ (24*1024)
         - #define STK_SZ 32
         - #define TIB_SZ 0x0080
-        - #define ALLOC_SZ 32
     - Press the [Verify] button (<ctrl>-R).
     
 To deploy the VM to the development board:
 
-    - Follow the steps from above, but use the [Upload] button (<ctrl>_U) instead.
+    - Follow the steps from above, but use the [Upload] button (<ctrl>-U) instead.
 
 Notes:
 
-    - This is a work in progress. I welcome collaboration.
     - This is not an ANSI standard Forth.
-    - However, one could build an ANSI standard Forth using it if so desired.
+    - This is a work in progress. I welcome collaboration.
+    - Words are not case sensitive. DICT, Dict, and dict all refer to the same word.
     - The data and return stack sizes are defaulted to 32 CELLS (32-bit). That can be easily changed in board.h
-    - Addresses are 16-bit values, allowing for up to 64k of dictionary space. That is an awful lot of code.
     - To add an opcode (primitive):
-        - Add a '#define XXX nnn // kkk' to the list in defs.h.
-        - Create a function 'void fXXX() { ... }'  (usually in prims.cpp).
-        - Put that function 'fXXX' into the big array of function pointers statement in prims.cpp.
-        - Add an entry to the list of 'if ((strcmp_FP(w, PSTR("kkk") == 0) return OP_XXX;' lines in opcodes.cpp.
-        - There is a nimbleText script to generate stubs for this. See nt-nt.txt
+        - Add a 'X("NEWOP", NEWOP, code) \' to the NASE_OPCODES list in defs.h.
+        - If the code is more involved, define a function and call that.
     - The development process I use is as follows:
         - Deploy the VM as above.
-        - Open up Serial Monitor.
+        - Open up Serial Monitor or PuTTY on that COM port.
         - Interactively code as usual, including defining new words as appropriate.
-        - When I know what I want to keep, I update the LoadUserWords() with any new code.
-        - If there is anything from the interactive session I want to use, I copy it from the SerialMonitor.
+        - When I know what I want to keep, I update SOURCE_USER with any new code.
+        - If there is anything from the interactive session I want to use, I copy it from the session.
         - Rebuild and upload the project to the board, and the new functionality is now "built-in".
 
-To control a LED connected to pin A4, you can do this:
+To control a LED connected to pin 4, you can do this:
 
-    - : led 4 ; led output    \ name the LED at pin A4 and makes it an OUTPUT pin
-    - : led-on 1 led dp! ;
-    - : led-off 0 led dp! ;
+    - : HIGH 1 swap pin! ;
+    - : LOW 0 swap pin! ;
+    - variable (led) 4 (led) !
+    - : led (led) @ ; 
+    - led output
+    - : led-on led HIGH ;
+    - : led-off led LOW ;
     - led-on                  \ the LED turns on
     - led-off                 \ the LED turns off
 
 The standard 'blink' example program:
 
-    - : i-led #13 ; i-led output       \ the internal LED is usually pin #13
-    - variable speed 500 speed !
-    - : blink 1 i-led dp! speed @ ms 0 i-led dp! speed @ ms ;
+    - #13 (led) ! led output
+    - variable (waitTime) 250 (waitTime) !
+    - : delay (waitTime) @ ms ;
+    - : blink led HIGH delay led LOW delay ;
     - auto-run-last                    \ the LED starts blining with a 500 ms interval
+    - 100 (speed) !                    \ the led speeds up
+    - 500 (speed) !                    \ the led slows down
     - auto-run-off                     \ the LED stops blining
 
-To read a switch connected to pin D36, do this:
+To read a switch connected to pin 36, do this:
 
     - : sw 36 ; sw input
-    - sw dp@ .
+    - sw pin@ .
 
-To read a potentiometer connected to pin A8, do this:
+To read a potentiometer connected to pin 8, do this:
 
-    - : pot 8 ;
-    - pot input
-    - pot ap@ .
+    - : pot 8 ; pot input
+    - pot apin@ .
 
 To turn on the LED depending on the value of the above switch:
 
-    - : sw->led sw dp@ led dp! ;       \ this will turn the LED on or off depending on the switch at pin 36
-    - last >body auto-run              \ now when you flip the switch, the LED turns on or off
+    - : sw->led sw pin@ led pin! ;     \ this will turn the LED on or off depending on the switch at pin 36
+    - auto-run-on                      \ now when you flip the switch, the LED turns on or off
     - 0 auto-run                       \ the LED no longer changes when the switch is flipped
