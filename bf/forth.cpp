@@ -964,7 +964,6 @@ void doParseWord() {
             doCComma(OP_LIT);
             doComma((CELL)VHERE);
             doCComma(OP_RET);
-            VHERE += CELL_SZ;
         }
         return;
     }
@@ -1287,8 +1286,8 @@ int main()
     X(1021, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
     X(1022, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
     X(1023, ": wordsl last num-words 1 for dup .wordl entry-sz + next drop ;") \
-    X(1024, "variable (regs) 9 cells allot") \
-    X(1025, ": reg cells (regs) + ;") \
+    X(1024, "variable (regs) #10 CELLS allot") \
+    X(1025, ": reg CELLS (regs) + ;") \
     X(1026, ": >src 0 reg ! ; : >dst 1 reg ! ;") \
     X(1027, ": src 0 reg @ ; : src+ src dup 1+ >src ;") \
     X(1028, ": dst 1 reg @ ; : dst+ dst dup 1+ >dst ;") \
@@ -1298,11 +1297,12 @@ int main()
     X(1032, ": _t1 dup _t0 #16 + ;") \
     X(1033, ": dump-dict dict begin _t1 dup here < while drop ;") \
     X(1034, ": elapsed timer swap - 1000 /mod . '.' emit 3 .n .\"  seconds\" ;") \
-    X(1035, "variable (ch) variable (cl) variable (nw) variable (vh)") \
-    X(1036, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
-    X(1037, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
-    X(1038, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
-    X(1039, ": pad last #128 - ; : ' pad nextword if- drop pad find then ;") \
+    X(1035, "variable (ch) CELL allot variable (cl) CELL allot") \
+    X(1036, "variable (nw) CELL allot variable (vh) CELL allot") \
+    X(1037, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
+    X(1038, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
+    X(1039, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
+    X(1040, ": pad last #128 - ; : ' pad nextword if- drop pad find then ;") \
     X(1499, "marker")
 
 #define SOURCE_PC X(2000, ": is-pc 0 ;")
@@ -1315,8 +1315,8 @@ int main()
     X(2003, ": cls _t0 .\" 2J\" 0 dup gotoXY ;") \
     X(2004, ": .ch dup #32 < if drop '.' then dup $7e > if drop '.' then emit ;") \
     X(2005, ": dump-ch low->high for i c@ .ch next ;") \
-    X(2006, "variable (comport) 0 (comport) !") \
-    X(2007, "variable (comhandle) 0 (comhandle) !") \
+    X(2006, "variable (comport)   CELL allot 0 (comport) !") \
+    X(2007, "variable (comhandle) CELL allot 0 (comhandle) !") \
     X(2008, ": comhandle (comhandle) @ ;") \
     X(2009, ": comport (comport) @ ;") \
     X(2010, ": comopen ( n -- ) dup (comport) ! com-open (comhandle) ! ;") \
@@ -1332,7 +1332,7 @@ int main()
 #endif
 
 #define SOURCE_ARDUINO \
-    X(4001, "variable (mux)") \
+    X(4001, "variable (mux) CELL allot") \
     X(4002, ": mux (mux) @ ; : mux! (mux) ! ;") \
     X(4003, ": (s0) mux ;     : s0 (s0) c@ ; ") \
     X(4004, ": (s1) mux 1+ ;  : s1 (s1) c@ ;") \
@@ -1353,16 +1353,12 @@ int main()
     X(4019, ": mux@A ( mux -- n ) _t0 apin@ ;") \
     X(4020, ": mux!  ( n mux -- ) _t0 pin! ;") \
     X(4021, ": mux!A ( n mux -- ) _t0 apin! ;") \
-    X(4022, "variable (pin-vals) 50 2* allot") \
-    X(4023, ": _t1 ( pin -- addr) 2* (pin-vals) + ;") \
-    X(4024, ": pin-val@ ( pin -- val) _t1 @ ;") \
-    X(4025, ": pin-val! ( val pin -- ) _t1 ! ;") \
     X(4999, "marker")
 
 #define SOURCE_USER \
-    X(5001, "variable mux1 1 allot") \
-    X(5002, "variable mux2 1 allot") \
-    X(5003, "variable mux3 1 allot") \
+    X(5001, "variable mux1 5 allot") \
+    X(5002, "variable mux2 5 allot") \
+    X(5003, "variable mux3 5 allot") \
     X(5991, ".\" BoardForth v0.0.1 - by Chris Curl\" cr") \
     X(5992, ".\" Source: https://github.com/CCurl/BoardForth\" cr") \
     X(5993, ".\" Dictionary size:\" dict-sz . .\" , free:\" last here - . cr") \
