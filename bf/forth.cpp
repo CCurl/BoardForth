@@ -1303,7 +1303,7 @@ int main()
     X(1038, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
     X(1039, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
     X(1040, ": pad last #128 - ; : ' pad nextword if- drop pad find then ;") \
-    X(1499, "marker")
+    X(1999, "marker")
 
 #define SOURCE_PC X(2000, ": is-pc 0 ;")
 #ifdef __IS_PC__
@@ -1356,9 +1356,72 @@ int main()
     X(4999, "marker")
 
 #define SOURCE_USER \
-    X(5001, "variable mux1 5 allot") \
-    X(5002, "variable mux2 5 allot") \
-    X(5003, "variable mux3 5 allot") \
+    X(5005, "( Note: the pinMode on the Arduino board is set to INPUT_PULLUP )") \
+    X(5010, "( Wire the switch to go to ground when closed )") \
+    X(5015, "( This way, the pin is HIGH/1 when the switch is open and LOW/0 when closed )") \
+    X(5020, "( DCS maps gamepad/joystick button presses to DCS commands )") \
+    X(5025, "( e.g. - consider a rocker switch to raise and lower the landing gear )") \
+    X(5030, "( The gamer would map GP-button <x> to 'RAISE_LANDING_GEAR' )") \
+    X(5035, "( And he would map GP-button <y> to 'LOWER_LANDING_GEAR' )") \
+    X(5040, "( When the switch goes LOW/0, we want to report that GP-button <x> was pressed )") \
+    X(5045, "( When the switch goes HIGH/1, we want to report that GP-button <y> was pressed )") \
+    X(5050, "( So when a switch opens and closes, that can generate potentially 2 DCS commands )") \
+    X(5055, "( So we need to be able to associate a 2 GP-Buttons with one mux/channel )") \
+    X(5060, "( and trigger the appropriate button press depending when we detect that there was a change )") \
+    X(5065, "( For a given mux/channel, we need to know 3 pieces of info: )") \
+    X(5070, "( 1 - The last known channel value, 2 bytes to support digital and analog data )") \
+    X(5075, "( 2 - Which GP-button to 'press' when the channel goes HIGH -> LOW, 1 byte )") \
+    X(5080, "( 3 - Which GP-button to 'press' when the channel goes LOW -> HIGH, 1 byte )") \
+    X(5085, "( Note: a GP-button value of ZERO means no GP-button is mapped for that event )") \
+    X(5086, "variable mux1 5 allot") \
+    X(5087, "variable mux2 5 allot") \
+    X(5090, "#16 4 * constant data-sz") \
+    X(5095, "variable mux1-data data-sz allot") \
+    X(5100, "variable mux2-data data-sz allot") \
+    X(5105, "variable (data) CELL allot") \
+    X(5110, "mux1-data data-sz 0 fill") \
+    X(5115, "mux2-data data-sz 0 fill") \
+    X(5120, "( The value read from the mux )") \
+    X(5125, "variable (val) 2 allot") \
+    X(5130, ": >val ( n -- ) (val) w! ;") \
+    X(5135, ": val ( -- n ) (val) w@ ;") \
+    X(5140, "( The data context for the current pin/channel )") \
+    X(5145, "variable (ctx) CELL allot") \
+    X(5150, ": >ctx ( ch -- ) #15 and 4 * (data) @ + (ctx) ! ;") \
+    X(5155, ": ctx ( -- a ) (ctx) @ ;") \
+    X(5160, "( Set/Retrieve values from the data context )") \
+    X(5165, ": ch-config ( ch l h -- ) ROT >ctx ctx 3 + c! ctx 2 + c! 0 ctx w! ;") \
+    X(5170, ": lastval   ( -- n )      ctx w@ ;") \
+    X(5175, ": >lastval  ( n -- )      ctx w! ;") \
+    X(5180, ": btn-lo    ( -- n )      ctx 2 + c@ ;") \
+    X(5185, ": btn-hi    ( -- n )      ctx 3 + c@ ;") \
+    X(5190, ": press-button ( n -- ) dup gp.press 50 ms gp.release ;") \
+    X(5195, ": do-report    ( n -- ) if- press-button else drop then ;") \
+    X(5200, ": report-LOW   ( -- )   btn-lo do-report ;") \
+    X(5205, ": report-HIGH  ( -- )   btn-hi do-report ;") \
+    X(5210, ": ->LOW?  ( -- ) lastval 0 > val 0=  and 0= 0= ;") \
+    X(5215, ": ->HIGH? ( -- ) lastval 0=  val 0 > and 0= 0= ;") \
+    X(5220, ": process ( val ch -- )") \
+    X(5225, "	>ctx >val") \
+    X(5230, "	->LOW? if report-LOW then") \
+    X(5235, "	->HIGH? if report-HIGH then") \
+    X(5240, "	val >lastval ;") \
+    X(5245, ": process-mux ( mux data -- )") \
+    X(5250, "	(data) ! (mux) !") \
+    X(5255, "	0 #15 for mux i over mux-select mux@ i process next ;") \
+    X(5260, ": process-muxes ( -- )") \
+    X(5265, "	mux1 mux1-data process-mux") \
+    X(5270, "	mux2 mux2-data process-mux ;") \
+    X(5275, "mux1-data (data) ! ") \
+    X(5280, "0 1 2 ch-config") \
+    X(5285, "1 3 4 ch-config") \
+    X(5290, "2 5 0 ch-config") \
+    X(5295, "3 0 6 ch-config") \
+    X(5300, "4 7 8 ch-config") \
+    X(5305, "mux2-data (data) ! ") \
+    X(5310, "0 16 17 ch-config") \
+    X(5315, "3 4 5 6  9 mux1 mux-init cr") \
+    X(5320, "3 4 5 6 10 mux2 mux-init cr") \
     X(5991, ".\" BoardForth v0.0.1 - by Chris Curl\" cr") \
     X(5992, ".\" Source: https://github.com/CCurl/BoardForth\" cr") \
     X(5993, ".\" Dictionary size:\" dict-sz . .\" , free:\" last here - . cr") \
