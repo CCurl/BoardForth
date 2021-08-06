@@ -52,14 +52,24 @@ typedef BYTE* ADDR;
 #define DBG_DEBUG 1
 #define DBG_OFF   0
 
-#define NAME_LEN      13
+#define NAME_LEN      12
 #define DICT_ENTRY_SZ 20
+
 typedef struct {
     ADDR XT;
     BYTE flags;
     BYTE len;
     char name[NAME_LEN+1];
+    BYTE lex;
 } DICT_T;
+
+typedef struct {
+    char name[12];
+} LEXICON_T;
+
+LEXICON_T lex[LEX_SZ];
+int lexCount = 0;
+int currentLex = 0;
 
 #define LOOP_STK_SZ 8
 typedef struct {
@@ -87,7 +97,7 @@ void doSlMod();
 void doUSlMod();
 void doType();
 CELL getNextWord(char *to, char sep);
-int doFind(char *to);
+int doFind(char *name);
 void doDot(CELL num, int inUnsigned, int space, int width);
 void doDotS();
 void doFor();
@@ -643,6 +653,7 @@ void doCreate(const char* name) {
     dp = (DICT_T*)LAST;
     if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%ld)-", name, LAST); }
     dp->flags = 0;
+    dp->lex = currentLex;
     dp->len = (BYTE)strlen(name);
     if (dp->len > NAME_LEN) {
         printStringF("-name [%s] too long (%d)-", name, NAME_LEN);
@@ -809,6 +820,14 @@ int doFind(char* name) {
     if (dp) {
         push((CELL)dp);
         return 1;
+    }
+    dp = (DICT_T*)LAST;
+    for (int i = 0; i < numWords; i++) {
+        if ((strCmp(name, dp->name) == 0) && (dp->lex == currentLex)) {
+            push((CELL)dp);
+            return 1;
+        }
+        dp++;
     }
     dp = (DICT_T*)LAST;
     for (int i = 0; i < numWords; i++) {
@@ -1058,6 +1077,27 @@ void doParseWord() {
         return;
     }
 
+    if (strCmp(w, "LEXICON") == 0) {
+        if (getNextWord(w, ' ')) {
+            if (lexCount < LEX_SZ) { 
+                w[12] = 0;
+                currentLex = lexCount++;
+                doCreate(w);
+                doCComma(OP_BLIT);
+                doCComma(currentLex);
+                doCComma(OP_RET);
+            } else {
+                printString("-lexicon full-");
+            }
+        }
+        return;
+    }
+
+    if (strCmp(w, "DEFINITIONS") == 0) {
+        currentLex = pop();
+        return;
+    }
+
     BYTE op = getOpcode(w);
     if (op < 0xFF) {
         if (compiling(w, 0)) {
@@ -1134,6 +1174,7 @@ void vmInit() {
     TIB = TIBBuf;
     TIBEnd = TIBBuf;
     loopDepth = 0;
+    currentLex = 0;
     doComma(0);
 }
 
@@ -1261,7 +1302,7 @@ int main()
 }
 #endif
 #define SOURCE_BASE \
-    X(1000, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
+    X(1000, "lexicon forth : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
     X(1001, ": tuck swap over ; inline") \
     X(1002, ": ?dup if- dup then ;") \
     X(1003, ": mod /mod drop ; inline : / /mod nip ; inline") \
