@@ -52,8 +52,8 @@ typedef BYTE* ADDR;
 #define DBG_DEBUG 1
 #define DBG_OFF   0
 
-#define NAME_LEN      12
-#define DICT_ENTRY_SZ 20
+#define NAME_LEN      16
+#define DICT_ENTRY_SZ 24
 
 typedef struct {
     ADDR XT;
@@ -1175,6 +1175,7 @@ void vmInit() {
     TIBEnd = TIBBuf;
     loopDepth = 0;
     currentLex = 0;
+    lexCount = 0;
     doComma(0);
 }
 
@@ -1224,6 +1225,7 @@ void loadSourceF(const char* fmt, ...) {
 }
 
 void loadBaseSystem() {
+    loadSourceF("lexicon forth");
     loadSourceF(": cell %d ; : cells cell * ; : addr %d ; ", CELL_SZ, ADDR_SZ);
     loadSourceF(": dict $%lx ; : dict-sz $%lx ; : entry-sz %d ;", (long)&dict[0], DICT_SZ, DICT_ENTRY_SZ);
     loadSourceF(": vars $%lx ; : vars-sz $%lx ;", (long)&vars[0], VARS_SZ);
@@ -1302,7 +1304,7 @@ int main()
 }
 #endif
 #define SOURCE_BASE \
-    X(1000, "lexicon forth : depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
+    X(1000, ": depth (dsp) @ 1- ; : 0sp 0 (dsp) ! ;") \
     X(1001, ": tuck swap over ; inline") \
     X(1002, ": ?dup if- dup then ;") \
     X(1003, ": mod /mod drop ; inline : / /mod nip ; inline") \
@@ -1373,6 +1375,7 @@ int main()
 #endif
 
 #define SOURCE_ARDUINO \
+    X(4000, "lexicon mux") \
     X(4001, "variable (mux) CELL allot") \
     X(4002, ": mux (mux) @ ; : mux! (mux) ! ;") \
     X(4003, ": (s0) mux ;     : s0 (s0) c@ ; ") \
@@ -1394,6 +1397,7 @@ int main()
     X(4019, ": mux@A ( mux -- n ) _t0 apin@ ;") \
     X(4020, ": mux!  ( n mux -- ) _t0 pin! ;") \
     X(4021, ": mux!A ( n mux -- ) _t0 apin! ;") \
+    X(4022, "forth definitions") \
     X(4999, "marker")
 
 #define SOURCE_USER \

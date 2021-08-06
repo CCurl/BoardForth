@@ -17,7 +17,7 @@
 	#define VARS_SZ (1024*4)
 	#define STK_SZ 32
 	#define TIB_SZ (128)
-	#define LEX_SZ 24
+	#define LEX_SZ 8
 	#define MAX_FILE_SZ (1024*10)
 	#define PIN_INPUT INPUT
 	#define PIN_INPUT_PULLUP INPUT_PULLUP
@@ -29,7 +29,7 @@
 	#define VARS_SZ (1024*64)
 	#define STK_SZ 32
 	#define TIB_SZ (128)
-	#define LEX_SZ 24
+	#define LEX_SZ 64
 	#define MAX_FILE_SZ 10*1024
 	#define __FILES__
 	#define __GAMEPAD_FAKE__
