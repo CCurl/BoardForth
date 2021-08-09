@@ -33,7 +33,7 @@ Notes:
     - Words are not case sensitive. DICT, Dict, and dict all refer to the same word.
     - The data and return stack sizes are defaulted to 32 CELLS (32-bit). That can be easily changed in board.h
     - To add an opcode (primitive):
-        - Add a 'X("NEWOP", NEWOP, code) \' to the NASE_OPCODES list in defs.h.
+        - Add a 'X("NEWOP", NEWOP, code) \' to the BASE_OPCODES list in defs.h.
         - If the code is more involved, define a function and call that.
     - The development process I use is as follows:
         - Deploy the VM as above.
