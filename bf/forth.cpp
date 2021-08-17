@@ -67,8 +67,8 @@ typedef struct {
     char name[12];
 } LEXICON_T;
 
-LEXICON_T lex[LEX_SZ];
-int lexCount = 0;
+LEXICON_T lex[LEX_SZ+1];
+int lastLex = 0;
 int currentLex = 0;
 
 #define LOOP_STK_SZ 8
@@ -823,7 +823,7 @@ int doFind(char* name) {
     }
     dp = (DICT_T*)LAST;
     for (int i = 0; i < numWords; i++) {
-        if ((strCmp(name, dp->name) == 0) && (dp->lex == currentLex)) {
+        if ((strCmp(name, dp->name) == 0) && (currentLex) && (dp->lex == currentLex)) {
             push((CELL)dp);
             return 1;
         }
@@ -1079,9 +1079,8 @@ void doParseWord() {
 
     if (strCmp(w, "LEXICON") == 0) {
         if (getNextWord(w, ' ')) {
-            if (lexCount < LEX_SZ) { 
-                w[12] = 0;
-                currentLex = lexCount++;
+            if (lastLex < LEX_SZ) { 
+                currentLex = ++lastLex;
                 doCreate(w);
                 doCComma(OP_BLIT);
                 doCComma(currentLex);
@@ -1175,7 +1174,7 @@ void vmInit() {
     TIBEnd = TIBBuf;
     loopDepth = 0;
     currentLex = 0;
-    lexCount = 0;
+    lastLex = 0;
     doComma(0);
 }
 
@@ -1225,7 +1224,7 @@ void loadSourceF(const char* fmt, ...) {
 }
 
 void loadBaseSystem() {
-    loadSourceF("lexicon forth");
+    loadSourceF(": all 0 ; lexicon forth");
     loadSourceF(": cell %d ; : cells cell * ; : addr %d ; ", CELL_SZ, ADDR_SZ);
     loadSourceF(": dict $%lx ; : dict-sz $%lx ; : entry-sz %d ;", (long)&dict[0], DICT_SZ, DICT_ENTRY_SZ);
     loadSourceF(": vars $%lx ; : vars-sz $%lx ;", (long)&vars[0], VARS_SZ);
@@ -1309,7 +1308,8 @@ int main()
     X(1002, ": ?dup if- dup then ;") \
     X(1003, ": mod /mod drop ; inline : / /mod nip ; inline") \
     X(1401, ": bl #32 ; inline : space bl emit ; inline") \
-    X(1402, ": cr #13 emit #10 emit ; inline : tab #9 emit ; inline") \
+    X(1402, ": spaces 1 for space next ;" ) \
+    X(1403, ": cr #13 emit #10 emit ; inline : tab #9 emit ; inline") \
     X(1005, ": rot >r swap r> swap ; : -rot swap >r swap r> ;") \
     X(1006, ": 2dup over over ; inline : 2drop drop drop ; inline") \
     X(1007, ": +! tuck @ + swap ! ; inline") \
@@ -1375,7 +1375,7 @@ int main()
 #endif
 
 #define SOURCE_ARDUINO \
-    X(4000, "lexicon mux") \
+    X(4000, "lexicon mux-words") \
     X(4001, "variable (mux) CELL allot") \
     X(4002, ": mux (mux) @ ; : mux! (mux) ! ;") \
     X(4003, ": (s0) mux ;     : s0 (s0) c@ ; ") \
