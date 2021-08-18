@@ -67,7 +67,6 @@ typedef struct {
     char name[12];
 } LEXICON_T;
 
-LEXICON_T lex[LEX_SZ+1];
 int lastLex = 0;
 int currentLex = 0;
 
@@ -1088,15 +1087,11 @@ void doParseWord() {
 
     if (strCmp(w, "LEXICON") == 0) {
         if (getNextWord(w, ' ')) {
-            if (lastLex < LEX_SZ) { 
-                currentLex = ++lastLex;
-                doCreate(w);
-                doCComma(OP_BLIT);
-                doCComma(currentLex);
-                doCComma(OP_RET);
-            } else {
-                printString("-lexicon full-");
-            }
+            currentLex = ++lastLex;
+            doCreate(w);
+            doCComma(OP_BLIT);
+            doCComma(currentLex);
+            doCComma(OP_RET);
         }
         return;
     }

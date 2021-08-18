@@ -18,7 +18,6 @@
 	#define VARS_SZ (1024*4)
 	#define STK_SZ 32
 	#define TIB_SZ (128)
-	#define LEX_SZ 7
 	#define MAX_FILE_SZ (1024*10)
 	#define PIN_INPUT INPUT
 	#define PIN_INPUT_PULLUP INPUT_PULLUP
@@ -30,7 +29,6 @@
 	#define VARS_SZ (1024*256)
 	#define STK_SZ 32
 	#define TIB_SZ (128)
-	#define LEX_SZ 63
 	#define MAX_FILE_SZ 10*1024
 	#define __FILES__
 	// #define __ARDUINO__
