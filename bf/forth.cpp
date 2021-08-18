@@ -137,13 +137,19 @@ extern const char *bootStrap[];
 
 #ifdef __IS_PC__
 #pragma warning(disable:4996)
+void delay(int ms) { Sleep(ms); }
+long millis() { return GetTickCount(); }
+#endif
+
+#ifdef __ARDUINO_FAKE__
+#define PIN_INPUT 1
+#define PIN_INPUT_PULLUP 2
+#define PIN_OUTPUT 3
 void pinMode(int pin, int mode) { printStringF("-pinMode(%d,%d)-", pin, mode); }
 int digitalRead(int pin) { printStringF("-dread(%d)-", pin); return pin + 1; }
 int analogRead(int pin) { printStringF("-aread(%d)-", pin); return pin + 1; }
 void digitalWrite(int pin, int val) { printStringF("-dwrite(%d,%d)-", pin, val); }
 void analogWrite(int pin, int val) { printStringF("-awrite(%d,%d)-", pin, val); }
-void delay(int ms) { Sleep(ms); }
-long millis() { return GetTickCount(); }
 #endif
 
 void push(CELL v) {
@@ -984,6 +990,8 @@ void doParseWord() {
             doCComma(OP_LIT);
             doComma((CELL)VHERE);
             doCComma(OP_RET);
+            cellStore(VHERE, 0);
+            VHERE += CELL_SZ;
         }
         return;
     }
@@ -1375,6 +1383,9 @@ int main()
     X(2099, "marker") 
 #endif
 
+#define SOURCE_ARDUINO
+#ifdef __ARDUINO__
+#undef SOURCE_ARDUINO
 #define SOURCE_ARDUINO \
     X(4000, "lexicon mux-words") \
     X(4001, "variable (mux) CELL allot") \
@@ -1400,8 +1411,13 @@ int main()
     X(4021, ": mux!A ( n mux -- ) _t0 apin! ;") \
     X(4022, "forth definitions") \
     X(4999, "marker")
+#endif // __ARDUINO__
 
-#define SOURCE_USER \
+#define SOURCE_BOARD
+#ifdef __DEV_BOARD__
+#undef SOURCE_BOARD 
+
+#define SOURCE_BOARD \
     X(5005, "( Note: the pinMode on the Arduino board is set to INPUT_PULLUP )") \
     X(5010, "( Wire the switch to go to ground when closed )") \
     X(5015, "( This way, the pin is HIGH/1 when the switch is open and LOW/0 when closed )") \
@@ -1467,14 +1483,17 @@ int main()
     X(5305, "mux2-data (data) ! ") \
     X(5310, "0 16 17 ch-config") \
     X(5315, "3 4 5 6  9 mux1 mux-init cr") \
-    X(5320, "3 4 5 6 10 mux2 mux-init cr") \
-    X(5991, ".\" BoardForth v0.0.1 - by Chris Curl\" cr") \
-    X(5992, ".\" Source: https://github.com/CCurl/BoardForth\" cr") \
-    X(5993, ".\" Dictionary size:\" dict-sz . .\" , free:\" last here - . cr") \
-    X(5998, ".\" Hello.\"") \
-    X(5999, "marker")
+    X(5320, "3 4 5 6 10 mux2 mux-init cr")
+#endif // __DEV_BOARD__
 
-#define SOURCES SOURCE_BASE SOURCE_PC SOURCE_ARDUINO SOURCE_USER
+#define SOURCE_STARTUP \
+    X(9995, ".\" BoardForth v0.0.1 - by Chris Curl\" cr") \
+    X(9996, ".\" Source: https://github.com/CCurl/BoardForth\" cr") \
+    X(9997, ".\" Dictionary size:\" dict-sz . .\" , free:\" last here - . cr") \
+    X(9998, ".\" Hello.\"") \
+    X(9999, "marker")
+
+#define SOURCES SOURCE_BASE SOURCE_PC SOURCE_ARDUINO SOURCE_BOARD SOURCE_STARTUP
 
 #undef X
 #define X(num, val) const PROGMEM char str ## num[] = val;
