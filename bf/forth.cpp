@@ -165,84 +165,84 @@ CELL rpop() {
 }
 
 #define BASE_OPCODES \
-    X("NOP"        , NOP         , ) \
-    X("CALL"       , CALL        , rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
-    X("RET"        , RET         , PC = (ADDR)rpop()) \
-    X("JMP"        , JMP         , PC = addrAt(PC)) \
-    X("BRANCH"     , BRANCH      , PC += *(PC)) \
-    X("ZBRANCH"    , ZBRANCH     , PC += (T == 0) ? *(PC) : 1; DROP1) \
-    X("NZBRANCH"   , NZBRANCH    , PC += (T == 0) ? *(PC) : 1) \
-    X("BLIT"       , BLIT        , push(*(PC++))) \
-    X("WLIT"       , WLIT        , push(wordAt(PC)); PC += WORD_SZ) \
-    X("LIT"        , LIT         , push(cellAt(PC)); PC += CELL_SZ) \
-    X("DUP"        , DUP         , push(T)) \
-    X("SWAP"       , SWAP        , t1 = T; T = N; N = t1) \
-    X("OVER"       , OVER        , push(N)) \
-    X("@"          , FETCH       , T = cellAt(A)) \
-    X("!"          , STORE       , cellStore(A ,N); DROP2) \
-    X("+"          , ADD         , N += T; DROP1) \
-    X("-"          , SUB         , N -= T; DROP1) \
-    X("*"          , MULT        , N *= T; DROP1) \
-    X("/MOD"       , SLMOD       , doSlMod()) \
-    X("AND"        , AND         , N &= T; DROP1) \
-    X("NAND"       , NAND        , N = (N & T) ? 0 : 1; DROP1) \
-    X("OR"         , OR          , N |= T; DROP1) \
-    X("XOR"        , XOR         , N ^= T; DROP1) \
-    X("COM"        , COM         , T = ~T) \
-    X("<"          , LESS        , N = (N < T) ? 1 : 0; DROP1) \
-    X("="          , EQUALS      , N = (N == T) ? 1 : 0; DROP1) \
-    X("<>"         , NEQUALS     , N = (N != T) ? 1 : 0; DROP1) \
-    X("0="         , ZEQUALS     , T = (T == 0) ? 1 : 0) \
-    X(">"          , GREATER     , N = (N > T) ? 1 : 0; DROP1) \
-    X("NIP"        , NIP         , N = T; DROP1) \
-    X("c@"         , CFETCH      , T = (BYTE)*A) \
-    X("DROP"       , ROP        , DROP1) \
-    X("MS"         , DELAY       , delay(pop())) \
-    X("TIMER"      , TIMER       , push(millis())) \
-    X("w@"         , WFETCH      , T = wordAt(A)) \
-    X("a@"         , AFETCH      , (ADDR_SZ == 2) ? T = wordAt(A) : T = cellAt(A)) \
-    X("c!"         , CSTORE      , *A = (N & 0xFF); DROP2) \
-    X("w!"         , WSTORE      , wordStore(A ,N); DROP2) \
-    X("a!"         , ASTORE      , (ADDR_SZ == 2) ? wordStore(A ,N) : cellStore(A,N); DROP2) \
-    X("U/MOD"      , USLMOD      , doUSlMod()) \
-    X("2/"         , RSHIFT      , T = T >> 1) \
-    X("2*"         , LSHIFT      , T = T << 1) \
-    X("1-"         , ONEMINUS    , --T) \
-    X("1+"         , ONEPLUS     , ++T) \
-    X(">r"         , DTOR        , rpush(pop())) \
-    X("r@"         , RFETCH      , push(R)) \
-    X("r>"         , RTOD        , push(rpop())) \
-    X("COUNT"      , COUNT       , push(T); N += 1; T = (*A)) \
-    X("TYPE"       , TYPE        , doType() ) \
-    X("EMIT"       , EMIT        , buf[0] = (char)T; printString(buf); DROP1) \
-    X("(.)"        , PDOT        , doDot(T ,0,0,0); DROP1) \
-    X("."          , DOT         , doDot(T ,0,1,0); DROP1) \
-    X("U."         , UDOT        , doDot(T ,1,1,0); DROP1) \
-    X(".N"         , NDOT        , doDot(N ,1,0,T); DROP2) \
-    X(".S"         , DOTS        , doDotS()) \
-    X("FOR"        , FOR         , doFor()) \
-    X("I"          , I           , if (0 <= loopSP) push(doStack[loopSP].index)) \
-    X("J"          , J           , if (1 <= loopSP) push(doStack[loopSP-1].index)) \
-    X("K"          , K           , if (2 <= loopSP) push(doStack[loopSP-2].index)) \
-    X("NEXT"       , NEXT        , doNext()) \
-    X("BREAK"      , BREAK       , doBreak()) \
-    X("BEGIN"      , BEGIN       , doBegin()) \
-    X("AGAIN"      , AGAIN       , doAgain()) \
-    X("WHILE"      , WHILE       , doWhile(1 ,0)) \
-    X("WHILE-"     , WHILEN      , doWhile(0 ,0)) \
-    X("UNTIL"      , UNTIL       , doWhile(1 ,1)) \
-    X("C,"         , CCOMMA      , *(HERE++) = (BYTE)T; DROP1) \
-    X("W,"         , WCOMMA      , doWComma((WORD)T); DROP1) \
-    X(","          , COMMA       , doComma(T); DROP1) \
-    X("A,"         , ACOMMA      , doAComma(A); DROP1) \
-    X("NEXTWORD"   , NEXTWORD    , T = getNextWord(C ,' ')) \
-    X("FIND"       , FIND        , push(doFind((char *)pop()))) \
-    X("MALLOC"     , MALLOC      , T = (CELL)malloc(T)) \
-    X("FREE"       , MFREE       , free((void *)T); DROP1) \
-    X("FILL"       , FILL        , memset((void *)N2,N0,N1); DROP3) \
-    X("ZCOUNT"     , ZCOUNT      , push(T); T = strlen(C)) \
-    X("ZTYPE"      , ZTYPE       , printString(C); DROP1 ) \
-    X("DEBUG-MODE" , DEBUG_MODE  , push((CELL)&debugMode)) \
+    X("NOP"        , 128 , NOP         , ) \
+    X("CALL"       , ':' , CALL        , rpush((CELL)PC + ADDR_SZ); PC = addrAt(PC)) \
+    X("RET"        , 130 , RET         , PC = (ADDR)rpop()) \
+    X("JMP"        , 131 , JMP         , PC = addrAt(PC)) \
+    X("BRANCH"     , 132 , BRANCH      , PC += *(PC)) \
+    X("ZBRANCH"    , 133 , ZBRANCH     , PC += (T == 0) ? *(PC) : 1; DROP1) \
+    X("NZBRANCH"   , 134 , NZBRANCH    , PC += (T == 0) ? *(PC) : 1) \
+    X("BLIT"       , 135 , BLIT        , push(*(PC++))) \
+    X("WLIT"       , 136 , WLIT        , push(wordAt(PC)); PC += WORD_SZ) \
+    X("LIT"        , 137 , LIT         , push(cellAt(PC)); PC += CELL_SZ) \
+    X("DUP"        , 138 , DUP         , push(T)) \
+    X("SWAP"       , 139 , SWAP        , t1 = T; T = N; N = t1) \
+    X("OVER"       , 140 , OVER        , push(N)) \
+    X("@"          , 141 , FETCH       , T = cellAt(A)) \
+    X("!"          , 142 , STORE       , cellStore(A ,N); DROP2) \
+    X("+"          , 143 , ADD         , N += T; DROP1) \
+    X("-"          , 144 , SUB         , N -= T; DROP1) \
+    X("*"          , 145 , MULT        , N *= T; DROP1) \
+    X("/MOD"       , 146 , SLMOD       , doSlMod()) \
+    X("AND"        , 147 , AND         , N &= T; DROP1) \
+    X("NAND"       , 148 , NAND        , N = (N & T) ? 0 : 1; DROP1) \
+    X("OR"         , 149 , OR          , N |= T; DROP1) \
+    X("XOR"        , 150 , XOR         , N ^= T; DROP1) \
+    X("COM"        , 151 , COM         , T = ~T) \
+    X("<"          , 152 , LESS        , N = (N < T) ? 1 : 0; DROP1) \
+    X("="          , 153 , EQUALS      , N = (N == T) ? 1 : 0; DROP1) \
+    X("<>"         , 154 , NEQUALS     , N = (N != T) ? 1 : 0; DROP1) \
+    X("0="         , 155 , ZEQUALS     , T = (T == 0) ? 1 : 0) \
+    X(">"          , 156 , GREATER     , N = (N > T) ? 1 : 0; DROP1) \
+    X("NIP"        , 157 , NIP         , N = T; DROP1) \
+    X("c@"         , 158 , CFETCH      , T = (BYTE)*A) \
+    X("DROP"       , 159 , ROP        , DROP1) \
+    X("MS"         , 160 , DELAY       , delay(pop())) \
+    X("TIMER"      , 161 , TIMER       , push(millis())) \
+    X("w@"         , 162 , WFETCH      , T = wordAt(A)) \
+    X("a@"         , 163 , AFETCH      , (ADDR_SZ == 2) ? T = wordAt(A) : T = cellAt(A)) \
+    X("c!"         , 164 , CSTORE      , *A = (N & 0xFF); DROP2) \
+    X("w!"         , 165 , WSTORE      , wordStore(A ,N); DROP2) \
+    X("a!"         , 166 , ASTORE      , (ADDR_SZ == 2) ? wordStore(A ,N) : cellStore(A,N); DROP2) \
+    X("U/MOD"      , 167 , USLMOD      , doUSlMod()) \
+    X("2/"         , 168 , RSHIFT      , T = T >> 1) \
+    X("2*"         , 169 , LSHIFT      , T = T << 1) \
+    X("1-"         , 170 , ONEMINUS    , --T) \
+    X("1+"         , 171 , ONEPLUS     , ++T) \
+    X(">r"         , 172 , DTOR        , rpush(pop())) \
+    X("r@"         , 173 , RFETCH      , push(R)) \
+    X("r>"         , 174 , RTOD        , push(rpop())) \
+    X("COUNT"      , 175 , COUNT       , push(T); N += 1; T = (*A)) \
+    X("TYPE"       , 176 , TYPE        , doType() ) \
+    X("EMIT"       , 177 , EMIT        , buf[0] = (char)T; printString(buf); DROP1) \
+    X("(.)"        , 178 , PDOT        , doDot(T ,0,0,0); DROP1) \
+    X("."          , 179 , DOT         , doDot(T ,0,1,0); DROP1) \
+    X("U."         , 180 , UDOT        , doDot(T ,1,1,0); DROP1) \
+    X(".N"         , 181 , NDOT        , doDot(N ,1,0,T); DROP2) \
+    X(".S"         , 182 , DOTS        , doDotS()) \
+    X("FOR"        , 183 , FOR         , doFor()) \
+    X("I"          , 184 , I           , if (0 <= loopSP) push(doStack[loopSP].index)) \
+    X("J"          , 185 , J           , if (1 <= loopSP) push(doStack[loopSP-1].index)) \
+    X("K"          , 186 , K           , if (2 <= loopSP) push(doStack[loopSP-2].index)) \
+    X("NEXT"       , 187 , NEXT        , doNext()) \
+    X("BREAK"      , 188 , BREAK       , doBreak()) \
+    X("BEGIN"      , 189 , BEGIN       , doBegin()) \
+    X("AGAIN"      , 190 , AGAIN       , doAgain()) \
+    X("WHILE"      , 191 , WHILE       , doWhile(1 ,0)) \
+    X("WHILE-"     , 192 , WHILEN      , doWhile(0 ,0)) \
+    X("UNTIL"      , 193 , UNTIL       , doWhile(1 ,1)) \
+    X("C,"         , 194 , CCOMMA      , *(HERE++) = (BYTE)T; DROP1) \
+    X("W,"         , 195 , WCOMMA      , doWComma((WORD)T); DROP1) \
+    X(","          , 196 , COMMA       , doComma(T); DROP1) \
+    X("A,"         , 197 , ACOMMA      , doAComma(A); DROP1) \
+    X("NEXTWORD"   , 198 , NEXTWORD    , T = getNextWord(C ,' ')) \
+    X("FIND"       , 199 , FIND        , push(doFind((char *)pop()))) \
+    X("MALLOC"     , 200 , MALLOC      , T = (CELL)malloc(T)) \
+    X("FREE"       , 201 , MFREE       , free((void *)T); DROP1) \
+    X("FILL"       , 202 , FILL        , memset((void *)N2,N0,N1); DROP3) \
+    X("ZCOUNT"     , 203 , ZCOUNT      , push(T); T = strlen(C)) \
+    X("ZTYPE"      , 204 , ZTYPE       , printString(C); DROP1 ) \
+    X("DEBUG-MODE" , 205 , DEBUG_MODE  , push((CELL)&debugMode)) \
 
 #ifndef __FILES__
 #define FILE_OPCODES
@@ -252,10 +252,11 @@ void doFileClose(CELL fp);
 void doFileRead();
 void doFileWrite();
 #define FILE_OPCODES \
-    X("FOPEN"   , FOPEN   , N = doFileOpen((char *)N+1, C+1); DROP1) \
-    X("FCLOSE"  , FCLOSE  , doFileClose(T); DROP1) \
-    X("FREAD"   , FREAD   , doFileRead()) \
-    X("FWRITE"  , FWRITE  , doFileWrite())
+    X("FOPEN"   , 206 , FOPEN   , N = doFileOpen((char *)N+1, C+1); DROP1) \
+    X("FCLOSE"  , 207 , FCLOSE  , doFileClose(T); DROP1) \
+    X("FREAD"   , 208 , FREAD   , doFileRead()) \
+    X("FWRITE"  , 209 , FWRITE  , doFileWrite())
+
 #endif
 
 #ifndef __LITTLEFS__
@@ -266,23 +267,23 @@ void doFileClose(CELL fp);
 void doFileRead();
 void doFileWrite();
 #define LITTLEFS_OPCODES \
-    X("FOPEN"    , FOPEN   , N = doFileOpen((char *)N+1, C+1); DROP1) \
-    X("FCLOSE"   , FCLOSE  , doFileClose(T); DROP1) \
-    X("FREAD"    , FREAD   , doFileRead()) \
-    X("FWRITE"   , FWRITE  , doFileWrite())
+    X("FOPEN"    , 206 , FOPEN   , N = doFileOpen((char *)N+1, C+1); DROP1) \
+    X("FCLOSE"   , 207 , FCLOSE  , doFileClose(T); DROP1) \
+    X("FREAD"    , 208 , FREAD   , doFileRead()) \
+    X("FWRITE"   , 209 , FWRITE  , doFileWrite())
 #endif
 
 #define ARDUINO_OPCODES
 #ifdef __ARDUINO__
 #undef ARDUINO_OPCODES
 #define ARDUINO_OPCODES \
-    X("INPUT"      , INPUT_PIN         , pinMode(T, PIN_INPUT);        DROP1) \
-    X("PULLUP"     , INPUT_PIN_PULLUP  , pinMode(T, PIN_INPUT_PULLUP); DROP1) \
-    X("OUTPUT"     , OUTPUT_PIN        , pinMode(T, PIN_OUTPUT);       DROP1) \
-    X("pin@"       , DPIN_FETCH        , T = digitalRead((int)T); ) \
-    X("pin!"       , DPIN_STORE        , digitalWrite((int)T, (int)N); DROP2) \
-    X("apin@"      , APIN_FETCH        , T = analogRead((int)T); ) \
-    X("apin!"      , APIN_STORE        , analogWrite((int)T, (int)N);  DROP2)
+    X("INPUT"      , 210 , INPUT_PIN         , pinMode(T, PIN_INPUT);        DROP1) \
+    X("PULLUP"     , 211 , INPUT_PIN_PULLUP  , pinMode(T, PIN_INPUT_PULLUP); DROP1) \
+    X("OUTPUT"     , 212 , OUTPUT_PIN        , pinMode(T, PIN_OUTPUT);       DROP1) \
+    X("pin@"       , 213 , DPIN_FETCH        , T = digitalRead((int)T); ) \
+    X("pin!"       , 214 , DPIN_STORE        , digitalWrite((int)T, (int)N); DROP2) \
+    X("apin@"      , 215 , APIN_FETCH        , T = analogRead((int)T); ) \
+    X("apin!"      , 216 , APIN_STORE        , analogWrite((int)T, (int)N);  DROP2)
 #endif
 
 // NB: These are for the HID library from NicoHood
@@ -290,27 +291,27 @@ void doFileWrite();
 #ifdef __GAMEPAD_FAKE__
 #undef GAMEPAD_OPCODES
 #define GAMEPAD_OPCODES \
-    X("GP.X"           , GP_XA  , printStringF("GP.x(%ld)", T); DROP1) \
-    X("GP.Y"           , GP_YA  , printStringF("GP.y(%ld)", T); DROP1) \
-    X("GP.PRESS"       , GP_BD  , printStringF("GP.press(%ld)", T); DROP1) \
-    X("GP.RELEASE"     , GP_BU  , printStringF("GP.release(%ld)", T); DROP1) \
-    X("GP.PAD1"        , GP_P1  , printStringF("GP.p1(%ld)", T); DROP1) \
-    X("GP.PAD2"        , GP_P2  , printStringF("GP.p2(%ld)", T); DROP1) \
-    X("GP.RELEASEALL"  , GP_RA  , printStringF("GP.releaseAll()")) \
-    X("GP.WRITE"       , GP_WR  , printStringF("GP.write()"))
+    X("GP.X"           , 217 , GP_XA  , printStringF("GP.x(%ld)", T); DROP1) \
+    X("GP.Y"           , 218 , GP_YA  , printStringF("GP.y(%ld)", T); DROP1) \
+    X("GP.PRESS"       , 219 , GP_BD  , printStringF("GP.press(%ld)", T); DROP1) \
+    X("GP.RELEASE"     , 220 , GP_BU  , printStringF("GP.release(%ld)", T); DROP1) \
+    X("GP.PAD1"        , 221 , GP_P1  , printStringF("GP.p1(%ld)", T); DROP1) \
+    X("GP.PAD2"        , 222 , GP_P2  , printStringF("GP.p2(%ld)", T); DROP1) \
+    X("GP.RELEASEALL"  , 223 , GP_RA  , printStringF("GP.releaseAll()")) \
+    X("GP.WRITE"       , 224 , GP_WR  , printStringF("GP.write()"))
 #endif
 
 #ifdef __GAMEPAD__
 #undef GAMEPAD_OPCODES
 #define GAMEPAD_OPCODES \
-    X("GP.X"           , GP_XA  , Gamepad.xAxis(T); DROP1) \
-    X("GP.Y"           , GP_YA  , Gamepad.yAxis(T); DROP1) \
-    X("GP.PRESS"       , GP_BD  , Gamepad.press(T); DROP1) \
-    X("GP.RELEASE"     , GP_BU  , Gamepad.release(T); DROP1) \
-    X("GP.PAD1"        , GP_P1  , Gamepad.dPad1(T); DROP1) \
-    X("GP.PAD2"        , GP_P2  , Gamepad.dPad2(T); DROP1) \
-    X("GP.RELEASEALL"  , GP_RA  , Gamepad.releaseAll()) \
-    X("GP.WRITE"       , GP_WR  , Gamepad.write())
+    X("GP.X"           , 217 , GP_XA  , Gamepad.xAxis(T); DROP1) \
+    X("GP.Y"           , 218 , GP_YA  , Gamepad.yAxis(T); DROP1) \
+    X("GP.PRESS"       , 219 , GP_BD  , Gamepad.press(T); DROP1) \
+    X("GP.RELEASE"     , 220 , GP_BU  , Gamepad.release(T); DROP1) \
+    X("GP.PAD1"        , 221 , GP_P1  , Gamepad.dPad1(T); DROP1) \
+    X("GP.PAD2"        , 222 , GP_P2  , Gamepad.dPad2(T); DROP1) \
+    X("GP.RELEASEALL"  , 223 , GP_RA  , Gamepad.releaseAll()) \
+    X("GP.WRITE"       , 224 , GP_WR  , Gamepad.write())
 #endif
 
 #ifndef __COM_PORT__
@@ -320,10 +321,10 @@ CELL doComOpen(CELL portNum, CELL baud);
 CELL doComRead(CELL handle);
 CELL doComWrite(CELL handle, CELL ch);
 #define COMPORT_OPCODES \
-    X("COM-OPEN"   , COM_OPEN   , N = doComOpen(T, N); DROP1) \
-    X("COM-READ"   , COM_READ   , T = doComRead(T)) \
-    X("COM-WRITE"  , COM_WRITE  , N = doComWrite(T, N); DROP1) \
-    X("COM-CLOSE"  , COM_CLOSE  , CloseHandle((HANDLE)T); DROP1)
+    X("COM-OPEN"   , 225 , COM_OPEN   , N = doComOpen(T, N); DROP1) \
+    X("COM-READ"   , 226 , COM_READ   , T = doComRead(T)) \
+    X("COM-WRITE"  , 227 , COM_WRITE  , N = doComWrite(T, N); DROP1) \
+    X("COM-CLOSE"  , 228 , COM_CLOSE  , CloseHandle((HANDLE)T); DROP1)
 #endif
 
 #define OPCODES \
@@ -333,18 +334,18 @@ CELL doComWrite(CELL handle, CELL ch);
     ARDUINO_OPCODES \
     GAMEPAD_OPCODES \
     COMPORT_OPCODES \
-    X("OPCODES", DUMP_OPCODES, dumpOpcodes()) \
-    X("FORTH-SOURCE", BOOT_STRAP, push((CELL)&bootStrap[0])) \
-    X("BYE", BYE, printString(" goodbye."); isBYE = 1)
+    X("OPCODES"       , 252 , DUMP_OPCODES  , dumpOpcodes()) \
+    X("FORTH-SOURCE"  , 253 , BOOT_STRAP    , push((CELL)&bootStrap[0])) \
+    X("BYE"           , 254 , BYE           , printString(" goodbye."); isBYE = 1)
 
-#define X(name, op, code) OP_ ## op,
+#define X(name, ch, op, code) OP_ ## op = ch,
 typedef enum {
-    OP_NONE = 31,
+    OP_NONE = 1,
     OPCODES
 } OPCODE_T;
 #undef X
 
-#define X(name, op, code) if (opcode == OP_ ## op) { strcpy(buf, #op); }
+#define X(name, ch, op, code) if (opcode == OP_ ## op) { strcpy(buf, #op); }
 void printOpcode(BYTE opcode) {
     char buf[32];
     sprintf(buf, "#%d", opcode);
@@ -353,21 +354,21 @@ void printOpcode(BYTE opcode) {
 }
 #undef X
 
-#define X(name, op, code) x = OP_ ## op; printStringF("\r\n%3d ($%02x, %c): %s", x, x, (char)x, name);
+#define X(name, ch, op, code) x = OP_ ## op; printStringF("\r\n%3d ($%02x, %c): %s", x, x, (char)x, name);
 void dumpOpcodes() {
     int x;
     OPCODES
 }
 #undef X
 
-#define X(name, op, code) if (strCmp(w, name) == 0) { return OP_ ## op; }
+#define X(name, ch, op, code) if (strCmp(w, name) == 0) { return OP_ ## op; }
 BYTE getOpcode(char* w) {
     OPCODES
         return 0xFF;
 }
 
 #undef X
-#define X(name, op, code) case OP_ ## op: code; break;
+#define X(name, ch, op, code) case OP_ ## op: code; break;
 
 void run(ADDR start, CELL max_cycles) {
     char buf[2];
