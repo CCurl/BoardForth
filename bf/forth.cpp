@@ -661,6 +661,7 @@ void doCreate(const char* name) {
     dp->flags = 0;
     dp->lex = currentLex;
     dp->len = (BYTE)strlen(name);
+    if (DBG_DEBUG <= debugMode) { printStringF("-cw:(%d, len)%d-", dp, dp->len); }
     if (dp->len > NAME_LEN) {
         printStringF("-name [%s] too long (%d)-", name, NAME_LEN);
         dp->len = NAME_LEN;
@@ -668,6 +669,7 @@ void doCreate(const char* name) {
     strncpy(dp->name, name, NAME_LEN);
     dp->name[NAME_LEN] = 0;
     dp->XT = HERE;
+    if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%ld)-", dp->name, LAST); }
 }
 
 int matches(char ch, char sep) {
@@ -697,10 +699,12 @@ void doParse(char sep) {
     isError = 0;
     toIN = (char*)pop();
     TIBEnd = toIN + strlen(toIN);
+    if (DBG_DEBUG <=  debugMode) { printStringF("doParse(%s, %p)\r\n", toIN, TIBEnd); }
     // try {
     while (1) {
         char* w = (char*)TMP_WORD;
         CELL len = getNextWord(w, sep);
+        if (DBG_DEBUG <=  debugMode) { printStringF("doParse(%s, %d)\r\n", w, len); }
         if (len == 0) { return; }
         push((CELL)w);
         doParseWord();
@@ -880,7 +884,7 @@ int isNumber(const char* w) {
 // ( a -- )
 void doParseWord() {
     char* w = (char*)pop();
-    if (DBG_INFO <= debugMode) { printStringF("-%s-", w); }
+    if (DBG_INFO <= debugMode) { printStringF("-pw:%s-", w); }
     //if (strCmp(w, "dump-dict") == 0) {
     //    int x = 1;
     //}
@@ -971,6 +975,7 @@ void doParseWord() {
             doCreate(w);
             STATE = 1;
         }
+        if (DBG_INFO <= debugMode) { printStringF("-:-end-\r\n"); }
         return;
     }
 
@@ -1122,6 +1127,7 @@ void doParseWord() {
 
 // ---------------------------------------------------------------------
 void parseLine(const char* line) {
+    if (DBG_DEBUG <=  debugMode) { printStringF("parseLine(0): %s\r\n", line); }
     push((CELL)line);
     doParse(' ');
 }
@@ -1170,6 +1176,7 @@ void vmInit() {
     HERE = &dict[0];
     VHERE = &vars[0];
     LAST = HERE + (DICT_SZ-4);
+    while (((long)LAST%4) != 0) { LAST--; }
     BASE = 10;
     STATE = 0;
     DSP = 0;
@@ -1180,6 +1187,7 @@ void vmInit() {
     currentLex = 0;
     lastLex = 0;
     doComma(0);
+    if (DBG_TRACE <= debugMode) { printStringF("-cw:%ld,%ld-\r\n", HERE, LAST); }
 }
 
 #ifdef __DEV_BOARD__
@@ -1224,6 +1232,7 @@ void loadSourceF(const char* fmt, ...) {
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
+    if (DBG_DEBUG <=  debugMode) { printStringF("-ls:::%s:%p-\r\n", buf, buf); }
     parseLine(buf);
 }
 
@@ -1239,7 +1248,6 @@ void loadBaseSystem() {
     loadSourceF(": base $%lx ; : state $%lx ;", (long)&BASE, (long)&STATE);
     loadSourceF(": tib $%lx ;", (long)&TIB[0]);
     loadSourceF(": (dsp) $%lx ; : dstack $%lx ;", (long)&DSP, (long)&dstk[0]);
-
     for (int i = 0; bootStrap[i]; i++) { parseLine(bootStrap[i]); }
 }
 
@@ -1272,9 +1280,8 @@ void ok() {
 
 void setup() {
 #ifdef __SERIAL__
-    theSerial.begin(19200);
     while (!theSerial) {}
-    while (theSerial.available()) {}
+    theSerial.begin(19200);
 #endif
 #ifdef __LITTLEFS__
     myFS.begin(1024 * 1024);
