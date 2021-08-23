@@ -752,42 +752,33 @@ int strCmp(const char* l, const char* r) {
     return 0;
 }
 
-CELL cellAt(ADDR loc) {
+
 #ifdef __NEEDS_ALIGN__
-    return (*(loc + 3) << 24) + (*(loc + 2) << 16) + (*(loc + 1) << 8) + *(loc);
-#else
-    return *(CELL*)loc;
-#endif
+CELL cellAt(ADDR loc) { return (*(loc+3) << 24) + (*(loc+2) << 16) + (*(loc+1) << 8) + *(loc); }
+CELL wordAt(ADDR loc) { return (*(loc+1) << 8) + *(loc); }
+
+void cellStore(ADDR addr, CELL val) {
+    *(addr++) = (val & 0xFF);
+    *(addr++) = (val >> 8) & 0xFF;
+    *(addr++) = (val >> 16) & 0xFF;
+    *(addr) = (val >> 24) & 0xFF;
 }
-CELL wordAt(ADDR loc) {
-#ifdef __NEEDS_ALIGN__
-    return (*(loc + 1) << 8) + *(loc);
-#else
-    return *(WORD*)loc;
-#endif
+
+void wordStore(ADDR addr, CELL val) {
+    *(addr) = (val & 0xFF);
+    *(addr+1) = (val >> 8) & 0xFF;
 }
+#else
+CELL cellAt(ADDR loc) { return *(CELL*)loc; }
+CELL wordAt(ADDR loc) { return *(WORD*)loc; }
+void wordStore(ADDR addr, CELL val) { *(WORD*)addr = (WORD)val; }
+void cellStore(ADDR addr, CELL val) { *(CELL*)addr = val; }
+#endif
+
 ADDR addrAt(ADDR loc) {
     return (ADDR_SZ == 2) ? (ADDR)wordAt(loc) : (ADDR)cellAt(loc);
 }
 
-void wordStore(ADDR addr, CELL val) {
-#ifdef __NEEDS_ALIGN__
-    * (addr) = (val & 0xFF);
-    *(addr + 1) = (val >> 8) & 0xFF;
-#else
-    * (WORD*)addr = (WORD)val;
-#endif
-}
-void cellStore(ADDR addr, CELL val) {
-#ifdef __NEEDS_ALIGN__
-    * (addr++) = (val & 0xFF);
-    *(addr++) = (val >> 8) & 0xFF;
-    *(addr++) = (val >> 16) & 0xFF;
-    *(addr) = (val >> 24) & 0xFF;
-#else
-    * (CELL*)addr = val;
-#endif
-}
 void addrStore(ADDR addr, ADDR v) {
     (ADDR_SZ == 2) ? wordStore(addr, (CELL)v) : cellStore(addr, (CELL)v);
 }
@@ -806,23 +797,6 @@ int compiling(char* w, int errIfNot) {
 int interpreting(char* w, int errIfNot) {
     if ((STATE != 0) && (errIfNot)) { printStringF("[%s]: Interpreting only.", w); }
     return (STATE == 0) ? 1 : 0;
-}
-
-int isInlineWord(char* w) {
-
-    if (strCmp(w, "inline") == 0) {
-        DICT_T* dp = (DICT_T*)LAST;
-        dp->flags = 2;
-        return 1;
-    }
-
-    if (strCmp(w, "immediate") == 0) {
-        DICT_T* dp = (DICT_T*)LAST;
-        dp->flags = 1;
-        return 1;
-    }
-
-    return 0;
 }
 
 int doFind(char* name) {
@@ -914,8 +888,6 @@ void doParseWord() {
         }
         return;
     }
-
-    if (isInlineWord(w)) { return; }
 
     if (isNumber(w)) {
         if (compiling(w, 0)) {
@@ -1090,7 +1062,19 @@ void doParseWord() {
         return;
     }
 
-    if (strCmp(w, "LEXICON") == 0) {
+    if (strCmp(w, "inline") == 0) {
+        DICT_T* dp = (DICT_T*)LAST;
+        dp->flags = 0x02;
+        return;
+    }
+
+    if (strCmp(w, "immediate") == 0) {
+        DICT_T* dp = (DICT_T*)LAST;
+        dp->flags = 0x01;
+        return;
+    }
+
+    if (strCmp(w, "lexicon") == 0) {
         if (getNextWord(w, ' ')) {
             currentLex = ++lastLex;
             doCreate(w);
@@ -1101,7 +1085,7 @@ void doParseWord() {
         return;
     }
 
-    if (strCmp(w, "DEFINITIONS") == 0) {
+    if (strCmp(w, "definitions") == 0) {
         currentLex = pop();
         return;
     }
@@ -1190,17 +1174,6 @@ void vmInit() {
     if (DBG_TRACE <= debugMode) { printStringF("-cw:%ld,%ld-\r\n", HERE, LAST); }
 }
 
-#ifdef __DEV_BOARD__
-void loop() {
-#ifdef __SERIAL__
-    while (theSerial.available()) {
-        int c = theSerial.read();
-        toTIB(c);
-    }
-#endif
-    autoRun();
-}
-#endif
 #ifdef __IS_PC__
 void doHistory(char* l) {
     FILE* fp = fopen("history.txt", "at");
@@ -1299,6 +1272,18 @@ void setup() {
     *TIBEnd = 0;
     ok();
 }
+
+#ifdef __DEV_BOARD__
+void loop() {
+#ifdef __SERIAL__
+    while (theSerial.available()) {
+        int c = theSerial.read();
+        toTIB(c);
+    }
+#endif
+    autoRun();
+}
+#endif
 
 #ifdef __IS_PC__
 int main()
