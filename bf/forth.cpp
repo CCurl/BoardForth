@@ -58,9 +58,9 @@ typedef BYTE* ADDR;
 typedef struct {
     ADDR XT;
     BYTE flags;
+    BYTE lex;
     BYTE len;
     char name[NAME_LEN+1];
-    BYTE lex;
 } DICT_T;
 
 typedef struct {
@@ -643,31 +643,30 @@ DICT_T* isTempWord(const char* name) {
     return &tempWords[name[2] - '0'];
 }
 
-void doCreate(const char* name) {
+void doCreate(char* name) {
     DICT_T* dp = isTempWord(name);
     if (dp) {
         dp->XT = HERE;
         return;
     }
 
-    ++numWords;
-    LAST -= DICT_ENTRY_SZ;
     if (LAST < (HERE+0x40)) {
         printString("***OUT OF MEMORY***");
         return;
     }
+    LAST -= DICT_ENTRY_SZ;
+    ++numWords;
     dp = (DICT_T*)LAST;
-    if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%ld)-", name, LAST); }
-    dp->flags = 0;
-    dp->lex = currentLex;
-    dp->len = (BYTE)strlen(name);
-    if (DBG_DEBUG <= debugMode) { printStringF("-cw:(%d, len)%d-", dp, dp->len); }
-    if (dp->len > NAME_LEN) {
-        printStringF("-name [%s] too long (%d)-", name, NAME_LEN);
-        dp->len = NAME_LEN;
+    int len = strlen(name);
+    if (NAME_LEN < len) {
+        printString("-cw:lengthErr-");
+        len = NAME_LEN;
+        name[len] = 0;
     }
-    strncpy(dp->name, name, NAME_LEN);
-    dp->name[NAME_LEN] = 0;
+    dp->flags = 0;
+    dp->len = len;
+    dp->lex = currentLex;
+    strcpy(dp->name, name);
     dp->XT = HERE;
     if (DBG_DEBUG <= debugMode) { printStringF("-cw:%s(%ld)-", dp->name, LAST); }
 }
@@ -1305,7 +1304,7 @@ int main()
     X(1403, ": cr #13 emit #10 emit ; inline : tab #9 emit ; inline") \
     X(1005, ": rot >r swap r> swap ; : -rot swap >r swap r> ;") \
     X(1006, ": 2dup over over ; inline : 2drop drop drop ; inline") \
-    X(1007, ": +! tuck @ + swap ! ; inline") \
+    X(1007, ": +! tuck @ + swap ! ;") \
     X(1008, ": negate 0 swap - ; inline") \
     X(1009, ": off 0 swap ! ; inline : on 1 swap ! ; inline") \
     X(1010, ": abs dup 0 < if negate then ;") \
@@ -1318,9 +1317,9 @@ int main()
     X(1017, ": allot vhere + (vhere) ! ;") \
     X(1018, ": >body @ ; inline : auto-run dict ! ;") \
     X(1019, ": auto-last last >body auto-run ; : auto-off 0 auto-run ;") \
-    X(1020, ": .word addr + 1+ count type tab ;") \
+    X(1020, ": .word addr + 1+ 1+ count type tab ;") \
     X(1021, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
-    X(1022, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . space count type ;") \
+    X(1022, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . 1+ dup c@ . space count type ;") \
     X(1023, ": wordsl last num-words 1 for dup .wordl entry-sz + next drop ;") \
     X(1024, "variable (regs) #16 CELLS allot") \
     X(1025, ": (reg) CELLS (regs) + ;") \
