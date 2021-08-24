@@ -1320,32 +1320,6 @@ int main()
     X(1040, ": pad last #128 - ; : ' pad nextword if- drop pad find then ;") \
     X(1999, "marker")
 
-#define SOURCE_PC X(2000, ": is-pc 0 ;")
-#ifdef __IS_PC__
-#undef SOURCE_PC
-#define SOURCE_PC \
-    X(2000, ": is-pc 1 ;") \
-    X(2001, ": _t0 27 emit '[' emit ;") \
-    X(2002, ": gotoXY ( x y -- )  _t0 (.) ';' emit (.) 'H' emit ;") \
-    X(2003, ": cls _t0 .\" 2J\" 0 dup gotoXY ;") \
-    X(2004, ": .ch dup #32 < if drop '.' then dup $7e > if drop '.' then emit ;") \
-    X(2005, ": dump-ch low->high for i c@ .ch next ;") \
-    X(2006, "variable (comport)   CELL allot 0 (comport) !") \
-    X(2007, "variable (comhandle) CELL allot 0 (comhandle) !") \
-    X(2008, ": comhandle (comhandle) @ ;") \
-    X(2009, ": comport (comport) @ ;") \
-    X(2010, ": comopen ( n -- ) dup (comport) ! com-open (comhandle) ! ;") \
-    X(2011, ": comclose ( -- ) comhandle com-close 0 (comhandle) ! ;") \
-    X(2012, ": comread ( -- c ) comhandle com-read ;") \
-    X(2013, ": comwrite ( c -- ) comhandle com-write 0= if .\" -err-\" then ;") \
-    X(2014, ": comall ( -- ) begin comread dup if emit 1 then while ;") \
-    X(2015, ": comstring ( a n -- ) over + for i c@ comwrite next ;") \
-    X(2016, ": comcr ( -- ) 13 comwrite ;") \
-    X(2017, ": comline ( cs -- )   count comstring comcr comall ;") \
-    X(2018, ": comlinez ( zs -- ) zcount comstring comcr comall ;") \
-    X(2099, "marker") 
-#endif
-
 #define SOURCE_ARDUINO
 #ifdef __ARDUINO__
 #undef SOURCE_ARDUINO
@@ -1456,7 +1430,7 @@ int main()
     X(9998, ".\" Hello.\"") \
     X(9999, "marker")
 
-#define SOURCES SOURCE_BASE SOURCE_PC SOURCE_ARDUINO SOURCE_BOARD SOURCE_STARTUP
+#define SOURCES SOURCE_BASE SOURCE_ARDUINO SOURCE_BOARD SOURCE_STARTUP
 
 #undef X
 #define X(num, val) const PROGMEM char str ## num[] = val;
