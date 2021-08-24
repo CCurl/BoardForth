@@ -67,8 +67,7 @@ typedef struct {
     char name[12];
 } LEXICON_T;
 
-int lastLex = 0;
-int currentLex = 0;
+byte currentLex = 0;
 
 #define LOOP_STK_SZ 8
 typedef struct {
@@ -858,9 +857,6 @@ int isNumber(const char* w) {
 void doParseWord() {
     char* w = (char*)pop();
     if (DBG_INFO <= debugMode) { printStringF("-pw:%s-", w); }
-    //if (strCmp(w, "dump-dict") == 0) {
-    //    int x = 1;
-    //}
     int lwc = lastWasCall;
     lastWasCall = 0;
     if (doFind(w)) {
@@ -1073,22 +1069,6 @@ void doParseWord() {
         return;
     }
 
-    if (strCmp(w, "lexicon") == 0) {
-        if (getNextWord(w, ' ')) {
-            currentLex = ++lastLex;
-            doCreate(w);
-            doCComma(OP_BLIT);
-            doCComma(currentLex);
-            doCComma(OP_RET);
-        }
-        return;
-    }
-
-    if (strCmp(w, "definitions") == 0) {
-        currentLex = pop();
-        return;
-    }
-
     BYTE op = getOpcode(w);
     if (op < 0xFF) {
         if (compiling(w, 0)) {
@@ -1168,7 +1148,6 @@ void vmInit() {
     TIBEnd = TIBBuf;
     loopDepth = 0;
     currentLex = 0;
-    lastLex = 0;
     doComma(0);
     if (DBG_TRACE <= debugMode) { printStringF("-cw:%ld,%ld-\r\n", HERE, LAST); }
 }
@@ -1209,7 +1188,8 @@ void loadSourceF(const char* fmt, ...) {
 }
 
 void loadBaseSystem() {
-    loadSourceF(": all 0 ; lexicon forth");
+    loadSourceF(": (lexicon) $%lx ; : definitions (lexicon) c! ;", (long)&currentLex);
+    loadSourceF(": forth 1 ; forth definitions");
     loadSourceF(": cell %d ; : cells cell * ; : addr %d ; ", CELL_SZ, ADDR_SZ);
     loadSourceF(": dict $%lx ; : dict-sz $%lx ; : entry-sz %d ;", (long)&dict[0], DICT_SZ, DICT_ENTRY_SZ);
     loadSourceF(": vars $%lx ; : vars-sz $%lx ;", (long)&vars[0], VARS_SZ);
