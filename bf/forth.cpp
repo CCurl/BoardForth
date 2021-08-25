@@ -219,22 +219,22 @@ CELL rpop() {
     X("COUNT"      , 175 , COUNT       , push(T); N += 1; T = (*A)) \
     X("TYPE"       , 176 , TYPE        , doType() ) \
     X("EMIT"       , 177 , EMIT        , buf[0] = (char)T; printString(buf); DROP1) \
-    X("(.)"        , 178 , PDOT        , doDot(T ,0,0,0); DROP1) \
-    X("."          , 179 , DOT         , doDot(T ,0,1,0); DROP1) \
-    X("U."         , 180 , UDOT        , doDot(T ,1,1,0); DROP1) \
-    X(".N"         , 181 , NDOT        , doDot(N ,1,0,T); DROP2) \
+    X("(.)"        , 178 , PDOT        , doDot(T,0,0,0); DROP1) \
+    X("."          , 179 , DOT         , doDot(T,0,1,0); DROP1) \
+    X("U."         , 180 , UDOT        , doDot(T,1,1,0); DROP1) \
+    X(".N"         , 181 , NDOT        , doDot(N,1,0,T); DROP2) \
     X(".S"         , 182 , DOTS        , doDotS()) \
     X("FOR"        , 183 , FOR         , doFor()) \
-    X("I"          , 184 , I           , if (0 <= loopSP) push(doStack[loopSP].index)) \
-    X("J"          , 185 , J           , if (1 <= loopSP) push(doStack[loopSP-1].index)) \
-    X("K"          , 186 , K           , if (2 <= loopSP) push(doStack[loopSP-2].index)) \
+    X("I"          , 184 , I           , push(0); if (0 <= loopSP) T = doStack[loopSP].index) \
+    X("J"          , 185 , J           , push(0); if (1 <= loopSP) T = doStack[loopSP-1].index) \
+    X("K"          , 186 , K           , push(0); if (2 <= loopSP) T = doStack[loopSP-2].index) \
     X("NEXT"       , 187 , NEXT        , doNext()) \
     X("BREAK"      , 188 , BREAK       , doBreak()) \
     X("BEGIN"      , 189 , BEGIN       , doBegin()) \
     X("AGAIN"      , 190 , AGAIN       , doAgain()) \
-    X("WHILE"      , 191 , WHILE       , doWhile(1 ,0)) \
-    X("WHILE-"     , 192 , WHILEN      , doWhile(0 ,0)) \
-    X("UNTIL"      , 193 , UNTIL       , doWhile(1 ,1)) \
+    X("WHILE"      , 191 , WHILE       , doWhile(1,0)) \
+    X("WHILE-"     , 192 , WHILEN      , doWhile(0,0)) \
+    X("UNTIL"      , 193 , UNTIL       , doWhile(1,1)) \
     X("C,"         , 194 , CCOMMA      , *(HERE++) = (BYTE)T; DROP1) \
     X("W,"         , 195 , WCOMMA      , doWComma((WORD)T); DROP1) \
     X(","          , 196 , COMMA       , doComma(T); DROP1) \
