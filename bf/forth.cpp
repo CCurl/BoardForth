@@ -397,9 +397,10 @@ void run(ADDR start, CELL max_cycles) {
 
 void doDot(CELL num, int isUnsigned, int space, int width) {
     int len  = 0;
+    int isNeg = 0;
     if ((!isUnsigned) && (BASE == 10) && (num < 0)) {
-        printString("-");
         num = -num;
+        isNeg = 1;
     }
     UCELL n = (UCELL)num;
     char *cp = (char *)TMP_PAD;
@@ -413,6 +414,7 @@ void doDot(CELL num, int isUnsigned, int space, int width) {
     } while (0 < n);
     while (len < width) { *(--cp) = '0'; len++; }
     if (space) { printString(" "); }
+    if (isNeg) { printString("-"); }
     printString(cp);
 }
 
