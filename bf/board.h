@@ -40,8 +40,8 @@
 		#define DICT_SZ (1024*48)
 		#define VARS_SZ (1024*64)
 	#elif __BOARD__ == TEENSY_LC
-		#define DICT_SZ (1024*16)
-		#define VARS_SZ (1024*2)
+		#define DICT_SZ (1024*4)
+		#define VARS_SZ (1024*1)
 	#endif
 #else
 	#define __IS_PC__
@@ -52,7 +52,6 @@
 	#define TIB_SZ (128)
 	#define MAX_FILE_SZ 10*1024
 	#define __FILES__
-	// #define __ARDUINO__
 	// #define __ARDUINO_FAKE__
 	// #define __GAMEPAD_FAKE__
 	#define __COM_PORT__

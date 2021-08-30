@@ -1219,7 +1219,6 @@ void loadBaseSystem() {
 #endif
 }
 
-
 void ok() {
 #ifdef __DEV_BOARD__
     printString(" OK ");
