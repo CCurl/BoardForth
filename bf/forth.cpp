@@ -137,6 +137,7 @@ extern const char *bootStrap[];
 #pragma warning(disable:4996)
 void delay(int ms) { Sleep(ms); }
 long millis() { return GetTickCount(); }
+FILE* input_fp = (FILE *)NULL;
 #endif
 
 #ifdef __ARDUINO_FAKE__
@@ -256,7 +257,7 @@ void doFileClose(CELL fp);
 void doFileRead();
 void doFileWrite();
 #define FILE_OPCODES \
-    X("FOPEN"   , 206 , FOPEN   , N = doFileOpen((char *)N+1, C+1); DROP1) \
+    X("FOPEN"   , 206 , FOPEN   , N = doFileOpen((char *)N1+1, C+1); DROP1) \
     X("FCLOSE"  , 207 , FCLOSE  , doFileClose(T); DROP1) \
     X("FREAD"   , 208 , FREAD   , doFileRead()) \
     X("FWRITE"  , 209 , FWRITE  , doFileWrite())
@@ -271,7 +272,7 @@ void doFileClose(CELL fp);
 void doFileRead();
 void doFileWrite();
 #define LITTLEFS_OPCODES \
-    X("FOPEN"    , 206 , FOPEN   , N = doFileOpen((char *)N+1, C+1); DROP1) \
+    X("FOPEN"    , 206 , FOPEN   , N = doFileOpen((char *)N1+1, C+1); DROP1) \
     X("FCLOSE"   , 207 , FCLOSE  , doFileClose(T); DROP1) \
     X("FREAD"    , 208 , FREAD   , doFileRead()) \
     X("FWRITE"   , 209 , FWRITE  , doFileWrite())
@@ -1164,11 +1165,18 @@ void doHistory(char* l) {
 }
 
 void loop() {
+    FILE* fp = input_fp ? input_fp : stdin;
     char buf[128];
     numTIB = 0;
     TIBEnd = TIB;
     *TIBEnd = 0;
-    fgets(buf, 128, stdin);
+    if (fgets(buf, 128, fp) != buf) {
+        if (input_fp) {
+            fclose(input_fp);
+            input_fp = NULL;
+        }
+        return;
+    }
     int len = strlen(buf);
     while ((0 < len) && (buf[len - 1] < ' ')) {
         buf[--len] = 0;
@@ -1203,24 +1211,13 @@ void loadBaseSystem() {
     loadSourceF(": tib $%lx ;", (long)&TIB[0]);
     loadSourceF(": (dsp) $%lx ; : dstack $%lx ;", (long)&DSP, (long)&dstk[0]);
     for (int i = 0; bootStrap[i]; i++) { parseLine(bootStrap[i]); }
+#ifdef __IS_PC__
+    loadSourceF(": (input) $%lx ;", (long)&input_fp);
+    loadSourceF(": include S\" rt\" fopen (input) ! ;");
+    loadSourceF("marker S\" user-words.4th.\" include");
+#endif
 }
 
-#ifdef __USER_WORDS__
-void loadUserWords() {
-    CELL fp = doFileOpen("user-words.4th", "rb");
-    if (fp) {
-        char* fc = (char *)malloc(MAX_FILE_SZ);
-        if (fc) { memset(fc, 0, MAX_FILE_SZ); }
-        push((CELL)fc);
-        push(MAX_FILE_SZ);
-        push(fp);
-        doFileRead();
-        doFileClose(fp);
-        if (pop()) { parseLine(fc); }
-        free(fc);
-    }
-}
-#endif
 
 void ok() {
     #ifdef __DEV_BOARD__
@@ -1245,9 +1242,6 @@ void setup() {
 #endif
     vmInit();
     loadBaseSystem();
-#ifdef __USER_WORDS__
-    loadUserWords();
-#endif
     numTIB = 0;
     TIBEnd = TIB;
     *TIBEnd = 0;
