@@ -1174,6 +1174,7 @@ void loop() {
         if (input_fp) {
             fclose(input_fp);
             input_fp = NULL;
+            ok();
         }
         return;
     }
@@ -1220,13 +1221,17 @@ void loadBaseSystem() {
 
 
 void ok() {
-    #ifdef __DEV_BOARD__
+#ifdef __DEV_BOARD__
     printString(" OK ");
-    #else 
-    printString(" ok ");
-    #endif
     doDotS();
     printString("\r\n");
+#else 
+    if (input_fp == NULL) { 
+        printString(" ok "); 
+        doDotS();
+        printString("\r\n");
+    }
+#endif
 }
 
 void setup() {
