@@ -210,8 +210,8 @@ CELL rpop() {
     X("w!"         , 165 , WSTORE      , wordStore(A ,N); DROP2) \
     X("a!"         , 166 , ASTORE      , (ADDR_SZ == 2) ? wordStore(A ,N) : cellStore(A,N); DROP2) \
     X("U/MOD"      , 167 , USLMOD      , doUSlMod()) \
-    X("2/"         , 168 , RSHIFT      , T = T >> 1) \
-    X("2*"         , 169 , LSHIFT      , T = T << 1) \
+    X("rshift"     , 168 , RSHIFT      , N = N >> T; DROP1) \
+    X("lshift"     , 169 , LSHIFT      , N = N << T; DROP1) \
     X("1-"         , 170 , ONEMINUS    , --T) \
     X("1+"         , 171 , ONEPLUS     , ++T) \
     X(">r"         , 172 , DTOR        , rpush(pop())) \
@@ -1279,6 +1279,7 @@ int main()
     X(1001, ": tuck swap over ; inline") \
     X(1002, ": ?dup if- dup then ;") \
     X(1003, ": mod /mod drop ; inline : / /mod nip ; inline") \
+    X(10031,": 2* dup + inline ; : 2/ 1 rshift ;") \
     X(1401, ": bl #32 ; inline : space bl emit ; inline") \
     X(1402, ": spaces 1 for space next ;" ) \
     X(1403, ": cr #13 emit #10 emit ; inline : tab #9 emit ; inline") \
