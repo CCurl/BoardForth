@@ -40,10 +40,10 @@ typedef BYTE* ADDR;
 #define DROP2 DROP1; DROP1
 #define DROP3 DROP1; DROP1; DROP1
 
-#define TMP_RUNOP    (VHERE + 0x0002)
-#define TMP_WORD     (VHERE + 0x0004)
-#define TMP_SQUOTE   (VHERE + 0x0030)
-#define TMP_DOTQUOTE (VHERE + 0x0030)
+#define TMP_RUNOP    T_VHERE
+#define TMP_WORD     T_VHERE
+#define TMP_SQUOTE   T_VHERE
+#define TMP_DOTQUOTE T_VHERE
 #define TMP_PAD      (LAST  - 0x0004)
 
 #define DBG_ALL   4
@@ -112,8 +112,8 @@ int strCmp(const char*, const char*);
 
 BYTE IR;
 ADDR PC;
-ADDR HERE, VHERE;
-ADDR LAST;
+ADDR HERE, LAST;
+ADDR VHERE, T_VHERE;
 BYTE dict[DICT_SZ];
 BYTE vars[VARS_SZ];
 char TIBBuf[TIB_SZ];
@@ -784,7 +784,7 @@ void addrStore(ADDR addr, ADDR v) {
     (ADDR_SZ == 2) ? wordStore(addr, (CELL)v) : cellStore(addr, (CELL)v);
 }
 
-inline void doVComma(BYTE v) { *(VHERE++) = v; }
+inline void doVComma(BYTE v) { *(VHERE++) = v; T_VHERE = VHERE+2; }
 inline void doCComma(BYTE v) { *(HERE++) = v; }
 void doWComma(CELL v) { wordStore(HERE, v); HERE += WORD_SZ; }
 void doComma(CELL v)  { cellStore(HERE, v); HERE += CELL_SZ; }
@@ -989,6 +989,7 @@ void doParseWord() {
             CELL len = getNextWord(x + 1, '"');
             getNextChar();
             *x = (BYTE)len;
+            TMP_SQUOTE += (len + 2);
             return;
         }
         doCComma(OP_LIT);
@@ -1020,8 +1021,9 @@ void doParseWord() {
         if (STATE == 0) {
             getNextChar();
             push((CELL)TMP_SQUOTE);
-            getNextWord(C, '"');
+            CELL len = getNextWord(C, '"');
             getNextChar();
+            TMP_SQUOTE+= (len + 2);
             return;
         }
         doCComma(OP_LIT);
@@ -1152,6 +1154,7 @@ void vmInit() {
     loopDepth = 0;
     currentLex = 0;
     doComma(0);
+    T_VHERE = VHERE;
     if (DBG_TRACE <= debugMode) { printStringF("-cw:%ld,%ld-\r\n", HERE, LAST); }
 }
 
@@ -1215,7 +1218,7 @@ void loadBaseSystem() {
 #ifdef __IS_PC__
     loadSourceF(": (input) $%lx ;", (long)&input_fp);
     loadSourceF(": include S\" rt\" fopen (input) ! ;");
-    loadSourceF("marker S\" user-words.4th.\" include");
+    loadSourceF("marker S\" user-words.4th\" include");
 #endif
 }
 
@@ -1231,6 +1234,7 @@ void ok() {
         printString("\r\n");
     }
 #endif
+    T_VHERE = VHERE+2;
 }
 
 void setup() {
