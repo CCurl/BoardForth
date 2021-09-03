@@ -966,6 +966,7 @@ void doParseWord() {
             doCComma(OP_RET);
             cellStore(VHERE, 0);
             VHERE += CELL_SZ;
+            T_VHERE = (VHERE < T_VHERE) ? T_VHERE : (VHERE + 2);
         }
         return;
     }
