@@ -1219,7 +1219,7 @@ void loadBaseSystem() {
 #ifdef __IS_PC__
     loadSourceF(": (input) $%lx ;", (long)&input_fp);
     loadSourceF(": include S\" rt\" fopen (input) ! ;");
-    loadSourceF("marker S\" user-words.4th\" include");
+    loadSourceF("marker S\" user-words.fs\" include");
 #endif
 }
 
@@ -1291,7 +1291,7 @@ int main()
     X(1005, ": rot >r swap r> swap ; : -rot swap >r swap r> ;") \
     X(1006, ": 2dup over over ; inline : 2drop drop drop ; inline") \
     X(1007, ": +! tuck @ + swap ! ;") \
-    X(1008, ": negate 0 swap - ; inline") \
+    X(1008, ": negate com 1+ ; inline") \
     X(1009, ": off 0 swap ! ; inline : on 1 swap ! ; inline") \
     X(1010, ": abs dup 0 < if negate then ;") \
     X(1011, ": hex $10 base ! ; : decimal #10 base ! ; : binary %10 base ! ;") \
@@ -1305,8 +1305,9 @@ int main()
     X(1019, ": auto-last last >body auto-run ; : auto-off 0 auto-run ;") \
     X(1020, ": .word addr + 1+ 1+ count type tab ;") \
     X(1021, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
+    X(10210,": _t0 cr .\"  addr    xt      f L l   name\" ;") \
     X(1022, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . 1+ dup c@ . space count type ;") \
-    X(1023, ": wordsl last num-words 1 for dup .wordl entry-sz + next drop ;") \
+    X(1023, ": wordsl _t0 last num-words 1 for dup .wordl entry-sz + next drop ;") \
     X(1024, "variable (regs) #16 CELLS allot") \
     X(1025, ": (reg) CELLS (regs) + ;") \
     X(10251, ": reg@ (reg) @ ; : reg! (reg) ! ;") \
@@ -1359,7 +1360,6 @@ int main()
 #define SOURCE_BOARD
 #ifdef __DEV_BOARD__
 #undef SOURCE_BOARD 
-
 #define SOURCE_BOARD \
     X(5005, "( Note: the pinMode on the Arduino board is set to INPUT_PULLUP )") \
     X(5010, "( Wire the switch to go to ground when closed )") \
