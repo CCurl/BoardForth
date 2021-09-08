@@ -1308,11 +1308,6 @@ int main()
     X(10210,": _t0 cr .\"  addr    xt      f L l   name\" ;") \
     X(1022, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . 1+ dup c@ . space count type ;") \
     X(1023, ": wordsl _t0 last num-words 1 for dup .wordl entry-sz + next drop ;") \
-    X(1024, "variable (regs) #16 CELLS allot") \
-    X(1025, ": (reg) CELLS (regs) + ;") \
-    X(10251, ": reg@ (reg) @ ; : reg! (reg) ! ;") \
-    X(1026, ": reg+ dup reg@ 1+ swap reg! ;") \
-    X(1027, ": reg- dup reg@ 1- swap reg! ;") \
     X(1029, ": .b 3 base @ #16 = if 1- then .n ;") \
     X(1030, ": dump low->high for i c@ space .b next ;") \
     X(1031, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \

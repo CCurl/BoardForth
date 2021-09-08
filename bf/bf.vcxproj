@@ -165,7 +165,7 @@
     <None Include="board-words.4th" />
     <None Include="make.bat" />
     <None Include="bf.ino" />
-    <None Include="user-words.4th" />
+    <None Include="user-words.fs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

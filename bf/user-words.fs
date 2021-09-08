@@ -16,6 +16,11 @@ timer seed !
 
 : pc 64 ; 
 pc definitions
+variable (regs) #15 CELLS allot
+: _t1 #15 and CELLS (regs) + ;
+: reg@ _t1 @ ; : reg! _t1 ! ;
+: reg+ _t1 dup @ swap over 1+ swap ! ;
+: reg- _t1 dup @ swap over 1- swap ! ;
 
 : csi 27 emit '[' emit ;
 : gotoXY csi (.) ';' emit (.) 'H' emit ;
