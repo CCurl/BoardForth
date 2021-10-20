@@ -52,8 +52,8 @@
 	#define TIB_SZ (128)
 	#define MAX_FILE_SZ 10*1024
 	#define __FILES__
-	// #define __ARDUINO_FAKE__
-	// #define __GAMEPAD_FAKE__
+	#define __ARDUINO_FAKE__
+	#define __GAMEPAD_FAKE__
 	#define __COM_PORT__
 	typedef unsigned int uint;
 	typedef unsigned long ulong;

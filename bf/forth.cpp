@@ -139,6 +139,7 @@ FILE* input_fp = (FILE *)NULL;
 #endif
 
 #ifdef __ARDUINO_FAKE__
+#define __ARDUINO__
 #define PIN_INPUT 1
 #define PIN_INPUT_PULLUP 2
 #define PIN_OUTPUT 3
