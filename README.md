@@ -16,13 +16,16 @@ To build this VM for a given board:
     - Open the Arduino software IDE.
     - Load file bf/bf.ino.
     - Select the proper COM port and target board.
-    - Change the following #defines in defs.h to appropriate values for the target board.
+    - Change the following #defines in defs.h to appropriate values for the target board (I use these for the XIAO).
         - #define DICT_SZ (24*1024)
         - #define STK_SZ 32
         - #define TIB_SZ 0x0080
+    - To include HID device support, uncomment out the #define __GAMEPAD__ line
+        - Note that this requires that the HID-Project is installed (use Sketch->Library to install it)
+    - Set the #define theSerial appropriately. Some boards use Serial, others use SerialUSB.
     - Press the [Verify] button (<ctrl>-R).
     
-To deploy the VM to the development board:
+To deploy the BoartForth to the development board:
 
     - Follow the steps from above, but use the [Upload] button (<ctrl>-U) instead.
 
@@ -36,7 +39,7 @@ Notes:
         - Add a 'X("NEWOP", NEWOP, code) \' to the BASE_OPCODES list in defs.h.
         - If the code is more involved, define a function and call that.
     - The development process I use is as follows:
-        - Deploy the VM as above.
+        - Deploy BoardForth as above.
         - Open up Serial Monitor or PuTTY on that COM port.
         - Interactively code as usual, including defining new words as appropriate.
         - When I know what I want to keep, I update SOURCE_USER with any new code.
