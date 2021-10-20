@@ -9,7 +9,7 @@
 #define ESP32       4
 #define ESP8266     5
 
-#define __BOARD__ PICO
+#define __BOARD__ XIAO
 
 #ifndef _WIN32
 	#define __DEV_BOARD__

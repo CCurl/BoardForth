@@ -52,15 +52,14 @@ typedef BYTE* ADDR;
 #define DBG_DEBUG 1
 #define DBG_OFF   0
 
-#define NAME_LEN      16
+#define NAME_LEN      17
 #define DICT_ENTRY_SZ 24
 
 typedef struct {
     ADDR XT;
     BYTE flags;
     BYTE lex;
-    BYTE len;
-    char name[NAME_LEN+1];
+    char name[18];
 } DICT_T;
 
 typedef struct {
@@ -90,7 +89,7 @@ void ok();
 void doParse(char sep);
 int isNumber(const char*);
 void doParseWord();
-void doCreate(const char* name);
+void doCreate(char* name);
 void doSlMod();
 void doUSlMod();
 void doType();
@@ -107,7 +106,6 @@ void doWhile(int, int);
 void doWComma(CELL);
 void doComma(CELL);
 void doAComma(ADDR);
-void dumpOpcodes();
 int strCmp(const char*, const char*);
 
 BYTE IR;
@@ -339,7 +337,7 @@ CELL doComWrite(CELL handle, CELL ch);
     ARDUINO_OPCODES \
     GAMEPAD_OPCODES \
     COMPORT_OPCODES \
-    X("OPCODES"       , 252 , DUMP_OPCODES  , dumpOpcodes()) \
+    X("(WORDS)"       , 252 , WORDS         , dumpWords(T); DROP1) \
     X("FORTH-SOURCE"  , 253 , BOOT_STRAP    , push((CELL)&bootStrap[0])) \
     X("BYE"           , 254 , BYE           , printString(" goodbye."); isBYE = 1)
 
@@ -359,9 +357,29 @@ void printOpcode(BYTE opcode) {
 }
 #undef X
 
-#define X(name, ch, op, code) x = OP_ ## op; printStringF("\r\n%3d ($%02x, %c): %s", x, x, (char)x, name);
-void dumpOpcodes() {
-    int x;
+#define X(name, ch, op, code) printStringF(" %s", name);
+void dumpWords(int op) {
+    DICT_T* dp = (DICT_T*)LAST;
+    DICT_T *end = (DICT_T*)&dict[DICT_SZ-8];
+    int num = 0;
+    if (op == 2) {
+        printStringF("%-8s %-5s %-4s %s\r\n", "XT",       "flags", "lex",  "name");
+        printStringF("%-8s %-5s %-4s %s\r\n", "--------", "-----", "----", "---------------");
+    }
+    while (dp < end) {
+        if (op == 1) {
+            printStringF("%-12s ", dp->name);
+            if (++num == 7) {
+                num = 0;
+                printString("\r\n");
+            }
+        }
+        else {
+            printStringF("%-8lx %-5d %-4d %s\r\n", (long)dp->XT, dp->flags, dp->lex, dp->name);
+        }
+        dp++;
+    }
+    printString("\r\nPrimitives:");
     OPCODES
 }
 #undef X
@@ -371,8 +389,14 @@ BYTE getOpcode(char* w) {
     OPCODES
         return 0xFF;
 }
-
 #undef X
+
+#define X(name, ch, op, code) doCreate((char *)name);
+void OpsToWords() {
+    OPCODES
+}
+#undef X
+
 #define X(name, ch, op, code) case OP_ ## op: code; break;
 
 void run(ADDR start, CELL max_cycles) {
@@ -666,7 +690,6 @@ void doCreate(char* name) {
         name[len] = 0;
     }
     dp->flags = 0;
-    dp->len = len;
     dp->lex = currentLex;
     strcpy(dp->name, name);
     dp->XT = HERE;
@@ -1203,6 +1226,7 @@ void loadSourceF(const char* fmt, ...) {
 }
 
 void loadBaseSystem() {
+    // OpsToWords();
     loadSourceF(": (lexicon) $%lx ; : definitions (lexicon) c! ;", (long)&currentLex);
     loadSourceF(": forth 1 ; forth definitions");
     loadSourceF(": cell %d ; : cells cell * ; : addr %d ; ", CELL_SZ, ADDR_SZ);
@@ -1303,11 +1327,8 @@ int main()
     X(1017, ": allot vhere + (vhere) ! ;") \
     X(1018, ": >body @ ; inline : auto-run dict ! ;") \
     X(1019, ": auto-last last >body auto-run ; : auto-off 0 auto-run ;") \
-    X(1020, ": .word addr + 1+ 1+ count type tab ;") \
-    X(1021, ": words last num-words 1 for dup .word entry-sz + next drop ;") \
-    X(10210,": _t0 cr .\"  addr    xt      f L l   name\" ;") \
-    X(1022, ": .wordl cr dup . dup a@ . addr + dup c@ . 1+ dup c@ . 1+ dup c@ . space count type ;") \
-    X(1023, ": wordsl _t0 last num-words 1 for dup .wordl entry-sz + next drop ;") \
+    X(1021, ": words 1 (WORDS) ;") \
+    X(1023, ": wordsl 2 (WORDS) ;") \
     X(1029, ": .b 3 base @ #16 = if 1- then .n ;") \
     X(1030, ": dump low->high for i c@ space .b next ;") \
     X(1031, ": _t0 cr dup 8 .n ':' emit #16 over + dump ;") \
@@ -1319,14 +1340,14 @@ int main()
     X(1037, ": marker here (ch) ! last (cl) ! num-words (nw) ! vhere (vh) ! ;") \
     X(1038, ": forget (ch) @ (here) ! (cl) @ (last) ! (nw) @ (num-words) ! (vh) @ (vhere) ! ;") \
     X(1039, ": forget-1 last a@ (here) ! last entry-sz + (last) ! num-words 1- (num-words) ! ;") \
-    X(1040, ": pad last #128 - ; : ' pad nextword if- drop pad find then ;") \
+    X(1040, ": pad last #128 - ; ( : ' pad nextword if- drop pad find then ; )") \
     X(1999, "marker")
 
 #define SOURCE_ARDUINO
 #ifdef __ARDUINO__
 #undef SOURCE_ARDUINO
 #define SOURCE_ARDUINO \
-    X(4000, "lexicon mux-words") \
+    X(4000, ": mux-words 3 ; mux-words definitions") \
     X(4001, "variable (mux) CELL allot") \
     X(4002, ": mux (mux) @ ; : mux! (mux) ! ;") \
     X(4003, ": (s0) mux ;     : s0 (s0) c@ ; ") \
