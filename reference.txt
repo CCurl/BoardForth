@@ -1,0 +1,235 @@
+name
+---------------
+include  (a--)   ; a: the name of a file to include (PC only)
+(input)  (--a)   ; a: the address of the input file handle (PC only)
+
+-- For 8 or 16 channel multiplexer support
+mux!A
+mux!
+mux@A
+mux@
+mux-output
+mux-init
+mux-select
+z
+(z)
+s3
+(s3)
+s2
+(s2)
+s1
+(s1)
+s0
+(s0)
+mux!
+mux
+(mux)
+mux-words
+
+pad               (--n)           ; n: the address of a temp buffer used by .
+forget-1          (--)            ; forgets the last defined word
+forget            (--)            ; resets the dictionary to the state after 'marker'
+marker            (--)            ; marks the current state of the dictionary
+(vh)              (--v)           ; v: the value of VHERE for marker
+(nw)              (--v)           ; v: the value of NUM-WORDS for marker
+(cl)              (--v)           ; v: the value of LAST for marker
+(ch)              (--v            ; v: the value of HERE for marker
+elapsed           (T--)           ; T: Time - Print elapsed MS since T
+dump-dict         (--)            ; Dumps the CODE part of the dictionary 
+dump              (f t--)         ; Dumps memory from f through t
+.b                (c--)           ; c: a byte. Prints c with leading zeros to width 3
+wordsl            (--)            ; Prints the list of words (long form)
+words             (--)            ; Prints the list of words
+auto-off          (--)            ; Sets address 0 to 0. This stops auto-run
+auto-last         (--)            ; Sets auto-run to the XT of the LAST word
+auto-run          (a--)           ; a: an XT. Sets auto-run to a
+>body             (d--a)          ; d: a dictionary entry. a: the XT of d
+allot             (n--)           ; n: numbrt of bytes to reserve
+between           (x a b--f)      ; x: a number, a: min, b:max, f: -1 if a <= x <= b else 0
+max               (a b--n)        ; n: if a < b then b, else a
+min               (a b--n)        ; n: if a < b then a, else b
+high->low         (x y--a b)      ; a: max(x, y), b: min(x,y)
+low->high         (x y--a b)      ; a: min(x, y), b: max(x,y)
+binary            (--)            ; set the BASE to binary
+decimal           (--)            ; set the BASE to decimal
+hex               (--)            ; set the BASE to hex
+abs               (n--u)          ; u: the absolute vaue of n
+on                (a--)           ; store 1 into a
+off               (a--)           ; store 0 into a
+negate            (n1--n2)        ; n2: -n1
++!                (n a--)         ; Add n to the value at a and store back to a
+2drop             (x y--)         ; Drop x and y
+2dup              (x y--x y x y)  ; Dup x and y
+rot               (c b a--b a c)  ; Rotate the top 3 stack items
+-rot              (c b a--a c b)  ; Rotate the top 3 stack items backwards
+tab               (--)            ; Output a TAB
+cr                (--)            ; Output CR/LF
+spaces            (n--)           ; Output n spaces
+space             (--)            ; Output a BLANK
+bl                (--n)           ; n: 32
+2/                (a--b)          ; b: a/2
+2*                (a--b)          ; b: a*2
+/                 (x y--q)        ; q: x/y
+mod               (x y--r)        ; r: x MODULO y
+?dup              (n--(n n)|n)    ; Duplicate TOS if it is <> 0
+tuck              (a b--b a b)    ; Tuck b before a
+0sp               (n... --)       ; Empty/reset the stack
+depth             (--n)           ; n: the number of items on the stack
+dstack            (--a)           ; a: the address of the beginning of the stack
+(dsp)             (--a)           ; a: the address of the stack pointer
+tib               (--a)           ; a: the address of the text input buffer
+state             (--a)           ; a: the address of STATE
+base              (--a)           ; a: the address of BASE
+vhere             (--n)           ; n: the current value of VHERE
+(vhere)           (--a)           ; a: the address of VHERE
+last              (--n)           ; n: the current value of LAST
+(last)            (--a)           ; a: the address of LAST
+here              (--n)           ; n: the curent value of HERE
+(here)            (--a)           ; a: the address of HERE
+num-words         (--n)           ; n: the number of words in the dictionary
+(num-words)       (--a)           ; a: the address of NUM-WORDS
+vars-sz           (--n)           ; n: the number of bytes allocated for variables
+vars              (--a)           ; a: the address where variables start
+entry-sz          (--n)           ; n: the size of a dictionary entry
+dict-sz           (--n)           ; n: size of the dictionary (code+definitions)
+dict              (--a)           ; a: the address where the dictionary starts
+addr              (--n)           ; n: the number of bytes used by an address
+cells             (x--y)          ; y: x*CELL
+cell              (--n)           ; n: the number of bytes used by a CELL
+forth             (--n)           ; n: constant 1 (for lexicon/definitions)
+definitions       (n--)           ; n: the current lexicon
+(lexicon)         (--a)           ; a: the address of LEXICON
+
+****************** Primitives ******************
+
+Primitives behave like words; they are executed directly when STATE=0, and compiled into the dictionary when STATE=1. But they do not take up space as word entries in the dictionary. 
+
+Hopefully, most of these are self-explanatory. Those that might not be are documented.
+
+CALL       ; Internal (run-time only)
+RET        ; Internal (run-time only)
+JMP        ; Internal (run-time only)
+BRANCH     ; Internal (run-time only)  ; branch always
+ZBRANCH    ; Internal (run-time only)  ; branch if TOS = 0
+NZBRANCH   ; Internal (run-time only)  ; branch if TOS <> 0
+BLIT       ; Internal (run-time only)  ; 1 byte literal
+WLIT       ; Internal (run-time only)  ; 2 byte literal
+LIT        ; Internal (run-time only)  ; 4 byte literal
+IF
+IF- (n--n) ; Same as IF, but doesn't pop the stack
+ELSE
+THEN
+:
+;
+(
+)
+VARIABLE
+CONSTANT
+S"
+."
+Z"  (--a)  ; a: the address of a NULL terminated string
+INLINE     ; Mark the last word as an INLINE word
+IMMEDIATE
+DUP 
+SWAP 
+OVER 
+@ 
+! 
++ 
+- 
+* 
+/MOD  (x y--quotient remainder)
+AND 
+NAND 
+OR 
+XOR 
+COM  (x--x1)  ; x1: 1's complement of x
+< 
+= 
+<> 
+0= 
+> 
+NIP 
+c@ 
+DROP 
+MS    (n--)   ; Delay for n milliseconds
+TIMER (--t)   ; t: the current system uptime (milliseconds)
+w@    (a--n)  ; fetch 16-bits
+a@    (a--n)  ; fetch address at a
+c! 
+w! 
+a! 
+U/MOD 
+rshift 
+lshift 
+1- 
+1+ 
+>r 
+r@ 
+r> 
+COUNT 
+TYPE 
+EMIT 
+(.)   (n--)    ; Output n with no padding
+. 
+U. 
+.N    (n1 n--) ; Output n zeropadded to n1 width
+.S 
+FOR 
+I 
+J 
+K 
+NEXT 
+BREAK 
+BEGIN 
+AGAIN 
+WHILE  (n--)   ; if n==0 then continue else jump to begin
+WHILE- (n--n)  ; same as WHILE, but doesn't drop n
+UNTIL  (n--)
+C, 
+W, 
+, 
+A, 
+NEXTWORD 
+FIND 
+MALLOC 
+FREE 
+FILL 
+ZCOUNT 
+ZTYPE 
+DEBUG-MODE 
+
+--- These are for FILE port support (PC only)
+FOPEN   (name mode--h)  ; Open file
+FCLOSE  (h--)           ; Close file
+FREAD   (h--b)          ; Read one byte
+FWRITE  (b h--)         ; Write one byte
+
+-- These are for DEV Boards (Arduino)
+INPUT         (p--)     ; open pin p as input (pinMode(p, INPUT))
+PULLUP        (p--)     ; open pin p as input pullup (pinMode(p, INPUT))
+OUTPUT        (p--)     ; open pin p as output (pinMode(p, INPUT))
+pin@          (p--v)    ; p: pin#, v: value of pin (v = digitalRead(p))
+pin!          (v p--)   ; p: pin#, v: value to write pin (digitalWrite(p, v))
+apin@         (p--v)    ; p: pin#, v: value of pin (v = analogRead(p))
+apin!         (v p--)   ; p: pin#, v: value to write pin (analogWrite(p, v))
+
+--- These are for the GAMEPAD support (#define __GAMEPAD__)
+GP.X          (n--)     ; n: x axis pos
+GP.Y          (n--)     ; n: y axis pos
+GP.PRESS      (n--)     ; n: button number (1-32)
+GP.RELEASE    (n--)     ; n: button number (1-32)
+GP.PAD1       (n--)     ; n: pad 1 value
+GP.PAD2       (n--)     ; n: pad 2 value
+GP.RELEASEALL (--)      ; Release all buttons
+GP.WRITE      (--)      ; Send report to the PC
+
+--- These are for COM port support (PC only)
+COM-OPEN      (port baud--h)
+COM-READ      (h--b)
+COM-WRITE     (b h--)
+COM-CLOSE     (h--)
+
+(WORDS)                 ; Internal
+FORTH-SOURCE  (--a)
+BYE
